@@ -103,8 +103,8 @@ function todayString() {
   return `${y}-${m}-${d}`;
 }
 
-function buildCopyText(site: string, postsByStaff: SiteMap[string]): string {
-  const parts: string[] = [normalizeSiteName(site)];
+function buildCopyText(postsByStaff: SiteMap[string]): string {
+  const parts: string[] = [];
   for (const [staffName, posts] of Object.entries(postsByStaff)) {
     const workPosts = posts.filter((p) => isWorkRelated(p.message));
     if (workPosts.length === 0) continue;
@@ -128,7 +128,7 @@ function SiteCard({ site, staffList, agency, siteMap }: {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(buildCopyText(site, postsByStaff)).then(() => {
+    navigator.clipboard.writeText(buildCopyText(postsByStaff)).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
