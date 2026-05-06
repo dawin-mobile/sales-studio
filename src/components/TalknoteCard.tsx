@@ -71,11 +71,32 @@ function countWorkPosts(postsByStaff: SiteMap[string]): number {
   );
 }
 
+function normalize(s: string): string {
+  return s
+    .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFF10 + 48))
+    .replace(/[×✕✖ｘＸ]/g, 'x');
+}
+
+// 除外プレフィックス（新規の直前にあったらカウントしない）
+const SHIN_EXCLUDE_PREFIX = /(?:タブ\S*|光|[Bb]iglobe\S*|ビッグローブ\S*)$/;
+
+function countShin(msg: string): number {
+  let shin = 0;
+  // 新規 + 括弧修飾子(任意) + 数字(任意) を全て検索
+  for (const match of msg.matchAll(/新規(?:\([^)]*\))?[x×]?\s*(\d+)?/g)) {
+    const before = msg.slice(0, match.index);
+    if (SHIN_EXCLUDE_PREFIX.test(before)) continue;
+    shin += match[1] ? parseInt(match[1]) : 1;
+  }
+  return shin;
+}
+
 function countMnpNew(postsByStaff: SiteMap[string]): { mnp: number; shin: number } {
   let mnp = 0, shin = 0;
   for (const posts of Object.values(postsByStaff)) {
     for (const post of posts) {
-      const msg = post.message;
+      const msg = normalize(post.message);
+
       // MNP○台: "MNP2" → 2台、"MNP" alone → 1台
       const mnpMatches = [...msg.matchAll(/MNP(\d+)/gi)];
       if (mnpMatches.length > 0) {
@@ -83,13 +104,8 @@ function countMnpNew(postsByStaff: SiteMap[string]): { mnp: number; shin: number
       } else if (/MNP/i.test(msg)) {
         mnp += 1;
       }
-      // 新規○台: "新規2", "新規×2", "純新規×2" → N台、"新規" alone → 1台
-      const shinMatches = [...msg.matchAll(/新規[×x×\s]*(\d+)/g)];
-      if (shinMatches.length > 0) {
-        shin += shinMatches.reduce((s, m) => s + parseInt(m[1]), 0);
-      } else if (/新規/.test(msg)) {
-        shin += 1;
-      }
+
+      shin += countShin(msg);
     }
   }
   return { mnp, shin };
