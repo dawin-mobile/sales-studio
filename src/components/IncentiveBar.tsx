@@ -24,10 +24,17 @@ const TIERS: Tier[] = [
 ];
 
 const ZONES = [
-  { label: 'グリーン〜ブロンズ',    min: 0,  max: 15,  color: '#4ade80', trackColor: 'rgba(74,222,128,0.15)',  step: 5  },
-  { label: 'クローザー〜レジェンド', min: 15, max: 30,  color: '#60a5fa', trackColor: 'rgba(96,165,250,0.15)',  step: 5  },
-  { label: 'ゼウス',                min: 30, max: 100, color: '#f87171', trackColor: 'rgba(248,113,113,0.15)', step: 10 },
+  { label: 'グリーン〜レギュラー',       min: 0,  max: 15,  tickEnd: 10,  color: '#4ade80', trackColor: 'rgba(74,222,128,0.15)',  step: 5  },
+  { label: 'ブロンズ〜トップクローザー', min: 15, max: 30,  tickEnd: 25,  color: '#60a5fa', trackColor: 'rgba(96,165,250,0.15)',  step: 5  },
+  { label: 'レジェンド〜ゼウスⅥ',       min: 30, max: 100, tickEnd: 100, color: '#f87171', trackColor: 'rgba(248,113,113,0.15)', step: 10 },
 ];
+
+function tierColor(tierIndex: number): string {
+  const pt = TIERS[tierIndex].pt;
+  if (pt < 15) return '#4ade80';
+  if (pt < 30) return '#60a5fa';
+  return '#f87171';
+}
 
 function getCurrentTier(total: number, selfClose: number): number {
   let idx = 0;
@@ -57,7 +64,7 @@ export default function IncentiveBar({ total, selfClose }: { total: number; self
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
           <span style={{ fontSize: 11, color: 'var(--text-sub)', marginRight: 6 }}>現在クラス</span>
-          <span style={{ fontSize: 18, fontWeight: 'bold', color: 'var(--text-main)' }}>{current.name}</span>
+          <span style={{ fontSize: 18, fontWeight: 'bold', color: tierColor(currentIdx) }}>{current.name}</span>
         </div>
         <div style={{ textAlign: 'right' }}>
           <span style={{ fontSize: 11, color: 'var(--text-sub)', marginRight: 4 }}>インセン</span>
@@ -74,7 +81,7 @@ export default function IncentiveBar({ total, selfClose }: { total: number; self
           const range = zone.max - zone.min;
 
           const allTicks: number[] = [];
-          for (let pt = zone.min; pt <= zone.max; pt += zone.step) {
+          for (let pt = zone.min; pt <= zone.tickEnd; pt += zone.step) {
             allTicks.push(pt);
           }
           const tickPct = (pt: number) => ((pt - zone.min) / range) * 100;
@@ -148,7 +155,7 @@ export default function IncentiveBar({ total, selfClose }: { total: number; self
               {/* 次のランク条件（このゾーンに次ランクがある場合） */}
               {nextInZone && next && (
                 <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: 13 }}>
-                  <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{next.name}</span>
+                  <span style={{ fontWeight: 600, color: zone.color }}>{next.name}</span>
                   <span style={{ color: 'var(--text-sub)' }}> まであと </span>
                   <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>
                     {Math.ceil((next.pt - total) * 10) / 10}pt
