@@ -273,15 +273,27 @@ function SiteCard({ site, staffList, agency, siteMap }: {
                 }}>
                   {staffName}
                 </div>
-                <div style={{
-                  fontSize: 12,
-                  color: 'var(--text-main)',
-                  whiteSpace: 'pre-wrap',
-                  lineHeight: 1.65,
-                  opacity: 0.85,
-                  paddingLeft: 8,
-                }}>
-                  {workPosts.map((p) => p.message).join('\n\n')}
+                <div style={{ paddingLeft: 8 }}>
+                  {workPosts.map((p, idx) => (
+                    <div key={idx}>
+                      {idx > 0 && (
+                        <hr style={{
+                          border: 'none',
+                          borderTop: '1px solid rgba(255,255,255,0.08)',
+                          margin: '8px 0',
+                        }} />
+                      )}
+                      <div style={{
+                        fontSize: 12,
+                        color: 'var(--text-main)',
+                        whiteSpace: 'pre-wrap',
+                        lineHeight: 1.65,
+                        opacity: 0.85,
+                      }}>
+                        {p.message}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             );
