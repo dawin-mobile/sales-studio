@@ -101,12 +101,14 @@ export default function IncentiveBar({ total, selfClose }: { total: number; self
                 {allTicks.map((pt) => {
                   const tierName = TIERS.find(t => t.pt === pt)?.name ?? null;
                   if (!tierName) return null;
+                  const pct = tickPct(pt);
+                  const xAlign = pct <= 2 ? 'translateX(0)' : pct >= 98 ? 'translateX(-100%)' : 'translateX(-50%)';
                   return (
                     <span key={`name-${pt}`} style={{
                       position: 'absolute',
                       top: 0,
-                      left: `${tickPct(pt)}%`,
-                      transform: 'translateX(-50%)',
+                      left: `${pct}%`,
+                      transform: xAlign,
                       fontSize: 9,
                       color: total >= pt ? zone.color : 'rgba(255,255,255,0.22)',
                       fontWeight: total >= pt ? 600 : 400,
@@ -132,15 +134,17 @@ export default function IncentiveBar({ total, selfClose }: { total: number; self
 
                 {/* 目盛り線＋pt数字（バー下段） */}
                 {allTicks.map((pt) => {
+                  const pct = tickPct(pt);
+                  const xAlign = pct <= 2 ? 'translateX(0)' : pct >= 98 ? 'translateX(-100%)' : 'translateX(-50%)';
                   return (
                     <div key={`tick-${pt}`} style={{
                       position: 'absolute',
                       top: RANK_H + BAR_H,
-                      left: `${tickPct(pt)}%`,
+                      left: `${pct}%`,
                       display: 'flex',
                       flexDirection: 'column',
-                      alignItems: 'center',
-                      transform: 'translateX(-50%)',
+                      alignItems: pct <= 2 ? 'flex-start' : pct >= 98 ? 'flex-end' : 'center',
+                      transform: xAlign,
                       pointerEvents: 'none',
                     }}>
                       <div style={{ width: 1, height: GAP, background: 'rgba(255,255,255,0.18)' }} />
