@@ -65,7 +65,7 @@ export interface DashboardData {
   kpi: KPI;
   prevKpi: KPI;
   ranking: Staff[];
-  staffOrder?: { name: string; position?: string }[];
+  staffOrder?: { name: string; position?: string; role?: string }[];
   globalStats: GlobalStats;
   siteDetails: Record<string, SiteDetail>;
   daysInMonth: number;

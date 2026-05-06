@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     // スタッフ情報シートから役職・シート順・全アクティブスタッフを取得
     // T列=index19:名前, X列=index23:有効, AC列=index28:役職
-    const staffOrder: { name: string; position?: string }[] = [];
+    const staffOrder: { name: string; position?: string; role?: string }[] = [];
     if (staffRows.length > 1) {
       const positionMap = new Map<string, string>();
 
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
         const pos = row[28]?.trim();
         if (pos) positionMap.set(name, pos);
         if (row[23]?.trim().toUpperCase() === 'TRUE') {
-          staffOrder.push({ name, position: pos || undefined });
+          staffOrder.push({ name, position: pos || undefined, role: row[22]?.trim() || undefined });
         }
       });
 

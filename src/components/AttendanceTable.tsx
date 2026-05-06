@@ -192,7 +192,9 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
           </table>
         </div>
       </div>
-      {userRole === 'アルバイト' && <IncentiveBar total={totalPt} selfClose={totalSelfClose} />}
+      {(userRole === 'アルバイト' || staffOrderEntry?.role === 'アルバイト') && (
+        <IncentiveBar total={totalPt} selfClose={totalSelfClose} />
+      )}
     </>
   );
 }
