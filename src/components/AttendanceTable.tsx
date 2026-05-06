@@ -66,12 +66,20 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
   }, [selectedMonth]);
 
   const staffOrderEntry = data.staffOrder?.find((s) => s.name === staffName);
-  const positionBadge = (staff?.position ?? staffOrderEntry?.position) ? (
+  const position = staff?.position ?? staffOrderEntry?.position;
+  const positionColor = position === 'ディレクター'
+    ? { bg: 'rgba(239,68,68,0.2)', text: '#f87171', border: 'rgba(239,68,68,0.4)' }
+    : position?.includes('準ディレ')
+    ? { bg: 'rgba(59,130,246,0.2)', text: '#60a5fa', border: 'rgba(59,130,246,0.4)' }
+    : { bg: 'rgba(255,255,255,0.08)', text: 'rgba(255,255,255,0.6)', border: 'rgba(255,255,255,0.15)' };
+  const positionBadge = position ? (
     <span style={{
-      display: 'inline-block', fontSize: 10, padding: '2px 7px', borderRadius: 4, marginTop: 4,
-      background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.55)',
+      display: 'inline-block', fontSize: 12, fontWeight: 600,
+      padding: '4px 10px', borderRadius: 20, marginTop: 5,
+      background: positionColor.bg, color: positionColor.text,
+      border: `1px solid ${positionColor.border}`,
       alignSelf: 'flex-start',
-    }}>{staff?.position ?? staffOrderEntry?.position}</span>
+    }}>{position}</span>
   ) : null;
 
   if (!staff || !staff.calendar) {
