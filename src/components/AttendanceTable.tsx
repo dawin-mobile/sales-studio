@@ -189,7 +189,7 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
           </table>
         </div>
       </div>
-      <IncentiveBar total={totalPt} selfClose={totalSelfClose} />
+      {userRole === 'アルバイト' && <IncentiveBar total={totalPt} selfClose={totalSelfClose} />}
     </>
   );
 }
