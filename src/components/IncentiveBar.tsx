@@ -24,9 +24,9 @@ const TIERS: Tier[] = [
 ];
 
 const ZONES = [
-  { label: 'グリーン〜レギュラー',       min: 0,  max: 15,  tickEnd: 10,  color: '#4ade80', trackColor: 'rgba(74,222,128,0.15)',  step: 5  },
-  { label: 'ブロンズ〜トップクローザー', min: 15, max: 30,  tickEnd: 25,  color: '#60a5fa', trackColor: 'rgba(96,165,250,0.15)',  step: 5  },
-  { label: 'レジェンド〜ゼウスⅥ',       min: 30, max: 100, tickEnd: 100, color: '#f87171', trackColor: 'rgba(248,113,113,0.15)', step: 10 },
+  { label: 'グリーン〜レギュラー',       min: 0,  max: 15,  color: '#4ade80', trackColor: 'rgba(74,222,128,0.15)',  step: 5  },
+  { label: 'ブロンズ〜トップクローザー', min: 15, max: 30,  color: '#60a5fa', trackColor: 'rgba(96,165,250,0.15)',  step: 5  },
+  { label: 'レジェンド〜ゼウスⅥ',       min: 30, max: 100, color: '#f87171', trackColor: 'rgba(248,113,113,0.15)', step: 10 },
 ];
 
 function tierColor(tierIndex: number): string {
@@ -81,7 +81,7 @@ export default function IncentiveBar({ total, selfClose }: { total: number; self
           const range = zone.max - zone.min;
 
           const allTicks: number[] = [];
-          for (let pt = zone.min; pt <= zone.tickEnd; pt += zone.step) {
+          for (let pt = zone.min; pt <= zone.max; pt += zone.step) {
             allTicks.push(pt);
           }
           const tickPct = (pt: number) => ((pt - zone.min) / range) * 100;
@@ -103,6 +103,8 @@ export default function IncentiveBar({ total, selfClose }: { total: number; self
                   if (!tierName) return null;
                   const pct = tickPct(pt);
                   const xAlign = pct <= 2 ? 'translateX(0)' : pct >= 98 ? 'translateX(-100%)' : 'translateX(-50%)';
+                  const tierIdx = TIERS.findIndex(t => t.pt === pt);
+                  const tickColor = tierIdx >= 0 ? tierColor(tierIdx) : zone.color;
                   return (
                     <span key={`name-${pt}`} style={{
                       position: 'absolute',
@@ -110,7 +112,7 @@ export default function IncentiveBar({ total, selfClose }: { total: number; self
                       left: `${pct}%`,
                       transform: xAlign,
                       fontSize: 9,
-                      color: total >= pt ? zone.color : 'rgba(255,255,255,0.22)',
+                      color: total >= pt ? tickColor : 'rgba(255,255,255,0.22)',
                       fontWeight: total >= pt ? 600 : 400,
                       whiteSpace: 'nowrap',
                       lineHeight: 1,
