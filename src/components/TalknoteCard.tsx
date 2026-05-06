@@ -140,7 +140,6 @@ function SiteCard({ site, staffList, agency, siteMap }: {
       borderRadius: 10,
       marginBottom: 8,
       overflow: 'hidden',
-      position: 'relative',
     }}>
       {/* ヘッダー */}
       <div style={{
@@ -199,8 +198,8 @@ function SiteCard({ site, staffList, agency, siteMap }: {
           )}
         </div>
 
-        {/* 2行目: スタッフバッジ */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+        {/* 2行目: スタッフバッジ + コピーボタン */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
           {staffList.map((name) => (
             <span key={name} style={{
               fontSize: 10,
@@ -214,6 +213,29 @@ function SiteCard({ site, staffList, agency, siteMap }: {
               {name}
             </span>
           ))}
+          {hasReport && (
+            <button
+              onClick={handleCopy}
+              style={{
+                marginLeft: 'auto', flexShrink: 0,
+                background: copied ? 'rgba(74,222,128,0.2)' : 'rgba(255,255,255,0.08)',
+                border: `1px solid ${copied ? '#4ade80' : 'rgba(255,255,255,0.15)'}`,
+                borderRadius: 6, padding: '3px 9px',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                transition: 'all 0.2s',
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={copied ? '#4ade80' : '#bbb'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {copied
+                  ? <polyline points="20 6 9 17 4 12" />
+                  : <><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></>
+                }
+              </svg>
+              <span style={{ fontSize: 10, color: copied ? '#4ade80' : '#bbb', whiteSpace: 'nowrap' }}>
+                {copied ? 'コピー済み' : 'コピー'}
+              </span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -258,30 +280,7 @@ function SiteCard({ site, staffList, agency, siteMap }: {
         </div>
       )}
 
-      {/* コピーボタン（右上絶対配置） */}
-      {hasReport && (
-        <button
-          onClick={handleCopy}
-          style={{
-            position: 'absolute', top: 8, right: 8,
-            background: copied ? 'rgba(74,222,128,0.2)' : 'rgba(255,255,255,0.1)',
-            border: `1px solid ${copied ? '#4ade80' : 'rgba(255,255,255,0.2)'}`,
-            borderRadius: 6, padding: '4px 10px',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-            transition: 'all 0.2s',
-          }}
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={copied ? '#4ade80' : '#ccc'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            {copied
-              ? <polyline points="20 6 9 17 4 12" />
-              : <><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></>
-            }
-          </svg>
-          <span style={{ fontSize: 11, color: copied ? '#4ade80' : '#ccc', whiteSpace: 'nowrap' }}>
-            {copied ? 'コピー済み' : 'コピー'}
-          </span>
-        </button>
-      )}
+
     </div>
   );
 }
