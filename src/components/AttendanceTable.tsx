@@ -27,17 +27,19 @@ const rows: { label: string; key: CalendarKey; isTotal?: boolean }[] = [
 ];
 
 export default function AttendanceTable({ data, selectedMonth, loginName, userRole }: AttendanceTableProps) {
-  const initialName = (loginName && data.ranking.find((s) => s.name === loginName))
+  const allStaff = data.staffOrder?.length ? data.staffOrder : data.ranking;
+  const initialName = (loginName && allStaff.find((s) => s.name === loginName))
     ? loginName
-    : data.ranking[0]?.name || '';
+    : allStaff[0]?.name || '';
   const [staffName, setStaffName] = useState(initialName);
 
   // loginName が後から届いた場合（セッション取得遅延）やデータ更新時に追従
   useEffect(() => {
-    if (loginName && data.ranking.find((s) => s.name === loginName)) {
+    const list = data.staffOrder?.length ? data.staffOrder : data.ranking;
+    if (loginName && list.find((s) => s.name === loginName)) {
       setStaffName(loginName);
-    } else if (data.ranking.length > 0 && !data.ranking.find((s) => s.name === staffName)) {
-      setStaffName(data.ranking[0].name);
+    } else if (list.length > 0 && !list.find((s) => s.name === staffName)) {
+      setStaffName(list[0].name);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loginName, data.ranking]);
@@ -63,12 +65,13 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
     return { year: parseInt(parts[0]), month: parseInt(parts[1]) - 1 };
   }, [selectedMonth]);
 
-  const positionBadge = staff?.position ? (
+  const staffOrderEntry = data.staffOrder?.find((s) => s.name === staffName);
+  const positionBadge = (staff?.position ?? staffOrderEntry?.position) ? (
     <span style={{
       display: 'inline-block', fontSize: 10, padding: '2px 7px', borderRadius: 4, marginTop: 4,
       background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.55)',
       alignSelf: 'flex-start',
-    }}>{staff.position}</span>
+    }}>{staff?.position ?? staffOrderEntry?.position}</span>
   ) : null;
 
   if (!staff || !staff.calendar) {
@@ -113,7 +116,7 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
               <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>{staffName}</span>
             ) : (
               <select className="control-select" value={staffName} onChange={(e) => setStaffName(e.target.value)}>
-                {data.ranking.map((s) => (
+                {(data.staffOrder?.length ? data.staffOrder : data.ranking).map((s) => (
                   <option key={s.name} value={s.name}>{s.name}</option>
                 ))}
               </select>

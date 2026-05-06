@@ -41,48 +41,29 @@ export async function GET(request: NextRequest) {
 
     const data = aggregateMainSheet(mainRows, targetYear, targetMonthIdx);
 
-    // スタッフ情報シートの行順でソート＆役職付与＆未提出スタッフも追加
+    // スタッフ情報シートから役職・シート順・全アクティブスタッフを取得
     // T列=index19:名前, X列=index23:有効, AC列=index28:役職
+    const staffOrder: { name: string; position?: string }[] = [];
     if (staffRows.length > 1) {
-      const orderMap = new Map<string, number>();
       const positionMap = new Map<string, string>();
-      const activeNames: string[] = [];
 
-      staffRows.slice(1).forEach((row, i) => {
+      staffRows.slice(1).forEach((row) => {
         const name = row[19]?.trim();
         if (!name) return;
-        orderMap.set(name, i);
         const pos = row[28]?.trim();
         if (pos) positionMap.set(name, pos);
-        if (row[23]?.trim().toUpperCase() === 'TRUE') activeNames.push(name);
+        if (row[23]?.trim().toUpperCase() === 'TRUE') {
+          staffOrder.push({ name, position: pos || undefined });
+        }
       });
 
-      // 当月未提出のアクティブスタッフを空データで追加
-      const existingNames = new Set(data.ranking.map((s) => s.name));
-      activeNames.forEach((name) => {
-        if (existingNames.has(name)) return;
-        data.ranking.push({
-          name,
-          total: 0, mnp: 0, new: 0, change: 0, hikari: 0, tablet: 0, other: 0, selfClose: 0,
-          sites: {}, ages: {}, types: {},
-          dailyTotal: new Array(data.daysInMonth).fill(0),
-          dailyBySite: {},
-          calendar: Array.from({ length: data.daysInMonth }, () => ({
-            pt: 0, selfClose: 0, mnp: 0, new: 0, uq: 0, nw: 0, elec: 0, credit: 0, site: '',
-          })),
-        });
-      });
-
-      data.ranking.sort((a, b) => {
-        const ia = orderMap.get(a.name) ?? Number.MAX_SAFE_INTEGER;
-        const ib = orderMap.get(b.name) ?? Number.MAX_SAFE_INTEGER;
-        return ia - ib;
-      });
+      // rankingに役職を付与（rankingの順序はtotal降順のまま維持）
       data.ranking.forEach((s) => {
         const pos = positionMap.get(s.name);
         if (pos) s.position = pos;
       });
     }
+    data.staffOrder = staffOrder;
 
     const staffMap: Record<string, typeof data.ranking[0]> = {};
     data.ranking.forEach((s) => { staffMap[s.name] = s; });
