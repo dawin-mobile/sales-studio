@@ -82,10 +82,11 @@ const SHIN_EXCLUDE_PREFIX = /(?:タブ\S*|光|[Bb]iglobe\S*|ビッグローブ\S
 
 function countShin(msg: string): number {
   let shin = 0;
-  // 新規 + 括弧修飾子(任意) + 数字(任意) を全て検索
   for (const match of msg.matchAll(/新規(?:\([^)]*\))?[x×]?\s*(\d+)?/g)) {
     const before = msg.slice(0, match.index);
-    if (SHIN_EXCLUDE_PREFIX.test(before)) continue;
+    // 同じ行の直前テキストだけチェック（前の行に除外ワードがあっても無視）
+    const sameLine = before.split('\n').pop() ?? '';
+    if (SHIN_EXCLUDE_PREFIX.test(sameLine)) continue;
     shin += match[1] ? parseInt(match[1]) : 1;
   }
   return shin;
