@@ -36,6 +36,7 @@
 const CONFIG = {
   // Vercelアプリの URL（末尾スラッシュなし）
   SYNC_URL:    'https://sales-studio-iota.vercel.app/api/sync',
+  SYNC_URL_NEW: 'https://dawin-sales-studio.vercel.app/api/sync',
   // .env.local の SYNC_SECRET と同じ値
   SYNC_SECRET: 'my-super-secret-key-2026',
 };
@@ -112,15 +113,18 @@ function callSyncApi_(payload) {
     payload: JSON.stringify(payload),
     muteHttpExceptions: true,
   };
-  try {
-    const res  = UrlFetchApp.fetch(CONFIG.SYNC_URL, options);
-    const body = res.getContentText();
-    Logger.log('[sync] ' + payload.type + ' → ' + body);
-    return JSON.parse(body);
-  } catch (e) {
-    Logger.log('[sync] エラー: ' + e.message);
-    return null;
-  }
+  let result = null;
+  [CONFIG.SYNC_URL, CONFIG.SYNC_URL_NEW].forEach(function(url) {
+    try {
+      const res  = UrlFetchApp.fetch(url, options);
+      const body = res.getContentText();
+      Logger.log('[sync] ' + payload.type + ' → ' + url + ' → ' + body);
+      if (!result) result = JSON.parse(body);
+    } catch (e) {
+      Logger.log('[sync] エラー (' + url + '): ' + e.message);
+    }
+  });
+  return result;
 }
 
 
@@ -697,10 +701,15 @@ function syncStaffProfilesToDB() {
       muteHttpExceptions: true,
     };
 
-    const url = CONFIG.SYNC_URL.replace('/api/sync', '/api/sync/staff');
-    const res = UrlFetchApp.fetch(url, options);
-    const body = res.getContentText();
-    Logger.log('[スタッフDB同期] ' + res.getResponseCode() + ' ' + body);
+    [CONFIG.SYNC_URL, CONFIG.SYNC_URL_NEW].forEach(function(syncUrl) {
+      try {
+        const url = syncUrl.replace('/api/sync', '/api/sync/staff');
+        const res = UrlFetchApp.fetch(url, options);
+        Logger.log('[スタッフDB同期] ' + syncUrl + ' → ' + res.getResponseCode());
+      } catch (e) {
+        Logger.log('[スタッフDB同期] エラー (' + syncUrl + '): ' + e.message);
+      }
+    });
   } catch (e) {
     Logger.log('[スタッフDB同期] エラー: ' + e.message);
   }
