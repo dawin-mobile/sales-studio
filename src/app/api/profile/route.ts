@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { staffProfiles } from '@/lib/schema';
+import { getSheetData } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,8 +48,23 @@ export async function GET(request: Request) {
   const regionFilter = searchParams.get('region') ?? '全国';
 
   try {
-    // DBから全スタッフ取得
-    const allStaff = await db.select().from(staffProfiles);
+    // スタッフ情報シートから直接読み込み
+    const rows = await getSheetData('スタッフ情報');
+    const allStaff = rows.slice(1)
+      .filter((row) => String(row[23] ?? '').trim().toUpperCase() === 'TRUE' && String(row[19] ?? '').trim())
+      .map((row) => {
+        const rawBlood = String(row[8] ?? '').trim();
+        return {
+          name:       String(row[19] ?? '').trim(),
+          base:       String(row[1]  ?? '').trim(),
+          birthday:   String(row[4]  ?? '').trim(),
+          prefecture: String(row[7]  ?? '').trim().replace(/[都道府県]$/, ''),
+          bloodType:  rawBlood ? (rawBlood.endsWith('型') ? rawBlood : rawBlood + '型') : '',
+          animal:     String(row[10] ?? '').trim(),
+          role:       String(row[22] ?? '').trim(),
+          gender:     String(row[27] ?? '').trim(),
+        };
+      });
 
     const prefectures: Record<string, number> = {};
     const regions: Record<string, number> = {};

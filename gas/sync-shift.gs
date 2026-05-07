@@ -360,3 +360,8 @@ function clearTriggers() {
   });
   Logger.log('トリガーを削除しました');
 }
+
+function syncMay() {
+  syncShift('2026-05');
+  syncEmployeeShift('2026-05');
+}

@@ -1321,3 +1321,7 @@ function testSyncSingleStaff() {
   }
   Logger.log("✅ テスト完了。");
 }
+
+function runSync() {
+  syncTalknote('2026-04');
+}

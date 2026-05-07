@@ -217,8 +217,8 @@ export default function Home() {
           {/* ブランドバー: スマホのみ表示 */}
           <div className="header-brand-row">
             <div className="header-logo" onClick={handleLogoTap} style={{ cursor: 'pointer' }}>
-              <Image src={secretMode ? '/icon-g-512.png' : '/icon2-512.png'} alt="logo" width={45} height={45} style={{ borderRadius: 10, flexShrink: 0 }} />
-              <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-main)', letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>
+              <Image src={secretMode ? '/L-icon4g-g-512.png' : '/L-icon4w-512.png'} alt="logo" width={36} height={36} style={{ borderRadius: 10, flexShrink: 0 }} />
+              <span style={{ fontSize: 22, fontWeight: 700, color: secretMode ? '#4ade80' : 'var(--text-main)', letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>
                 Sales Studio
               </span>
             </div>

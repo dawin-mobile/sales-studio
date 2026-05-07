@@ -41,9 +41,9 @@ export default function Sidebar({ activeTab, onTabChange, userName, userRole, se
       {/* Brand + Toggle */}
       <div className="sidebar-brand-row">
         {!collapsed && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Image src={secretMode ? '/icon-g-192.png' : '/icon2-192.png'} alt="logo" width={48} height={48} style={{ borderRadius: 8, cursor: onLogoTap ? 'pointer' : 'default' }} onClick={onLogoTap} />
-            <div className="brand-text">Sales Studio</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Image src={secretMode ? '/L-icon4g-g-512.png' : '/L-icon4w-512.png'} alt="logo" width={38} height={38} style={{ borderRadius: 8, cursor: onLogoTap ? 'pointer' : 'default' }} onClick={onLogoTap} />
+            <div className="brand-text" style={secretMode ? { color: '#4ade80' } : undefined}>Sales Studio</div>
           </div>
         )}
         <button

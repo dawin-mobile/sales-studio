@@ -64,7 +64,7 @@ export default function LoginPage() {
 }}>
   {/* ここに画像を表示！ */}
   <Image 
-    src="/logo-w.png" 
+    src="/L-icon4w-512.png" 
     alt="ロゴ" 
     width={32} 
     height={32} 

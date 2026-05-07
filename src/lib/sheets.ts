@@ -208,10 +208,14 @@ export async function updateLastLogin(rowIndex: number): Promise<void> {
   const sheets = await getSheetsClient();
   const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
   const now = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
-  await sheets.spreadsheets.values.update({
+  await sheets.spreadsheets.values.batchUpdate({
     spreadsheetId: spreadsheetId!,
-    range: `${USER_SHEET_NAME}!Y${rowIndex}`,
-    valueInputOption: 'RAW',
-    requestBody: { values: [[now]] },
+    requestBody: {
+      valueInputOption: 'RAW',
+      data: [
+        { range: `${USER_SHEET_NAME}!Y${rowIndex}`, values: [[now]] }, // 最終ログイン（共通）
+        { range: `${USER_SHEET_NAME}!AD${rowIndex}`, values: [[now]] }, // 新アプリログイン記録
+      ],
+    },
   });
 }

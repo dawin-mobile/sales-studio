@@ -21,7 +21,7 @@ export async function GET() {
       const row       = staffRows[i];
       const name      = row[19]?.trim(); // T列: 名前
       const active    = row[23]?.trim(); // X列: 有効
-      const loginInfo = row[24]?.trim(); // Y列: ログイン情報
+      const loginInfo = row[29]?.trim(); // AD列: 新アプリログイン情報
 
       if (!name || active?.toUpperCase() !== 'TRUE') continue;
 
