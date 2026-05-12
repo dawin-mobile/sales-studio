@@ -116,9 +116,6 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
 
   return (
     <>
-      {(userRole === 'アルバイト' || staffOrderEntry?.role === 'アルバイト') && (
-        <IncentiveBar total={totalPt} selfClose={totalSelfClose} />
-      )}
       <div className="analysis-controls" style={{ flexWrap: 'nowrap', alignItems: 'center' }}>
         <div className="control-group">
           {userRole !== 'アルバイト' && userRole !== '業務委託' && <span className="control-label">スタッフ選択</span>}
@@ -146,6 +143,9 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
           </div>
         </div>
       </div>
+      {(userRole === 'アルバイト' || staffOrderEntry?.role === 'アルバイト') && (
+        <IncentiveBar total={totalPt} selfClose={totalSelfClose} />
+      )}
       <div className="chart-card" style={{ padding: 0, overflow: 'hidden' }}>
         <div className="calendar-wrapper">
           <table className="cal-table">

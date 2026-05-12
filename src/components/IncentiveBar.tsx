@@ -28,9 +28,9 @@ const TIERS: Tier[] = [
 
 function tierColor(tierIndex: number): string {
   const pt = TIERS[tierIndex].pt;
-  if (pt < 15) return '#4ade80';
-  if (pt < 30) return '#60a5fa';
-  return '#f87171';
+  if (pt < 15) return '#00ff88';
+  if (pt < 30) return '#00cfff';
+  return '#ff2d7a';
 }
 
 function getCurrentTier(total: number, selfClose: number): number {
@@ -60,9 +60,9 @@ export default function IncentiveBar({ total, selfClose }: { total: number; self
   }, []);
 
   const ZONES = [
-    { label: 'グリーン〜レギュラー',       min: 0,  max: 15,             color: '#4ade80', trackColor: 'rgba(74,222,128,0.15)',  step: 5  },
-    { label: 'ブロンズ〜トップクローザー', min: 15, max: 30,             color: '#60a5fa', trackColor: 'rgba(96,165,250,0.15)',  step: 5  },
-    { label: 'レジェンド〜ゼウス',         min: 30, max: isMobile ? 80 : 100, color: '#f87171', trackColor: 'rgba(248,113,113,0.15)', step: 10 },
+    { label: 'グリーン〜レギュラー',       min: 0,  max: 15,             color: '#00ff88', trackColor: 'rgba(0,255,136,0.10)',   step: 5  },
+    { label: 'ブロンズ〜トップクローザー', min: 15, max: 30,             color: '#00cfff', trackColor: 'rgba(0,207,255,0.10)',   step: 5  },
+    { label: 'レジェンド〜ゼウス',         min: 30, max: isMobile ? 80 : 100, color: '#ff2d7a', trackColor: 'rgba(255,45,122,0.10)',  step: 10 },
   ];
 
   const currentIdx = getCurrentTier(total, selfClose);
@@ -139,9 +139,11 @@ export default function IncentiveBar({ total, selfClose }: { total: number; self
                   background: zone.trackColor, borderRadius: 6, height: BAR_H, overflow: 'hidden' }}>
                   <div style={{
                     width: `${pct}%`, height: '100%',
-                    background: zone.color, borderRadius: 6,
+                    background: `linear-gradient(90deg, ${zone.color}bb, ${zone.color})`,
+                    borderRadius: 6,
                     transition: 'width 0.6s ease',
                     opacity: pct === 0 ? 0.3 : 1,
+                    boxShadow: pct > 0 ? `0 0 8px ${zone.color}99` : 'none',
                   }} />
                 </div>
 
