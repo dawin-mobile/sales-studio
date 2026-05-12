@@ -114,8 +114,7 @@ export default function IncentiveBar({ total, selfClose }: { total: number; self
                   if (!tierName) return null;
                   const pct = tickPct(pt);
                   const xAlign = pct <= 2 ? 'translateX(0)' : pct >= 98 ? 'translateX(-100%)' : 'translateX(-50%)';
-                  const tierIdx = TIERS.findIndex(t => t.pt === pt);
-                  const tickColor = tierIdx >= 0 ? tierColor(tierIdx) : zone.color;
+                  const tickColor = zone.color;
                   return (
                     <span key={`name-${pt}`} style={{
                       position: 'absolute',
