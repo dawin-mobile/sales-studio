@@ -508,6 +508,8 @@ export default function Home() {
             error={shiftError}
             selectedMonth={selectedMonth}
             userRole={effectiveRole}
+            secretMode={secretMode}
+            onLogoTap={handleLogoTap}
           />
         )}
 

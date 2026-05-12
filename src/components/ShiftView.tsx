@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import Image from 'next/image';
 import type { ShiftRow } from '@/types';
 import ShiftAnalysis from '@/components/ShiftAnalysis';
 
@@ -12,6 +13,8 @@ interface ShiftViewProps {
   error: string | null;
   selectedMonth: string; // 'YYYY-MM'
   userRole?: string;
+  secretMode?: boolean;
+  onLogoTap?: () => void;
 }
 
 // 代理店ごとに割り当てるカラーパレット（色相環を均等12分割・最大限視覚的に識別可能）
@@ -74,6 +77,8 @@ export default function ShiftView({
   error,
   selectedMonth,
   userRole,
+  secretMode,
+  onLogoTap,
 }: ShiftViewProps) {
   const [regionFilter, setRegionFilter] = useState<'東京' | '福岡'>('東京');
   const [viewMode, setViewMode] = useState<ViewMode>('location');
@@ -295,6 +300,23 @@ export default function ShiftView({
     <div className="shift-container">
 
       <div className="shift-sticky-header">
+
+      {/* ロゴ */}
+      <div
+        onClick={onLogoTap}
+        style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, cursor: onLogoTap ? 'pointer' : 'default' }}
+      >
+        <Image
+          src={secretMode ? '/L-icon4g-g-512.png' : '/L-icon4w-512.png'}
+          alt="logo"
+          width={28}
+          height={28}
+          style={{ borderRadius: 8, flexShrink: 0 }}
+        />
+        <span style={{ fontSize: 18, fontWeight: 700, color: secretMode ? '#4ade80' : 'var(--text-main)', letterSpacing: '0.01em' }}>
+          Sales Studio
+        </span>
+      </div>
 
       {/* Controls */}
       <div className="shift-controls">
