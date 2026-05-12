@@ -756,18 +756,23 @@ input[type="password"]:focus {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  overflow: auto;
+  /* overflow未設定(visible) — clipや hiddenはsticky left/topを壊す */
+  overflow: visible;
+}
+
+/* Y スクロールコンテナ（overflow-x: clip でX軸スクロールコンテキストを作らない） */
+.shift-scroll-y {
+  overflow-y: auto;
+  overflow-x: clip;
   max-height: calc(100vh - 220px);
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior-x: contain;
 }
 
-.shift-scroll-y {
-  /* passthrough */
-}
-
+/* X スクロールコンテナ（overflow-y: clip でY軸スクロールコンテキストを作らない） */
 .shift-scroll {
-  /* passthrough */
+  overflow-x: auto;
+  overflow-y: clip;
+  overscroll-behavior-x: contain;
 }
 
 /* thead を縦スクロール時に固定 */
@@ -1354,7 +1359,7 @@ thead .loc-th-dow { z-index: 30; } /* 最前面 */
   /* full-ranking-table は table-layout: fixed で横スクロール不要 */
   /* シフトコントロールをスマホ向けに調整 */
   .shift-sticky-header { top: -16px; padding-top: 16px; margin-top: -16px; }
-  .shift-table-card { max-height: calc(100vh - 260px); }
+  .shift-scroll-y { max-height: calc(100vh - 260px); }
   .shift-controls { gap: 8px; }
   .shift-region-btn { padding: 5px 10px; font-size: 12px; }
   .incentive-tick-num { font-size: 11px !important; }
