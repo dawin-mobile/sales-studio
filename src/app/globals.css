@@ -1354,7 +1354,7 @@ thead .loc-th-dow { z-index: 30; } /* 最前面 */
   /* full-ranking-table は table-layout: fixed で横スクロール不要 */
   /* シフトコントロールをスマホ向けに調整 */
   .shift-sticky-header { top: -16px; padding-top: 16px; margin-top: -16px; }
-  .shift-scroll-y { max-height: calc(100vh - 260px); overflow-x: clip; }
+  .shift-table-card { max-height: calc(100vh - 260px); }
   .shift-controls { gap: 8px; }
   .shift-region-btn { padding: 5px 10px; font-size: 12px; }
   .incentive-tick-num { font-size: 11px !important; }
