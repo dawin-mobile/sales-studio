@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+
 interface Tier {
   name: string;
   pt: number;
@@ -23,11 +25,6 @@ const TIERS: Tier[] = [
   { name: 'ゼウスⅥ',         pt: 90, incentive: 14000, selfClosePt: 90 },
 ];
 
-const ZONES = [
-  { label: 'グリーン〜レギュラー',       min: 0,  max: 15,  color: '#4ade80', trackColor: 'rgba(74,222,128,0.15)',  step: 5  },
-  { label: 'ブロンズ〜トップクローザー', min: 15, max: 30,  color: '#60a5fa', trackColor: 'rgba(96,165,250,0.15)',  step: 5  },
-  { label: 'レジェンド〜ゼウスⅥ',       min: 30, max: 100, color: '#f87171', trackColor: 'rgba(248,113,113,0.15)', step: 10 },
-];
 
 function tierColor(tierIndex: number): string {
   const pt = TIERS[tierIndex].pt;
@@ -54,6 +51,20 @@ function zoneProgress(total: number, min: number, max: number): number {
 }
 
 export default function IncentiveBar({ total, selfClose }: { total: number; selfClose: number }) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  const ZONES = [
+    { label: 'グリーン〜レギュラー',       min: 0,  max: 15,             color: '#4ade80', trackColor: 'rgba(74,222,128,0.15)',  step: 5  },
+    { label: 'ブロンズ〜トップクローザー', min: 15, max: 30,             color: '#60a5fa', trackColor: 'rgba(96,165,250,0.15)',  step: 5  },
+    { label: 'レジェンド〜ゼウス',         min: 30, max: isMobile ? 80 : 100, color: '#f87171', trackColor: 'rgba(248,113,113,0.15)', step: 10 },
+  ];
+
   const currentIdx = getCurrentTier(total, selfClose);
   const current = TIERS[currentIdx];
   const next = TIERS[currentIdx + 1] ?? null;
