@@ -79,7 +79,13 @@ export default function IncentiveBar({ total, selfClose }: { total: number; self
         </div>
         <div style={{ textAlign: 'right' }}>
           <span style={{ fontSize: 11, color: 'var(--text-sub)', marginRight: 4 }}>インセン</span>
-          <span style={{ fontSize: 16, fontWeight: 'bold', color: '#facc15' }}>
+          <span style={{
+            fontSize: 16, fontWeight: 'bold',
+            background: 'linear-gradient(180deg, #ffe566 0%, #c8950a 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}>
             ¥{current.incentive.toLocaleString()}
           </span>
         </div>
