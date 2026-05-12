@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     searchParams.get('month') ||
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-  const [rows, tokyoNames, fukuokaNames] = await Promise.all([
+  const [rawRows, tokyoNames, fukuokaNames] = await Promise.all([
     db.select().from(shiftRows).where(
       and(eq(shiftRows.month, month), ne(shiftRows.location, ''))
     ),
@@ -29,6 +29,15 @@ export async function GET(request: NextRequest) {
       and(eq(shiftStaffNames.month, month), eq(shiftStaffNames.sheetRegion, '福岡'))
     ).limit(1),
   ]);
+
+  // 重複除去（同時sync競合による重複を防ぐ）
+  const seen = new Set<string>();
+  const rows = rawRows.filter((r) => {
+    const key = `${r.date}|${r.location}|${r.startTime}|${r.sheetRegion}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 
   return NextResponse.json({
     rows,

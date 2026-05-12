@@ -241,6 +241,8 @@ function syncTalknote(month) {
 // 全シートを現在月で一括同期（1時間おき自動実行 / 手動実行も可）
 // ※トークノートは fetchAndSyncTalknote（5分おき）が別途同期するため除外
 function syncAll() {
+  const jstHour = new Date().getHours();
+  if (jstHour >= 1 && jstHour < 9) return;
   const month = getCurrentMonth_();
   Logger.log('DB同期開始: ' + month);
   syncNippoSheet(month);
@@ -267,6 +269,8 @@ function syncSpecificMonth() {
 
 // 未読メールを取得してシートに記録し、DBへ同期する（自動実行用）
 function fetchAndSyncTalknote() {
+  const jstHour = new Date().getHours();
+  if (jstHour >= 22 || jstHour < 9) return;
   const ss    = SpreadsheetApp.getActiveSpreadsheet();
   let   sheet = ss.getSheetByName(SHEET_TALKNOTE);
 
@@ -363,6 +367,8 @@ function fetchTalknoteEmails_PastData() {
 // ============================================================
 
 function mergeSheets_Complete() {
+  const jstHour = new Date().getHours();
+  if (jstHour >= 1 && jstHour < 9) return;
   const config = DAWIN;
   try {
     const mapping = [
