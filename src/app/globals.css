@@ -780,8 +780,8 @@ input[type="password"]:focus {
 
 .shift-table {
   border-collapse: collapse;
-  width: 100%;
-  min-width: max-content;
+  width: auto;
+  min-width: 100%;
   white-space: nowrap;
 }
 
