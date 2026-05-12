@@ -70,7 +70,7 @@ export default function IncentiveBar({ total, selfClose }: { total: number; self
   const next = TIERS[currentIdx + 1] ?? null;
 
   return (
-    <div className="chart-card" style={{ marginBottom: 12 }}>
+    <div className="chart-card" style={{ marginBottom: 12, minHeight: 'auto' }}>
       {/* ヘッダー */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
