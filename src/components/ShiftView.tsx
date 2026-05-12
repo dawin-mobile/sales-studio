@@ -587,9 +587,9 @@ export default function ShiftView({
                   <th className="loc-th loc-th-dow">曜日</th>
                   <th className="loc-th loc-th-place">店舗名</th>
                   <th className="loc-th loc-th-time">時間</th>
+                  <th className="loc-th loc-th-staff">スタッフ</th>
                   <th className="loc-th loc-th-order">クロ</th>
                   <th className="loc-th loc-th-order">キャ</th>
-                  <th className="loc-th loc-th-staff">スタッフ</th>
                   <th className="loc-th loc-th-final">終担</th>
                   <th className="loc-th loc-th-agency">代理店</th>
                 </tr>
@@ -644,9 +644,6 @@ export default function ShiftView({
 
                         <td className="loc-time-cell">{row.startTime}</td>
 
-                        <td className="loc-order-cell">{row.order1 === 'O' || row.order1 === 'o' ? '0' : row.order1}</td>
-                        <td className="loc-order-cell">{row.order2 === 'O' || row.order2 === 'o' ? '0' : row.order2}</td>
-
                         <td className="loc-staff-cell">
                           <div className="loc-staff-list">
                             {visibleStaff.length > 0 ? (
@@ -658,6 +655,9 @@ export default function ShiftView({
                             )}
                           </div>
                         </td>
+
+                        <td className="loc-order-cell">{row.order1 === 'O' || row.order1 === 'o' ? '0' : row.order1}</td>
+                        <td className="loc-order-cell">{row.order2 === 'O' || row.order2 === 'o' ? '0' : row.order2}</td>
 
                         <td className="loc-staff-cell">
                           <div className="loc-staff-list">
