@@ -94,7 +94,8 @@ export type TabName =
   | 'analytics'
   | 'shift'
   | 'profile'
-  | 'growth';
+  | 'growth'
+  | 'tardiness';
 
 export interface StaffEvaluation {
   staffName: string;

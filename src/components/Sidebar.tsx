@@ -23,6 +23,7 @@ const ALL_MENU_ITEMS: { id: TabName; label: string; icon: React.ReactNode; minRo
   { id: 'analytics',      label: '実績・分析',     icon: <PieChart        {...ICON_PROPS} /> },
   { id: 'shift',          label: 'シフト',         icon: <Calendar        {...ICON_PROPS} /> },
   { id: 'growth',         label: '育成管理',       icon: <GraduationCap   {...ICON_PROPS} />, minRole: '社員' },
+  { id: 'tardiness',     label: '遅刻/早退',      icon: <Clock           {...ICON_PROPS} />, minRole: '社員' },
   { id: 'profile',        label: 'スタッフ',       icon: <Users           {...ICON_PROPS} /> },
 ];
 
@@ -59,7 +60,7 @@ export default function Sidebar({ activeTab, onTabChange, userName, userRole, se
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
         {ALL_MENU_ITEMS.filter((item) => {
           if (!item.minRole || hasMinRole(userRole, item.minRole)) {
-            if (secretMode) return item.id === 'growth';
+            if (secretMode) return item.id === 'growth' || item.id === 'tardiness';
             return true;
           }
           return false;

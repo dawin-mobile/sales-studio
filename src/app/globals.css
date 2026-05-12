@@ -756,23 +756,18 @@ input[type="password"]:focus {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  /* overflow: clip はborder-radiusクリップを保ちつつ、子要素のスクロールを妨げない */
-  overflow: clip;
-}
-
-/* 縦スクロール用外側コンテナ（overflow-x:clipでx軸のスクロールコンテキストを作らない） */
-.shift-scroll-y {
-  overflow-y: auto;
-  overflow-x: clip;
+  overflow: auto;
   max-height: calc(100vh - 220px);
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 
-/* 横スクロール用内側コンテナ（overflow-y:clipでy軸のスクロールコンテキストを作らない） */
+.shift-scroll-y {
+  /* passthrough */
+}
+
 .shift-scroll {
-  overflow-x: auto;
-  overflow-y: clip;
-  overscroll-behavior-x: contain;
+  /* passthrough */
 }
 
 /* thead を縦スクロール時に固定 */
@@ -996,6 +991,9 @@ thead .shift-sticky-col {
   padding: 4px 6px;
   vertical-align: middle;
   white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 20;
 }
 
 /* 日付ヘッダー（sticky 1列目） */
@@ -1024,7 +1022,9 @@ thead .shift-sticky-col {
 thead .loc-th-dow { z-index: 30; } /* 最前面 */
 
 .loc-th-place  { min-width: 110px; }
-.loc-th-time   { min-width: 52px; text-align: center; }
+.loc-th-time   { min-width: 26px; text-align: center; padding: 4px 2px; }
+.loc-th-order  { min-width: 14px; text-align: center; padding: 4px 1px; }
+.loc-order-cell { text-align: center; font-size: 9px; color: var(--text-sub); padding: 2px 1px; }
 .loc-th-staff  { min-width: 160px; }
 .loc-th-final  { min-width: 60px; }
 .loc-th-agency { min-width: 90px; }
@@ -1101,9 +1101,9 @@ thead .loc-th-dow { z-index: 30; } /* 最前面 */
 .loc-time-cell {
   text-align: center;
   vertical-align: middle;
-  font-size: 10px;
+  font-size: 9px;
   color: var(--text-sub);
-  padding: 2px 4px;
+  padding: 2px 2px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -1159,6 +1159,11 @@ thead .loc-th-dow { z-index: 30; } /* 最前面 */
 }
 
 /* 当日行 — 現場別 */
+.location-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+}
 .location-table tr:has(.loc-date-cell.today) td        { background: rgba(229, 62, 62, 0.10); }
 .location-table tr:has(.loc-date-cell.today) .loc-date-cell { background: color-mix(in srgb, var(--bg-color) 88%, #e53e3e 12%); }
 .location-table tr:has(.loc-date-cell.today) .loc-dow-cell  { background: rgba(229, 62, 62, 0.10); }

@@ -37,6 +37,7 @@ import ProfileView from '@/components/ProfileView';
 import NippoAlert from '@/components/NippoAlert';
 import TalknoteCard from '@/components/TalknoteCard';
 import GrowthView from '@/components/GrowthView';
+import TardinessView from '@/components/TardinessView';
 import AnalyticsView from '@/components/AnalyticsView';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import IncentiveBar from '@/components/IncentiveBar';
@@ -51,6 +52,7 @@ const TAB_TITLES: Record<TabName, string> = {
   'shift': 'シフト',
   'profile': 'スタッフ',
   'growth': '育成管理',
+  'tardiness': '遅刻/早退',
 };
 
 export default function Home() {
@@ -320,7 +322,10 @@ export default function Home() {
         )}
 
         {secretMode && ['社員', '幹部', '管理者'].includes(effectiveRole ?? '') ? (
-          <GrowthView />
+          <>
+            {activeTab === 'growth' && <GrowthView />}
+            {activeTab === 'tardiness' && <TardinessView />}
+          </>
         ) : (<>
 
         {loading && (

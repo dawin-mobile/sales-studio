@@ -78,15 +78,25 @@ function normalize(s: string): string {
 }
 
 // 除外プレフィックス（新規の直前にあったらカウントしない）
-const SHIN_EXCLUDE_PREFIX = /(?:タブ\S*|光|[Bb]iglobe\S*|ビッグローブ\S*)$/;
+const SHIN_EXCLUDE_PREFIX = /(?:タブ\S*|光|ひかり|\S*[ろロ]\S*|[Bb]iglobe\S*|ビッグローブ\S*)$/;
+// 除外キーワード（新規と同じ行・次の行に含まれていたらカウントしない）
+const SHIN_EXCLUDE_LINE = /予定|明日|明後日|来週|翌日|[0-9０-９]{1,2}[\/／][0-9０-９]{1,2}|[0-9０-９]{1,2}月[0-9０-９]{1,2}日/;
 
 function countShin(msg: string): number {
   let shin = 0;
   for (const match of msg.matchAll(/新規(?:\([^)]*\))?[x×]?\s*(\d+)?/g)) {
     const before = msg.slice(0, match.index);
-    // 同じ行の直前テキストだけチェック（前の行に除外ワードがあっても無視）
-    const sameLine = before.split('\n').pop() ?? '';
+    const after = msg.slice((match.index ?? 0) + match[0].length);
+    const beforeLines = before.split('\n');
+    const sameLine = beforeLines.pop() ?? '';
+    const prevLine = beforeLines.pop() ?? '';
+    const afterLines = after.split('\n');
+    const afterLine = afterLines[0] ?? '';
+    const nextLine = afterLines[1] ?? '';
+    const nextNextLine = afterLines[2] ?? '';
+    const fullLine = sameLine + afterLine;
     if (SHIN_EXCLUDE_PREFIX.test(sameLine)) continue;
+    if (SHIN_EXCLUDE_LINE.test(prevLine) || SHIN_EXCLUDE_LINE.test(fullLine) || SHIN_EXCLUDE_LINE.test(nextLine) || SHIN_EXCLUDE_LINE.test(nextNextLine)) continue;
     shin += match[1] ? parseInt(match[1]) : 1;
   }
   return shin;
@@ -99,11 +109,19 @@ function countMnpNew(postsByStaff: SiteMap[string]): { mnp: number; shin: number
       const msg = normalize(post.message);
 
       // MNP○台: "MNP2" → 2台、"MNP" alone → 1台
-      const mnpMatches = [...msg.matchAll(/MNP(\d+)/gi)];
-      if (mnpMatches.length > 0) {
-        mnp += mnpMatches.reduce((s, m) => s + parseInt(m[1]), 0);
-      } else if (/MNP/i.test(msg)) {
-        mnp += 1;
+      for (const match of msg.matchAll(/MNP(\d+)?/gi)) {
+        const before = msg.slice(0, match.index);
+        const after = msg.slice((match.index ?? 0) + match[0].length);
+        const beforeLines = before.split('\n');
+        const sameLine = beforeLines.pop() ?? '';
+        const prevLine = beforeLines.pop() ?? '';
+        const afterLines = after.split('\n');
+        const afterLine = afterLines[0] ?? '';
+        const nextLine = afterLines[1] ?? '';
+        const nextNextLine = afterLines[2] ?? '';
+        const fullLine = sameLine + afterLine;
+        if (SHIN_EXCLUDE_LINE.test(prevLine) || SHIN_EXCLUDE_LINE.test(fullLine) || SHIN_EXCLUDE_LINE.test(nextLine) || SHIN_EXCLUDE_LINE.test(nextNextLine)) continue;
+        mnp += match[1] ? parseInt(match[1]) : 1;
       }
 
       shin += countShin(msg);

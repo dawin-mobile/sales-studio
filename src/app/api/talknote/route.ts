@@ -3,6 +3,8 @@ import { eq } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { talknotePosts } from '@/lib/schema';
+
+export const revalidate = 300; // 5分キャッシュ
 import { getShiftSheetData } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
