@@ -38,7 +38,7 @@ function SingleColumn({ title, stats, isCompact = false }: { title: string; stat
         <h3 style={{ fontSize: '14px', color: '#aaa', marginBottom: 10 }}>現場別</h3>
         <SiteBarChart sites={stats.sites} nameWidth={isCompact ? 60 : 100} />
       </div>
-      <div className="chart-card">
+      <div className="chart-card" style={{ marginTop: 16 }}>
         <h3 style={{ fontSize: '14px', color: '#aaa', marginBottom: 10 }}>客層・年代</h3>
         <div className="pie-container">
           <div className="nested-pie-wrapper">
