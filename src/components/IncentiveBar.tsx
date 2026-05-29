@@ -73,23 +73,9 @@ export default function IncentiveBar({ total, selfClose }: { total: number; self
   return (
     <div className="chart-card" style={{ marginBottom: 12, minHeight: 'auto' }}>
       {/* ヘッダー */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div>
-          <span style={{ fontSize: 11, color: 'var(--text-sub)', marginRight: 6 }}>現在クラス</span>
-          <span style={{ fontSize: 18, fontWeight: 'bold', color: tierColor(currentIdx) }}>{current.name}</span>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <span style={{ fontSize: 11, color: 'var(--text-sub)', marginRight: 4 }}>インセン</span>
-          <span style={{
-            fontSize: 16, fontWeight: 'bold',
-            background: 'linear-gradient(180deg, #ffe566 0%, #c8950a 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-          }}>
-            ¥{current.incentive.toLocaleString()}
-          </span>
-        </div>
+      <div style={{ marginBottom: 16 }}>
+        <span style={{ fontSize: 11, color: 'var(--text-sub)', marginRight: 6 }}>現在クラス</span>
+        <span style={{ fontSize: 18, fontWeight: 'bold', color: tierColor(currentIdx) }}>{current.name}</span>
       </div>
 
       {/* 3本ゾーンバー（次ランク条件をそのバーの直下に表示） */}
