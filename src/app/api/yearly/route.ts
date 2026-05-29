@@ -10,9 +10,17 @@ function n(row: string[], i: number) {
 }
 function add(a: number, b: number) { return Math.round((a + b) * 100) / 100; }
 
+function calcPt(row: string[]) {
+  return add(add(add(
+    add(n(row, COL.MNP_H), n(row, COL.MNP_S)),
+    add(n(row, COL.NEW), add(n(row, COL.CHANGE), n(row, COL.CELLUP)))),
+    add(add(n(row, COL.HIKARI_N), n(row, COL.HIKARI_T)), n(row, COL.HIKARI_C))),
+    add(n(row, COL.TABLET), add(n(row, COL.LIFE), n(row, COL.CREDIT))));
+}
+
 export interface MonthData {
-  month: string;   // 'YYYY-MM'
-  label: string;   // '25/6'
+  month: string;
+  label: string;
   total: number;
   workDays: number;
 }
@@ -26,7 +34,6 @@ export async function GET(request: NextRequest) {
   const rows = await getSheetData('合算データ');
   const now = new Date();
 
-  // 過去12ヶ月のYYYY-MMセットを生成
   const months: string[] = [];
   for (let i = 11; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -34,41 +41,54 @@ export async function GET(request: NextRequest) {
   }
   const monthSet = new Set(months);
 
-  // 集計用マップ: month → { total, dates }
+  // 個人集計
   const map = new Map<string, { total: number; dates: Set<string> }>();
-  months.forEach(m => map.set(m, { total: 0, dates: new Set() }));
+  // 全体集計: month → { staffPt: Map<staffName, total> }
+  const avgMap = new Map<string, Map<string, number>>();
+  months.forEach(m => {
+    map.set(m, { total: 0, dates: new Set() });
+    avgMap.set(m, new Map());
+  });
 
   for (const row of rows.slice(1)) {
     const name = row[COL.NAME];
-    if (!name || name !== staffName) continue;
-
+    if (!name) continue;
     const d = new Date(row[COL.DATE]);
     if (isNaN(d.getTime())) continue;
-
     const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     if (!monthSet.has(ym)) continue;
 
-    const pt = add(add(add(
-      add(n(row, COL.MNP_H), n(row, COL.MNP_S)),
-      add(n(row, COL.NEW), add(n(row, COL.CHANGE), n(row, COL.CELLUP)))),
-      add(add(n(row, COL.HIKARI_N), n(row, COL.HIKARI_T)), n(row, COL.HIKARI_C))),
-      add(n(row, COL.TABLET), add(n(row, COL.LIFE), n(row, COL.CREDIT))));
+    const pt = calcPt(row);
 
-    const entry = map.get(ym)!;
-    entry.total = add(entry.total, pt);
-    entry.dates.add(row[COL.DATE]);
+    // 全体平均用
+    const staffMap = avgMap.get(ym)!;
+    staffMap.set(name, add(staffMap.get(name) ?? 0, pt));
+
+    // 個人用
+    if (name === staffName) {
+      const entry = map.get(ym)!;
+      entry.total = add(entry.total, pt);
+      entry.dates.add(row[COL.DATE]);
+    }
   }
 
-  const data: MonthData[] = months.map(ym => {
+  const makeLabel = (ym: string) => {
     const [y, m] = ym.split('-');
+    return `${String(y).slice(2)}/${parseInt(m)}`;
+  };
+
+  const data: MonthData[] = months.map(ym => {
     const entry = map.get(ym)!;
-    return {
-      month: ym,
-      label: `${String(y).slice(2)}/${parseInt(m)}`,
-      total: entry.total,
-      workDays: entry.dates.size,
-    };
+    return { month: ym, label: makeLabel(ym), total: entry.total, workDays: entry.dates.size };
   });
 
-  return NextResponse.json({ data, staffName });
+  const avgData: MonthData[] = months.map(ym => {
+    const staffMap = avgMap.get(ym)!;
+    const staffCount = staffMap.size;
+    const totalPt = [...staffMap.values()].reduce((s, v) => add(s, v), 0);
+    const avg = staffCount > 0 ? Math.round((totalPt / staffCount) * 10) / 10 : 0;
+    return { month: ym, label: makeLabel(ym), total: avg, workDays: staffCount };
+  });
+
+  return NextResponse.json({ data, avgData, staffName });
 }
