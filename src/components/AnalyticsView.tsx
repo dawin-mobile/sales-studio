@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { DashboardData } from '@/types';
 import AttendanceTable from './AttendanceTable';
 import AnalysisView from './AnalysisView';
+import YearlyView from './YearlyView';
 
 interface AnalyticsViewProps {
   data: DashboardData;
@@ -12,8 +13,10 @@ interface AnalyticsViewProps {
   userRole?: string;
 }
 
+type InnerTab = 'attendance' | 'yearly' | 'analysis';
+
 export default function AnalyticsView({ data, selectedMonth, loginName, userRole }: AnalyticsViewProps) {
-  const [innerTab, setInnerTab] = useState<'attendance' | 'analysis'>('attendance');
+  const [innerTab, setInnerTab] = useState<InnerTab>('attendance');
 
   return (
     <div>
@@ -25,6 +28,12 @@ export default function AnalyticsView({ data, selectedMonth, loginName, userRole
             onClick={() => setInnerTab('attendance')}
           >
             個人実績
+          </button>
+          <button
+            className={`shift-region-btn${innerTab === 'yearly' ? ' active' : ''}`}
+            onClick={() => setInnerTab('yearly')}
+          >
+            過去1年
           </button>
           <button
             className={`shift-region-btn${innerTab === 'analysis' ? ' active' : ''}`}
@@ -39,6 +48,13 @@ export default function AnalyticsView({ data, selectedMonth, loginName, userRole
         <AttendanceTable
           data={data}
           selectedMonth={selectedMonth}
+          loginName={loginName}
+          userRole={userRole}
+        />
+      )}
+      {innerTab === 'yearly' && (
+        <YearlyView
+          data={data}
           loginName={loginName}
           userRole={userRole}
         />
