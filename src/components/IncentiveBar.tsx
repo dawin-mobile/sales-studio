@@ -191,7 +191,7 @@ export default function IncentiveBar({ total, selfClose }: { total: number; self
                   <span style={{ fontWeight: 600, color: zone.color }}>{next.name}</span>
                   <span style={{ color: 'var(--text-sub)' }}> まであと </span>
                   <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>
-                    {Math.ceil((next.pt - total) * 10) / 10}pt
+                    {Math.ceil(Math.round((next.pt - total) * 1000) / 100) / 10}pt
                   </span>
                 </div>
               )}
