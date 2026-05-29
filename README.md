@@ -1,36 +1,134 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sales Studio
 
-## Getting Started
+携帯販売スタッフ向けの業績管理・シフト確認Webアプリ。
 
-First, run the development server:
+- **本番URL**: https://dawin-sales-studio.vercel.app
+- **リポジトリ**: https://github.com/dawin-mobile/sales-studio
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## 概要
+
+スプレッドシートで管理していた販売実績・シフト・スタッフ情報をWebアプリ上で見やすく表示する社内ツール。スマホ・PCどちらからでもアクセス可能なPWA対応のWebアプリ。
+
+---
+
+## 機能一覧
+
+### 一般スタッフ向け
+
+| 機能 | 内容 |
+|------|------|
+| ダッシュボード | 当月の獲得件数・KPI・Top10チャート・ランキング表示 |
+| ランキング | MNP・新規・SU等の種別ごとのランキング表示 |
+| 実績・分析 | 月別推移グラフ・年代別・機種別の分析 |
+| 個人実績 | スタッフごとのカレンダー形式の日別実績 |
+| シフト | 現場別・スタッフ別・社員のシフト確認 |
+| スタッフ | スタッフ情報・プロフィール一覧 |
+| インセンティブバー | 獲得ptに応じたランク・インセン金額の進捗表示 |
+
+### 管理者向け（裏メニュー）
+
+| 機能 | 内容 |
+|------|------|
+| 育成管理 | スタッフの評価スコア・知識習熟度の管理 |
+| 遅刻/早退 | 遅刻・早退の記録管理（準備中） |
+| スタッフ切り替え | 管理者が任意のスタッフ視点で画面確認 |
+| ログイン情報 | スタッフのログイン日時確認 |
+
+---
+
+## 技術スタック
+
+| 項目 | 内容 |
+|------|------|
+| フレームワーク | Next.js 15（App Router） |
+| 言語 | TypeScript |
+| スタイリング | CSS（globals.css） |
+| 認証 | NextAuth.js（Google OAuth） |
+| データベース | Neon DB（PostgreSQL）+ Drizzle ORM |
+| データソース | Google Sheets API（スプレッドシート直読み） |
+| ホスティング | Vercel |
+| 自動同期 | Google Apps Script（GAS）→ Webhook → DB |
+
+---
+
+## データフロー
+
+```
+スプレッドシート
+  └─ GAS（定期実行）
+       └─ POST /api/sync（Webhook）
+            └─ Neon DB（シフト・日報・評価データ）
+
+Google Sheets API（直読み）
+  └─ ダッシュボード・実績・スタッフ情報
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 画面構成
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+/（ログイン後）
+├── ホーム（ダッシュボード）
+├── ランキング
+├── 実績・分析
+├── シフト
+└── スタッフ
+```
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 主要ファイル
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+src/
+├── app/
+│   ├── page.tsx              # メインページ
+│   ├── globals.css           # スタイル
+│   └── api/
+│       ├── sync/             # GASからのWebhook受信
+│       ├── shift/            # シフトデータ取得
+│       ├── data/             # ダッシュボードデータ
+│       ├── talknote/         # 日報データ
+│       └── profile/          # スタッフ情報
+├── components/               # UIコンポーネント
+├── lib/
+│   ├── db.ts                 # DBクライアント
+│   ├── sheets.ts             # Google Sheets APIクライアント
+│   └── schema.ts             # DBテーブル定義
+└── types/
+    └── index.ts              # 型定義
+gas/
+├── sync-nippo.gs             # 日報・Talknote同期スクリプト
+└── sync-shift.gs             # シフト同期スクリプト
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 開発環境のセットアップ
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm install
+npm run dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`.env.local` に以下の環境変数が必要：
+
+```
+DATABASE_URL=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+NEXTAUTH_SECRET=
+NEXTAUTH_URL=
+GOOGLE_SERVICE_ACCOUNT_KEY=
+SPREADSHEET_ID=
+SYNC_SECRET=
+```
+
+---
+
+## デプロイ
+
+GitHub の `main` ブランチへの push で Vercel が自動デプロイ。
