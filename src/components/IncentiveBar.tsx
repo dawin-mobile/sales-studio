@@ -166,8 +166,15 @@ export default function IncentiveBar({ total, selfClose }: { total: number; self
                             fontSize: 9,
                             whiteSpace: 'nowrap',
                             marginTop: 2,
-                            color: total >= pt ? zone.color : 'rgba(255,255,255,0.25)',
                             fontWeight: total >= pt ? 600 : 400,
+                            ...(total >= pt ? {
+                              background: 'linear-gradient(180deg, #ffe566 0%, #c8950a 100%)',
+                              WebkitBackgroundClip: 'text',
+                              WebkitTextFillColor: 'transparent',
+                              backgroundClip: 'text',
+                            } : {
+                              color: 'rgba(255,255,255,0.25)',
+                            }),
                           }}>
                             ¥{tier.incentive.toLocaleString()}
                           </span>
