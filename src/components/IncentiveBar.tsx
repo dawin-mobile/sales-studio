@@ -107,7 +107,7 @@ export default function IncentiveBar({ total, selfClose }: { total: number; self
           const RANK_H = 14;
           const BAR_H = 8;
           const GAP = 5;
-          const TOTAL_H = RANK_H + BAR_H + GAP + 24;
+          const TOTAL_H = RANK_H + BAR_H + GAP + 24 + 14;
 
           // このゾーンに次のランクが含まれるか
           const nextInZone = next && next.pt > zone.min && next.pt <= zone.max;
@@ -172,6 +172,21 @@ export default function IncentiveBar({ total, selfClose }: { total: number; self
                       <span className="incentive-tick-num" style={{ fontSize: 20, lineHeight: 1, whiteSpace: 'nowrap', color: total >= pt ? zone.color : 'rgba(255,255,255,0.4)', fontWeight: total >= pt ? 700 : 400 }}>
                         {pt}
                       </span>
+                      {(() => {
+                        const tier = TIERS.find(t => t.pt === pt);
+                        if (!tier) return null;
+                        return (
+                          <span style={{
+                            fontSize: 9,
+                            whiteSpace: 'nowrap',
+                            marginTop: 2,
+                            color: total >= pt ? zone.color : 'rgba(255,255,255,0.25)',
+                            fontWeight: total >= pt ? 600 : 400,
+                          }}>
+                            ¥{tier.incentive.toLocaleString()}
+                          </span>
+                        );
+                      })()}
                     </div>
                   );
                 })}
