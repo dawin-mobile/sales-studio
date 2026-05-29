@@ -16,7 +16,7 @@ function BarChart({ months, accentColor, label }: { months: MonthData[]; accentC
   const maxTotal = Math.max(...months.map(m => m.total), 1);
   return (
     <div className="chart-card" style={{ minHeight: 'auto', padding: '14px 8px 10px', marginTop: 16 }}>
-      <div style={{ fontSize: 10, color: 'var(--text-sub)', marginBottom: 10, fontWeight: 600, letterSpacing: '0.04em' }}>
+      <div style={{ fontSize: 10, color: 'var(--text-main)', marginBottom: 10, fontWeight: 600, letterSpacing: '0.04em' }}>
         {label}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
