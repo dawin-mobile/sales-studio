@@ -83,24 +83,22 @@ export default function YearlyView({ data, loginName, userRole }: YearlyViewProp
       .finally(() => setLoading(false));
   }, [staffName]);
 
+  const isLimitedRole = userRole === 'アルバイト' || userRole === '業務委託';
+
   return (
     <>
-      <div className="analysis-controls" style={{ flexWrap: 'nowrap', alignItems: 'center', marginBottom: 0 }}>
-        <div className="control-group">
-          {userRole !== 'アルバイト' && userRole !== '業務委託' && (
+      {!isLimitedRole && (
+        <div className="analysis-controls" style={{ flexWrap: 'nowrap', alignItems: 'center', marginBottom: 0 }}>
+          <div className="control-group">
             <span className="control-label">スタッフ選択</span>
-          )}
-          {userRole === 'アルバイト' || userRole === '業務委託' ? (
-            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>{staffName}</span>
-          ) : (
             <select className="control-select" value={staffName} onChange={e => setStaffName(e.target.value)}>
               {allStaff.map(s => (
                 <option key={s.name} value={s.name}>{s.name}</option>
               ))}
             </select>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {loading ? (
         <div className="chart-card" style={{ minHeight: 'auto', marginTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 80 }}>
