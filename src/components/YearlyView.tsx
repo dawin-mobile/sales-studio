@@ -50,7 +50,7 @@ export default function YearlyView({ data, loginName, userRole }: YearlyViewProp
         </div>
       </div>
 
-      <div className="chart-card" style={{ minHeight: 'auto', padding: '16px 8px 12px' }}>
+      <div className="chart-card" style={{ minHeight: 'auto', padding: '16px 8px 12px', marginTop: 16 }}>
         {loading ? (
           <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div className="shift-loading-spinner" />
