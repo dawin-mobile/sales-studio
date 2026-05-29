@@ -67,6 +67,7 @@ export default function Home() {
   const [contacts, setContacts] = useState<{ name: string; contact: string; mentees: string[] }[]>([]);
   const [loginInfoOpen, setLoginInfoOpen] = useState(false);
   const [loginInfoList, setLoginInfoList] = useState<{ name: string; loginInfo: string }[]>([]);
+  const [accessLogOpen, setAccessLogOpen] = useState(false);
   const [tenureOpen, setTenureOpen] = useState(false);
   const [tenureList, setTenureList] = useState<{ name: string; joinDate: string; years: number; months: number; totalMonths: number }[]>([]);
   const [meData, setMeData] = useState<{ birthday: string; bloodType: string; joinDate: string; animal: string; zodiac: string } | null>(null);
@@ -712,6 +713,29 @@ export default function Home() {
               </button>
             )}
 
+            {/* アクセスログ（管理者のみ） */}
+            {(session.user.role as string) === '管理者' && (
+              <button
+                onClick={() => setAccessLogOpen(true)}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '14px 0',
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: '1px solid var(--border-color)',
+                  color: 'var(--text-main)',
+                  fontSize: 15,
+                  cursor: 'pointer',
+                }}
+              >
+                <span>アクセスログ</span>
+                <ChevronLeft size={18} strokeWidth={1.75} style={{ transform: 'rotate(180deg)', color: 'var(--text-sub)' }} />
+              </button>
+            )}
+
             {/* ログイン情報（管理者のみ） */}
             {(session.user.role as string) === '管理者' && (
               <button
@@ -796,6 +820,24 @@ export default function Home() {
                 </div>
               ));
             })()}
+          </div>
+        </div>
+      )}
+
+      {/* アクセスログパネル（管理者のみ） */}
+      {accessLogOpen && (
+        <div onClick={() => setAccessLogOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 299 }} />
+      )}
+      {accessLogOpen && (
+        <div className="contacts-panel" style={{ zIndex: 300, overflowY: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid var(--border-color)' }}>
+            <button onClick={() => setAccessLogOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px 8px', marginLeft: -8 }}>
+              <ChevronLeft size={20} strokeWidth={1.75} />
+            </button>
+            <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-main)', marginLeft: 4 }}>アクセスログ</span>
+          </div>
+          <div style={{ padding: '16px', paddingBottom: 'calc(50px + env(safe-area-inset-bottom))' }}>
+            <AccessLogView />
           </div>
         </div>
       )}
