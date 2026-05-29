@@ -14,7 +14,8 @@ export async function POST(request: NextRequest) {
   try {
     await appendAccessLog(session.user.name, tab);
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (e) {
+    console.error('[track] エラー:', e);
     return NextResponse.json({ ok: false });
   }
 }

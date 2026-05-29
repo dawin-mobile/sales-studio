@@ -47,7 +47,7 @@ export async function appendAccessLog(userName: string, tabName: string): Promis
   const now = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
   await sheets.spreadsheets.values.append({
     spreadsheetId,
-    range: `${ACCESS_LOG_SHEET}!A:C`,
+    range: `'${ACCESS_LOG_SHEET}'!A:C`,
     valueInputOption: 'RAW',
     requestBody: { values: [[now, userName, tabName]] },
   });
