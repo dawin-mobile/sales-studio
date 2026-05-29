@@ -197,6 +197,13 @@ export default function Home() {
     setContactsOpen(false);
     setLoginInfoOpen(false);
     document.querySelector<HTMLElement>('.main-content')?.scrollTo({ top: 0 });
+    if (session?.user?.name) {
+      fetch('/api/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tab: TAB_TITLES[activeTab] ?? activeTab }),
+      }).catch(() => {});
+    }
   }, [activeTab]);
 
   const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {

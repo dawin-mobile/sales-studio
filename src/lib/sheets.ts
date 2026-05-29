@@ -37,6 +37,22 @@ export async function getSheetsClient() {
   return sheets;
 }
 
+const ACCESS_LOG_SHEET = 'アクセスログ';
+
+export async function appendAccessLog(userName: string, tabName: string): Promise<void> {
+  const sheets = await getSheetsClient();
+  const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
+  if (!spreadsheetId) return;
+
+  const now = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+  await sheets.spreadsheets.values.append({
+    spreadsheetId,
+    range: `${ACCESS_LOG_SHEET}!A:C`,
+    valueInputOption: 'RAW',
+    requestBody: { values: [[now, userName, tabName]] },
+  });
+}
+
 export async function getSheetData(sheetName: string): Promise<string[][]> {
   const sheets = await getSheetsClient();
   const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
