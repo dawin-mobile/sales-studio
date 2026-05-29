@@ -23,6 +23,7 @@ const TIERS: Tier[] = [
   { name: 'ゼウスⅣ',         pt: 70, incentive: 12000, selfClosePt: 70 },
   { name: 'ゼウスⅤ',         pt: 80, incentive: 13000, selfClosePt: 80 },
   { name: 'ゼウスⅥ',         pt: 90, incentive: 14000, selfClosePt: 90 },
+  { name: 'ゼウスⅦ',         pt: 100, incentive: 15000, selfClosePt: 100 },
 ];
 
 
