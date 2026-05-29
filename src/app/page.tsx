@@ -197,17 +197,12 @@ export default function Home() {
     setContactsOpen(false);
     setLoginInfoOpen(false);
     document.querySelector<HTMLElement>('.main-content')?.scrollTo({ top: 0 });
-    const name = session?.user?.name;
-    console.log('[track] tab:', activeTab, 'user:', name);
-    if (name) {
+    if (session?.user?.name) {
       fetch('/api/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tab: TAB_TITLES[activeTab] ?? activeTab }),
-      })
-        .then(r => r.json())
-        .then(d => console.log('[track] result:', d))
-        .catch(e => console.error('[track] fetch error:', e));
+      }).catch(() => {});
     }
   }, [activeTab]);
 
