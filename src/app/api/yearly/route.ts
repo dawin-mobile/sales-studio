@@ -43,8 +43,8 @@ export async function GET(request: NextRequest) {
 
   // 個人集計
   const map = new Map<string, { total: number; dates: Set<string> }>();
-  // 全体集計: month → { staffPt: Map<staffName, total> }
-  const avgMap = new Map<string, Map<string, number>>();
+  // 全体集計: month → Map<staffName, { pt, dates }>
+  const avgMap = new Map<string, Map<string, { pt: number; dates: Set<string> }>>();
   months.forEach(m => {
     map.set(m, { total: 0, dates: new Set() });
     avgMap.set(m, new Map());
@@ -62,7 +62,10 @@ export async function GET(request: NextRequest) {
 
     // 全体平均用
     const staffMap = avgMap.get(ym)!;
-    staffMap.set(name, add(staffMap.get(name) ?? 0, pt));
+    if (!staffMap.has(name)) staffMap.set(name, { pt: 0, dates: new Set() });
+    const se = staffMap.get(name)!;
+    se.pt = add(se.pt, pt);
+    se.dates.add(row[COL.DATE]);
 
     // 個人用
     if (name === staffName) {
@@ -85,9 +88,12 @@ export async function GET(request: NextRequest) {
   const avgData: MonthData[] = months.map(ym => {
     const staffMap = avgMap.get(ym)!;
     const staffCount = staffMap.size;
-    const totalPt = [...staffMap.values()].reduce((s, v) => add(s, v), 0);
-    const avg = staffCount > 0 ? Math.round((totalPt / staffCount) * 10) / 10 : 0;
-    return { month: ym, label: makeLabel(ym), total: avg, workDays: staffCount };
+    const entries = [...staffMap.values()];
+    const totalPt = entries.reduce((s, v) => add(s, v.pt), 0);
+    const totalDays = entries.reduce((s, v) => s + v.dates.size, 0);
+    const avgPt = staffCount > 0 ? Math.round((totalPt / staffCount) * 10) / 10 : 0;
+    const avgDays = staffCount > 0 ? Math.round(totalDays / staffCount) : 0;
+    return { month: ym, label: makeLabel(ym), total: avgPt, workDays: avgDays };
   });
 
   return NextResponse.json({ data, avgData, staffName });
