@@ -137,7 +137,7 @@ export default function Home() {
     }
   }, []);
 
-  const fetchData = useCallback(async (month: string) => {
+  const fetchData = useCallback(async (month: string, autoFallback = false) => {
     setLoading(true);
     setError(null);
     try {
@@ -147,6 +147,13 @@ export default function Home() {
         throw new Error(err.error || 'データの取得に失敗しました');
       }
       const json: DashboardData = await res.json();
+      // データがなく、かつ自動フォールバック初回なら先月へ
+      if (autoFallback && json.ranking.length === 0) {
+        const [y, m] = month.split('-').map(Number);
+        const prev = new Date(y, m - 2, 1);
+        setSelectedMonth(`${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`);
+        return;
+      }
       setData(json);
       const t = new Date();
       setLastUpdate(`最終更新: ${new Intl.DateTimeFormat('ja-JP', { hour: '2-digit', minute: '2-digit' }).format(t)}`);
@@ -158,8 +165,8 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    fetchData(selectedMonth);
-  }, [selectedMonth, fetchData]);
+    fetchData(selectedMonth, selectedMonth === defaultMonth);
+  }, [selectedMonth, fetchData, defaultMonth]);
 
   // シフトタブ表示中 or 切り替え時に（未取得 or 月が変わっていたら）取得
   useEffect(() => {
