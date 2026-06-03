@@ -29,10 +29,14 @@ export async function GET(request: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const staffName = new URL(request.url).searchParams.get('staff') ?? session.user?.name ?? '';
+  const searchParams = new URL(request.url).searchParams;
+  const staffName = searchParams.get('staff') ?? session.user?.name ?? '';
+  const monthParam = searchParams.get('month'); // 選択月（基準月）
 
   const rows = await getSheetData('合算データ');
-  const now = new Date();
+  const now = monthParam
+    ? new Date(`${monthParam}-01`)
+    : new Date();
 
   const months: string[] = [];
   for (let i = 11; i >= 0; i--) {

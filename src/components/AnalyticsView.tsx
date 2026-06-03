@@ -57,6 +57,7 @@ export default function AnalyticsView({ data, selectedMonth, loginName, userRole
           data={data}
           loginName={loginName}
           userRole={userRole}
+          selectedMonth={selectedMonth}
         />
       )}
       {innerTab === 'analysis' && (

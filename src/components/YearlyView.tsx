@@ -8,11 +8,13 @@ interface YearlyViewProps {
   data: DashboardData;
   loginName?: string;
   userRole?: string;
+  selectedMonth?: string;
 }
 
-const CURRENT_MONTH = new Date().toISOString().slice(0, 7);
+// ハイライトは selectedMonth または今月
 
-function BarChart({ months, accentColor, label }: { months: MonthData[]; accentColor: string; label: string }) {
+
+function BarChart({ months, accentColor, label, currentMonth }: { months: MonthData[]; accentColor: string; label: string; currentMonth: string }) {
   const maxTotal = Math.max(...months.map(m => m.total), 1);
   return (
     <div className="chart-card" style={{ minHeight: 'auto', padding: '14px 8px 10px', marginTop: 16 }}>
@@ -23,7 +25,7 @@ function BarChart({ months, accentColor, label }: { months: MonthData[]; accentC
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 110 }}>
           {months.map(m => {
             const barH = m.total > 0 ? Math.max(Math.round((m.total / maxTotal) * 100), 4) : 0;
-            const isCurrent = m.month === CURRENT_MONTH;
+            const isCurrent = m.month === currentMonth;
             return (
               <div key={m.month} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
                 {m.total > 0 && (
@@ -46,7 +48,7 @@ function BarChart({ months, accentColor, label }: { months: MonthData[]; accentC
         </div>
         <div style={{ display: 'flex', gap: 3 }}>
           {months.map(m => {
-            const isCurrent = m.month === CURRENT_MONTH;
+            const isCurrent = m.month === currentMonth;
             return (
               <div key={m.month} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
                 <span style={{ fontSize: 8, color: isCurrent ? accentColor : 'var(--text-sub)', fontWeight: isCurrent ? 700 : 400, lineHeight: 1 }}>
@@ -64,7 +66,7 @@ function BarChart({ months, accentColor, label }: { months: MonthData[]; accentC
   );
 }
 
-export default function YearlyView({ data, loginName, userRole }: YearlyViewProps) {
+export default function YearlyView({ data, loginName, userRole, selectedMonth }: YearlyViewProps) {
   const allStaff = data.staffOrder?.length ? data.staffOrder : data.ranking;
   const initialName = (loginName && allStaff.find(s => s.name === loginName))
     ? loginName : allStaff[0]?.name ?? '';
@@ -77,11 +79,13 @@ export default function YearlyView({ data, loginName, userRole }: YearlyViewProp
   useEffect(() => {
     if (!staffName) return;
     setLoading(true);
-    fetch(`/api/yearly?staff=${encodeURIComponent(staffName)}`)
+    const params = new URLSearchParams({ staff: staffName });
+    if (selectedMonth) params.set('month', selectedMonth);
+    fetch(`/api/yearly?${params}`)
       .then(r => r.json())
       .then(d => { setMonths(d.data ?? []); setAvgMonths(d.avgData ?? []); })
       .finally(() => setLoading(false));
-  }, [staffName]);
+  }, [staffName, selectedMonth]);
 
   const isLimitedRole = userRole === 'アルバイト' || userRole === '業務委託';
 
@@ -106,8 +110,8 @@ export default function YearlyView({ data, loginName, userRole }: YearlyViewProp
         </div>
       ) : (
         <>
-          <BarChart months={months} accentColor="#00cfff" label={`${staffName} の獲得推移`} />
-          <BarChart months={avgMonths} accentColor="#facc15" label="全体平均" />
+          <BarChart months={months} accentColor="#00cfff" label={`${staffName} の獲得推移`} currentMonth={selectedMonth ?? new Date().toISOString().slice(0, 7)} />
+          <BarChart months={avgMonths} accentColor="#facc15" label="全体平均" currentMonth={selectedMonth ?? new Date().toISOString().slice(0, 7)} />
         </>
       )}
     </>
