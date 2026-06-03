@@ -405,20 +405,40 @@ export default function TalknoteCard() {
             ))}
           </div>
         </div>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          style={{
-            background: 'var(--card-bg)',
-            border: '1px solid var(--border-color)',
-            borderRadius: 6,
-            color: 'var(--text-main)',
-            fontSize: 12,
-            padding: '3px 8px',
-            cursor: 'pointer',
-          }}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <button
+            onClick={() => {
+              const d = new Date(date); d.setDate(d.getDate() - 1);
+              setDate(d.toISOString().slice(0, 10));
+            }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-main)', fontSize: 18, padding: '0 4px', lineHeight: 1, opacity: 0.7 }}
+            onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+            onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}
+          >‹</button>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            style={{
+              background: 'var(--card-bg)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 6,
+              color: 'var(--text-main)',
+              fontSize: 12,
+              padding: '3px 8px',
+              cursor: 'pointer',
+            }}
+          />
+          <button
+            onClick={() => {
+              const d = new Date(date); d.setDate(d.getDate() + 1);
+              setDate(d.toISOString().slice(0, 10));
+            }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-main)', fontSize: 18, padding: '0 4px', lineHeight: 1, opacity: 0.7 }}
+            onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+            onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}
+          >›</button>
+        </div>
       </div>
 
       {loading && (
