@@ -135,11 +135,11 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
         <div style={{ display: 'flex', gap: 16, marginLeft: 8 }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.3 }}>
             <span style={{ fontSize: 10, color: 'var(--text-sub)' }}>獲得</span>
-            <span style={{ fontSize: 35, fontWeight: 600, color: '#3ea6ff', lineHeight: 1 }}>{totalPt}<span style={{ fontSize: 15, marginLeft: 2 }}>pt</span></span>
+            <span style={{ fontSize: 35, fontWeight: 600, color: 'var(--text-main)', lineHeight: 1 }}>{totalPt}<span style={{ fontSize: 15, marginLeft: 2 }}>pt</span></span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.3 }}>
             <span style={{ fontSize: 10, color: 'var(--text-sub)' }}>自己クロ</span>
-            <span style={{ fontSize: 35, fontWeight: 600, color: '#f97316', lineHeight: 1 }}>{totalSelfClose}<span style={{ fontSize: 15, marginLeft: 2 }}>pt</span></span>
+            <span style={{ fontSize: 35, fontWeight: 600, color: 'var(--text-main)', lineHeight: 1 }}>{totalSelfClose}<span style={{ fontSize: 15, marginLeft: 2 }}>pt</span></span>
           </div>
         </div>
       </div>
