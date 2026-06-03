@@ -97,6 +97,17 @@ export default function Home() {
   const now = new Date();
   const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
+  const staffFallbackCount = useRef(0);
+
+  const handleNoDataForStaff = useCallback(() => {
+    if (staffFallbackCount.current >= 12) return;
+    staffFallbackCount.current += 1;
+    setSelectedMonth(prev => {
+      const [y, m] = prev.split('-').map(Number);
+      const d = new Date(y, m - 2, 1);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    });
+  }, []);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -221,10 +232,12 @@ export default function Home() {
   }, [activeTab]);
 
   const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    staffFallbackCount.current = 0;
     setSelectedMonth(e.target.value);
   };
 
   const goMonth = (delta: number) => {
+    staffFallbackCount.current = 0;
     const [y, m] = selectedMonth.split('-').map(Number);
     const d = new Date(y, m - 1 + delta, 1);
     setSelectedMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
@@ -534,7 +547,7 @@ export default function Home() {
 
             {activeTab === 'attendance' && (
               <div style={{ marginBottom: 28 }}>
-                <AttendanceTable data={data} selectedMonth={selectedMonth} loginName={effectiveName} userRole={effectiveRole} />
+                <AttendanceTable data={data} selectedMonth={selectedMonth} loginName={effectiveName} userRole={effectiveRole} onNoData={handleNoDataForStaff} />
               </div>
             )}
 

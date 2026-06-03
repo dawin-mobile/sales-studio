@@ -9,6 +9,7 @@ interface AttendanceTableProps {
   selectedMonth: string; // 'YYYY-MM'
   loginName?: string;
   userRole?: string;
+  onNoData?: () => void;
 }
 
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
@@ -26,12 +27,13 @@ const rows: { label: string; key: CalendarKey; isTotal?: boolean }[] = [
   { label: 'クレカ', key: 'credit' },
 ];
 
-export default function AttendanceTable({ data, selectedMonth, loginName, userRole }: AttendanceTableProps) {
+export default function AttendanceTable({ data, selectedMonth, loginName, userRole, onNoData }: AttendanceTableProps) {
   const allStaff = data.staffOrder?.length ? data.staffOrder : data.ranking;
   const initialName = (loginName && allStaff.find((s) => s.name === loginName))
     ? loginName
     : allStaff[0]?.name || '';
   const [staffName, setStaffName] = useState(initialName);
+  const [manuallySelected, setManuallySelected] = useState(false);
 
   // loginName が後から届いた場合（セッション取得遅延）やデータ更新時に追従
   useEffect(() => {
@@ -45,6 +47,13 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
   }, [loginName, data.ranking]);
 
   const staff = data.ranking.find((s) => s.name === staffName);
+
+  // 自分のデータがない場合（手動選択でない場合のみ）親に通知して月を遡る
+  useEffect(() => {
+    if (!manuallySelected && (!staff || !staff.calendar)) {
+      onNoData?.();
+    }
+  }, [staff, manuallySelected, onNoData]);
 
   // ログインユーザーの未提出日（日番号のSet）
   const [missingDays, setMissingDays] = useState<Set<number>>(new Set());
@@ -92,7 +101,7 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
               {userRole === 'アルバイト' || userRole === '業務委託' ? (
                 <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>{staffName}</span>
               ) : (
-                <select className="control-select" value={staffName} onChange={(e) => setStaffName(e.target.value)}>
+                <select className="control-select" value={staffName} onChange={(e) => { setStaffName(e.target.value); setManuallySelected(true); }}>
                   {data.ranking.map((s) => (
                     <option key={s.name} value={s.name}>{s.name}</option>
                   ))}
@@ -123,7 +132,7 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
             {userRole === 'アルバイト' || userRole === '業務委託' ? (
               <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>{staffName}</span>
             ) : (
-              <select className="control-select" value={staffName} onChange={(e) => setStaffName(e.target.value)}>
+              <select className="control-select" value={staffName} onChange={(e) => { setStaffName(e.target.value); setManuallySelected(true); }}>
                 {(data.staffOrder?.length ? data.staffOrder : data.ranking).map((s) => (
                   <option key={s.name} value={s.name}>{s.name}</option>
                 ))}
