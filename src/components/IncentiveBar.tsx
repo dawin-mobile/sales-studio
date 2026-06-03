@@ -194,9 +194,9 @@ export default function IncentiveBar({ total, selfClose }: { total: number; self
                   <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: 13 }}>
                     <span style={{ fontWeight: 600, color: zone.color }}>{next.name}</span>
                     <span style={{ color: 'var(--text-sub)' }}> まであと </span>
-                    {ptNeeded > 0 && <span style={{ color: '#3ea6ff', fontWeight: 600 }}>獲得{ptNeeded}pt</span>}
+                    {ptNeeded > 0 && <span style={{ fontWeight: 600 }}>獲得<span style={{ color: '#3ea6ff' }}>{ptNeeded}pt</span></span>}
                     {ptNeeded > 0 && scNeeded > 0 && <span style={{ color: 'var(--text-sub)' }}>・</span>}
-                    {scNeeded > 0 && <span style={{ color: '#f97316', fontWeight: 600 }}>自己クロ{scNeeded}pt</span>}
+                    {scNeeded > 0 && <span style={{ fontWeight: 600 }}>自己クロ<span style={{ color: '#f97316' }}>{scNeeded}pt</span></span>}
                   </div>
                 );
               })()}
