@@ -213,6 +213,12 @@ export default function Home() {
     setSelectedMonth(e.target.value);
   };
 
+  const goMonth = (delta: number) => {
+    const [y, m] = selectedMonth.split('-').map(Number);
+    const d = new Date(y, m - 1 + delta, 1);
+    setSelectedMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  };
+
   return (
     <AuthGuard>
       <Sidebar
@@ -267,12 +273,29 @@ export default function Home() {
             <div className="header-left">
               <h1 className="page-title">{TAB_TITLES[activeTab]}</h1>
               {activeTab !== 'profile' && (
-                <input
-                  type="month"
-                  value={selectedMonth}
-                  onChange={handleMonthChange}
-                  aria-label="表示月を選択"
-                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <button
+                    onClick={() => goMonth(-1)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-main)', fontSize: 20, padding: '0 6px', lineHeight: 1, opacity: 0.7 }}
+                    onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                    onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}
+                    aria-label="前の月"
+                  >‹</button>
+                  <input
+                    type="month"
+                    value={selectedMonth}
+                    onChange={handleMonthChange}
+                    aria-label="表示月を選択"
+                  />
+                  <button
+                    onClick={() => goMonth(+1)}
+                    disabled={selectedMonth >= defaultMonth}
+                    style={{ background: 'none', border: 'none', cursor: selectedMonth >= defaultMonth ? 'default' : 'pointer', color: 'var(--text-main)', fontSize: 20, padding: '0 6px', lineHeight: 1, opacity: selectedMonth >= defaultMonth ? 0.2 : 0.7 }}
+                    onMouseEnter={e => { if (selectedMonth < defaultMonth) e.currentTarget.style.opacity = '1'; }}
+                    onMouseLeave={e => { if (selectedMonth < defaultMonth) e.currentTarget.style.opacity = '0.7'; }}
+                    aria-label="次の月"
+                  >›</button>
+                </div>
               )}
             </div>
             {/* PC時のみ表示 */}
