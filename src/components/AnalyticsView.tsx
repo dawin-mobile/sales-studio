@@ -11,11 +11,12 @@ interface AnalyticsViewProps {
   selectedMonth: string;
   loginName?: string;
   userRole?: string;
+  onNoData?: () => void;
 }
 
 type InnerTab = 'attendance' | 'yearly' | 'analysis';
 
-export default function AnalyticsView({ data, selectedMonth, loginName, userRole }: AnalyticsViewProps) {
+export default function AnalyticsView({ data, selectedMonth, loginName, userRole, onNoData }: AnalyticsViewProps) {
   const [innerTab, setInnerTab] = useState<InnerTab>('attendance');
 
   return (
@@ -50,6 +51,7 @@ export default function AnalyticsView({ data, selectedMonth, loginName, userRole
           selectedMonth={selectedMonth}
           loginName={loginName}
           userRole={userRole}
+          onNoData={onNoData}
         />
       )}
       {innerTab === 'yearly' && (

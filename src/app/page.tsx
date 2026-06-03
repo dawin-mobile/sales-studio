@@ -552,7 +552,7 @@ export default function Home() {
             )}
 
             {activeTab === 'analytics' && (
-              <AnalyticsView data={data} selectedMonth={selectedMonth} loginName={effectiveName} userRole={effectiveRole} />
+              <AnalyticsView data={data} selectedMonth={selectedMonth} loginName={effectiveName} userRole={effectiveRole} onNoData={handleNoDataForStaff} />
             )}
           </>
         )}
