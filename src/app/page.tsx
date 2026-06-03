@@ -99,7 +99,10 @@ export default function Home() {
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
   const staffFallbackCount = useRef(0);
 
+  const NO_FALLBACK_USERS = ['橋本章平'];
+
   const handleNoDataForStaff = useCallback(() => {
+    if (NO_FALLBACK_USERS.includes(effectiveName ?? '')) return;
     if (staffFallbackCount.current >= 12) return;
     staffFallbackCount.current += 1;
     setSelectedMonth(prev => {
@@ -107,7 +110,8 @@ export default function Home() {
       const d = new Date(y, m - 2, 1);
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     });
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveName]);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
