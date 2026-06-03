@@ -141,20 +141,24 @@ export default function Home() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchWithRetry(`/api/data?month=${month}`);
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'データの取得に失敗しました');
-      }
-      const json: DashboardData = await res.json();
-      // データがなく、かつ自動フォールバック初回なら先月へ
-      if (autoFallback && json.ranking.length === 0) {
-        const [y, m] = month.split('-').map(Number);
+      let targetMonth = month;
+      let json: DashboardData | null = null;
+
+      for (let i = 0; i < 12; i++) {
+        const res = await fetchWithRetry(`/api/data?month=${targetMonth}`);
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'データの取得に失敗しました');
+        }
+        json = await res.json() as DashboardData;
+        if (!autoFallback || json.ranking.length > 0) break;
+        const [y, m] = targetMonth.split('-').map(Number);
         const prev = new Date(y, m - 2, 1);
-        setSelectedMonth(`${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`);
-        return;
+        targetMonth = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
       }
-      setData(json);
+
+      if (targetMonth !== month) setSelectedMonth(targetMonth);
+      setData(json!);
       const t = new Date();
       setLastUpdate(`最終更新: ${new Intl.DateTimeFormat('ja-JP', { hour: '2-digit', minute: '2-digit' }).format(t)}`);
     } catch (e) {
