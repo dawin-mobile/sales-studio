@@ -161,13 +161,14 @@ export default function IncentiveBar({ total, selfClose }: { total: number; self
                       {(() => {
                         const tier = TIERS.find(t => t.pt === pt);
                         if (!tier) return null;
+                        const achieved = total >= tier.pt && (tier.selfClosePt === null || selfClose >= tier.selfClosePt);
                         return (
                           <span style={{
                             fontSize: 9,
                             whiteSpace: 'nowrap',
                             marginTop: 2,
-                            fontWeight: total >= pt ? 600 : 400,
-                            ...(total >= pt ? {
+                            fontWeight: achieved ? 600 : 400,
+                            ...(achieved ? {
                               background: 'linear-gradient(180deg, #ffe566 0%, #c8950a 100%)',
                               WebkitBackgroundClip: 'text',
                               WebkitTextFillColor: 'transparent',
@@ -186,15 +187,19 @@ export default function IncentiveBar({ total, selfClose }: { total: number; self
               </div>
 
               {/* 次のランク条件（このゾーンに次ランクがある場合） */}
-              {nextInZone && next && (
-                <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: 13 }}>
-                  <span style={{ fontWeight: 600, color: zone.color }}>{next.name}</span>
-                  <span style={{ color: 'var(--text-sub)' }}> まであと </span>
-                  <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>
-                    {Math.ceil(Math.round((next.pt - total) * 1000) / 100) / 10}pt
-                  </span>
-                </div>
-              )}
+              {nextInZone && next && (() => {
+                const ptNeeded = Math.max(0, Math.ceil(Math.round((next.pt - total) * 1000) / 100) / 10);
+                const scNeeded = next.selfClosePt !== null ? Math.max(0, Math.ceil(Math.round((next.selfClosePt - selfClose) * 1000) / 100) / 10) : 0;
+                return (
+                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: 13 }}>
+                    <span style={{ fontWeight: 600, color: zone.color }}>{next.name}</span>
+                    <span style={{ color: 'var(--text-sub)' }}> まであと </span>
+                    {ptNeeded > 0 && <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>獲得{ptNeeded}pt</span>}
+                    {ptNeeded > 0 && scNeeded > 0 && <span style={{ color: 'var(--text-sub)' }}>・</span>}
+                    {scNeeded > 0 && <span style={{ color: '#facc15', fontWeight: 600 }}>自己クロ{scNeeded}pt</span>}
+                  </div>
+                );
+              })()}
             </div>
           );
         })}

@@ -448,6 +448,8 @@ function mergeSheets_Complete() {
       if (r   > cur)  shC.insertRowsAfter(cur,  r   - cur);
       if (col > curC) shC.insertColumnsAfter(curC, col - curC);
       shC.getRange(1, 1, r, col).setValues(finalData);
+      // 勤務日列（B列）の表示形式を統一してアプリ側で正しく読み込まれるようにする
+      if (r > 1) shC.getRange(2, 2, r - 1, 1).setNumberFormat('yyyy/MM/dd');
     }
     Logger.log('[merge] 日報合算完了');
   } catch (e) {
