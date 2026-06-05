@@ -302,7 +302,7 @@ export default function Home() {
           <div className="header-top-row">
             <div className="header-left">
               <h1 className="page-title">{TAB_TITLES[activeTab]}</h1>
-              {activeTab !== 'profile' && (
+              {!['profile', 'growth', 'tantou', 'tardiness'].includes(activeTab) && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <button
                     onClick={() => goMonth(-1)}
