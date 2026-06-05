@@ -44,6 +44,11 @@ export default function TantouView() {
                 <span style={{ fontSize: 14, color: 'var(--text-main)', fontWeight: 500, minWidth: 80 }}>
                   {s.name}
                 </span>
+                {(s.years > 0 || s.months > 0) && (
+                  <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>
+                    {s.years > 0 ? `${s.years}年` : ''}{s.months}ヶ月
+                  </span>
+                )}
                 {s.position && (() => {
                   const c = s.position === 'ディレクター'
                     ? { bg: 'rgba(239,68,68,0.2)', text: '#f87171', border: 'rgba(239,68,68,0.4)' }

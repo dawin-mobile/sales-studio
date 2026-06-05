@@ -8,6 +8,26 @@ export interface TantouEntry {
   name: string;
   position: string;
   supervisor: string;
+  years: number;
+  months: number;
+}
+
+function calcTenure(raw: string): { years: number; months: number } {
+  if (!raw) return { years: 0, months: 0 };
+  const serial = Number(raw);
+  let join: Date;
+  if (!isNaN(serial) && serial > 10000) {
+    join = new Date((serial - 25569) * 86400 * 1000);
+  } else {
+    join = new Date(raw.replace(/\//g, '-'));
+  }
+  if (isNaN(join.getTime())) return { years: 0, months: 0 };
+  const today = new Date();
+  let years = today.getFullYear() - join.getFullYear();
+  let months = today.getMonth() - join.getMonth();
+  if (today.getDate() < join.getDate()) months--;
+  if (months < 0) { years--; months += 12; }
+  return { years: Math.max(0, years), months: Math.max(0, months) };
 }
 
 export async function GET() {
@@ -34,13 +54,13 @@ export async function GET() {
     }
   }
 
-  // スタッフ情報: T列(19)=名前, X列(23)=有効, AC列(28)=役職
-  // アルバイト名(短い) → 役職 の部分一致マップ
-  const positionMap: { name: string; position: string }[] = [];
+  // スタッフ情報: T列(19)=名前, X列(23)=有効, J列(9)=入社日, AC列(28)=役職
+  const positionMap: { name: string; position: string; joinDate: string }[] = [];
   for (let i = 1; i < staffRows.length; i++) {
     const name     = String(staffRows[i][19] || '').trim(); // T列
     const position = String(staffRows[i][28] || '').trim(); // AC列
-    if (name) positionMap.push({ name, position });
+    const joinDate = String(staffRows[i][9]  || '').trim(); // J列
+    if (name) positionMap.push({ name, position, joinDate });
   }
 
   // 社員ごとに担当アルバイトリストを組み立て
@@ -57,16 +77,17 @@ export async function GET() {
     if (mentees.length === 0) continue;
 
     for (const menteeName of mentees) {
-      // アルバイト役職を部分一致で取得
       const matched = positionMap.find(p => p.name.includes(menteeName) || menteeName.includes(p.name));
-      result.push({ name: menteeName, position: matched?.position ?? '', supervisor: supervisorName });
+      const tenure = calcTenure(matched?.joinDate ?? '');
+      result.push({ name: menteeName, position: matched?.position ?? '', supervisor: supervisorName, ...tenure });
     }
   }
 
   // 担当なしスタッフを末尾に追加
   for (const menteeName of unassigned) {
     const matched = positionMap.find(p => p.name.includes(menteeName) || menteeName.includes(p.name));
-    result.push({ name: menteeName, position: matched?.position ?? '', supervisor: '' });
+    const tenure = calcTenure(matched?.joinDate ?? '');
+    result.push({ name: menteeName, position: matched?.position ?? '', supervisor: '', ...tenure });
   }
 
   return NextResponse.json({ staff: result });
