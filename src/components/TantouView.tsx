@@ -44,16 +44,23 @@ export default function TantouView() {
                 <span style={{ fontSize: 14, color: 'var(--text-main)', fontWeight: 500, minWidth: 80 }}>
                   {s.name}
                 </span>
-                {s.position && (
-                  <span style={{
-                    fontSize: 11, fontWeight: 600,
-                    padding: '2px 8px', borderRadius: 10,
-                    background: 'rgba(255,255,255,0.08)',
-                    color: 'var(--text-sub)',
-                  }}>
-                    {s.position}
-                  </span>
-                )}
+                {s.position && (() => {
+                  const c = s.position === 'ディレクター'
+                    ? { bg: 'rgba(239,68,68,0.2)', text: '#f87171', border: 'rgba(239,68,68,0.4)' }
+                    : s.position.includes('準ディレ')
+                    ? { bg: 'rgba(59,130,246,0.2)', text: '#60a5fa', border: 'rgba(59,130,246,0.4)' }
+                    : { bg: 'rgba(255,255,255,0.08)', text: 'rgba(255,255,255,0.6)', border: 'rgba(255,255,255,0.15)' };
+                  return (
+                    <span style={{
+                      fontSize: 11, fontWeight: 600,
+                      padding: '2px 8px', borderRadius: 10,
+                      background: c.bg, color: c.text,
+                      border: `1px solid ${c.border}`,
+                    }}>
+                      {s.position}
+                    </span>
+                  );
+                })()}
               </div>
             ))}
           </div>
