@@ -19,26 +19,25 @@ export async function GET() {
     getSheetData('知識'),
   ]);
 
-  // スタッフ情報: A列(0)=名前, W列(22)=ロール, AC列(28)=役職
-  // 名前 → { role, position } のマップを作る
-  const staffMap = new Map<string, { role: string; position: string }>();
+  // スタッフ情報: A列(0)=名前, AC列(28)=役職
+  // 部分一致で引けるよう全エントリを配列で保持
+  const staffList: { name: string; position: string }[] = [];
   for (let i = 1; i < staffRows.length; i++) {
-    const row = staffRows[i];
-    const name = String(row[0] || '').trim();
-    const role = String(row[22] || '').trim();
-    const position = String(row[28] || '').trim();
-    if (name) staffMap.set(name, { role, position });
+    const name = String(staffRows[i][0] || '').trim();
+    const position = String(staffRows[i][28] || '').trim();
+    if (name) staffList.push({ name, position });
   }
 
-  // デバッグ: 知識シートの全行を返す（フィルターなし）
+  // 知識シートを主軸: A列(0)=名前, B列(1)=担当上司 (row0-1はヘッダー)
   const result: TantouEntry[] = [];
   for (let i = 2; i < knRows.length; i++) {
-    const name = String(knRows[i][0] || '').trim();
+    const knName = String(knRows[i][0] || '').trim();
     const supervisor = String(knRows[i][1] || '').trim();
-    if (!name) continue;
-    const info = staffMap.get(name);
-    result.push({ name, position: info?.position ?? `[未マッチ:role=${info?.role ?? 'なし'}]`, supervisor });
+    if (!knName) continue;
+    // 部分一致でAC列の役職を取得（短い名前でも一致させる）
+    const matched = staffList.find(s => s.name.includes(knName) || knName.includes(s.name));
+    result.push({ name: knName, position: matched?.position ?? '', supervisor });
   }
 
-  return NextResponse.json({ staff: result, debug: { staffMapSize: staffMap.size, knRowCount: knRows.length } });
+  return NextResponse.json({ staff: result });
 }
