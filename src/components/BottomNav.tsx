@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutDashboard, BarChart2, PieChart, Calendar, Users, GraduationCap, Clock } from 'lucide-react';
+import { LayoutDashboard, BarChart2, PieChart, Calendar, Users, GraduationCap, Clock, UserCheck } from 'lucide-react';
 import { TabName } from '@/types';
 
 interface BottomNavProps {
@@ -21,6 +21,7 @@ const ALL_NAV_ITEMS: { id: TabName; icon: React.ReactNode; label: string }[] = [
 const SECRET_NAV_ITEMS: { id: TabName; icon: React.ReactNode; label: string }[] = [
   { id: 'growth',     icon: <GraduationCap size={20} strokeWidth={1.75} />, label: '育成管理' },
   { id: 'tardiness',  icon: <Clock         size={20} strokeWidth={1.75} />, label: '遅刻/早退' },
+  { id: 'tantou',     icon: <UserCheck     size={20} strokeWidth={1.75} />, label: '担当' },
 ];
 
 export default function BottomNav({ activeTab, onTabChange, secretMode }: BottomNavProps) {

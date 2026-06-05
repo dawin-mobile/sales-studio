@@ -39,6 +39,7 @@ import TalknoteCard from '@/components/TalknoteCard';
 import GrowthView from '@/components/GrowthView';
 import TardinessView from '@/components/TardinessView';
 import AccessLogView from '@/components/AccessLogView';
+import TantouView from '@/components/TantouView';
 import AnalyticsView from '@/components/AnalyticsView';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import IncentiveBar from '@/components/IncentiveBar';
@@ -55,6 +56,7 @@ const TAB_TITLES: Record<TabName, string> = {
   'growth': '育成管理',
   'tardiness': '遅刻/早退',
   'access-log': 'アクセスログ',
+  'tantou': '担当',
 };
 
 export default function Home() {
@@ -387,6 +389,7 @@ export default function Home() {
             {activeTab === 'growth' && <GrowthView />}
             {activeTab === 'tardiness' && <TardinessView />}
             {activeTab === 'access-log' && <AccessLogView />}
+            {activeTab === 'tantou' && <TantouView />}
           </>
         ) : (<>
 

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { LayoutDashboard, BarChart2, Layers, PieChart, Clock, Calendar, Users, Menu, GraduationCap } from 'lucide-react';
+import { LayoutDashboard, BarChart2, Layers, PieChart, Clock, Calendar, Users, Menu, GraduationCap, UserCheck } from 'lucide-react';
 import { TabName } from '@/types';
 import { signOut } from 'next-auth/react';
 
@@ -24,6 +24,7 @@ const ALL_MENU_ITEMS: { id: TabName; label: string; icon: React.ReactNode; minRo
   { id: 'shift',          label: 'シフト',         icon: <Calendar        {...ICON_PROPS} /> },
   { id: 'growth',         label: '育成管理',       icon: <GraduationCap   {...ICON_PROPS} />, minRole: '社員' },
   { id: 'tardiness',     label: '遅刻/早退',      icon: <Clock           {...ICON_PROPS} />, minRole: '社員' },
+  { id: 'tantou',        label: '担当',           icon: <UserCheck       {...ICON_PROPS} />, minRole: '社員' },
   { id: 'profile',        label: 'スタッフ',       icon: <Users           {...ICON_PROPS} /> },
 ];
 

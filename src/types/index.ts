@@ -96,7 +96,8 @@ export type TabName =
   | 'profile'
   | 'growth'
   | 'tardiness'
-  | 'access-log';
+  | 'access-log'
+  | 'tantou';
 
 export interface StaffEvaluation {
   staffName: string;
