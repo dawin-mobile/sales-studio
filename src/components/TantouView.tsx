@@ -29,7 +29,7 @@ export default function TantouView() {
     if (!grouped.has(key)) grouped.set(key, []);
     grouped.get(key)!.push(s);
   }
-  const sortedGroups = [...grouped.entries()].sort((a, b) => a[0].localeCompare(b[0], 'ja'));
+  const sortedGroups = [...grouped.entries()]; // APIがスタッフ情報の行順（入社歴順）で返す
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
