@@ -30,17 +30,15 @@ export async function GET() {
     if (name) staffMap.set(name, { role, position });
   }
 
-  // 知識シートを主軸: A列(0)=名前, B列(1)=担当上司 (row0-1はヘッダー)
+  // デバッグ: 知識シートの全行を返す（フィルターなし）
   const result: TantouEntry[] = [];
   for (let i = 2; i < knRows.length; i++) {
     const name = String(knRows[i][0] || '').trim();
     const supervisor = String(knRows[i][1] || '').trim();
     if (!name) continue;
     const info = staffMap.get(name);
-    // スタッフ情報にない or アルバイト以外はスキップ
-    if (!info || info.role !== 'アルバイト') continue;
-    result.push({ name, position: info.position, supervisor });
+    result.push({ name, position: info?.position ?? `[未マッチ:role=${info?.role ?? 'なし'}]`, supervisor });
   }
 
-  return NextResponse.json({ staff: result });
+  return NextResponse.json({ staff: result, debug: { staffMapSize: staffMap.size, knRowCount: knRows.length } });
 }
