@@ -21,12 +21,17 @@ export async function GET() {
 
   // 知識シートから 担当姓 → アルバイト名[] のマップを構築（contacts APIと同じ）
   const mentorMap: Record<string, string[]> = {};
+  const unassigned: string[] = []; // 担当なしのスタッフ
   for (let i = 2; i < knRows.length; i++) {
-    const staffName  = String(knRows[i][0] || '').trim();
-    const mentorKey  = String(knRows[i][1] || '').trim();
-    if (!staffName || !mentorKey || mentorKey === 'なし' || mentorKey === '未定') continue;
-    if (!mentorMap[mentorKey]) mentorMap[mentorKey] = [];
-    mentorMap[mentorKey].push(staffName);
+    const staffName = String(knRows[i][0] || '').trim();
+    const mentorKey = String(knRows[i][1] || '').trim();
+    if (!staffName) continue;
+    if (!mentorKey || mentorKey === 'なし' || mentorKey === '未定') {
+      unassigned.push(staffName);
+    } else {
+      if (!mentorMap[mentorKey]) mentorMap[mentorKey] = [];
+      mentorMap[mentorKey].push(staffName);
+    }
   }
 
   // スタッフ情報: T列(19)=名前, X列(23)=有効, AC列(28)=役職
@@ -56,6 +61,12 @@ export async function GET() {
       const matched = positionMap.find(p => p.name.includes(menteeName) || menteeName.includes(p.name));
       result.push({ name: menteeName, position: matched?.position ?? '', supervisor: supervisorName });
     }
+  }
+
+  // 担当なしスタッフを末尾に追加
+  for (const menteeName of unassigned) {
+    const matched = positionMap.find(p => p.name.includes(menteeName) || menteeName.includes(p.name));
+    result.push({ name: menteeName, position: matched?.position ?? '', supervisor: '' });
   }
 
   return NextResponse.json({ staff: result });
