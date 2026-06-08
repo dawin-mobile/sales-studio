@@ -345,10 +345,10 @@ function setupTriggers() {
     .onEdit()
     .create();
 
-  // 10分ごとの定期同期
+  // 1時間ごとの定期同期（編集時はonEditTriggerで即時同期されるため保険として十分）
   ScriptApp.newTrigger('syncAll')
     .timeBased()
-    .everyMinutes(10)
+    .everyHours(1)
     .create();
 
   Logger.log('トリガーを設定しました ✅');
