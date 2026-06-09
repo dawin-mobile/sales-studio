@@ -150,20 +150,22 @@ function buildCopyText(postsByStaff: SiteMap[string]): string {
   return parts.join('\n');
 }
 
-function SiteCard({ site, staffList, agency, siteMap }: {
+function SiteCard({ site, staffList, agency, siteMap, filterWork = true }: {
   site: string;
   staffList: string[];
   agency: string;
   siteMap: SiteMap;
+  filterWork?: boolean;
 }) {
   const postsByStaff = siteMap[site] ?? {};
-  const workCount = countWorkPosts(postsByStaff);
+  const workCount = filterWork ? countWorkPosts(postsByStaff) : Object.values(postsByStaff).reduce((s, ps) => s + ps.length, 0);
   const hasReport = workCount > 0;
   const { mnp, shin } = countMnpNew(postsByStaff);
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(buildCopyText(postsByStaff)).then(() => {
+    const text = filterWork ? buildCopyText(postsByStaff) : Object.entries(postsByStaff).map(([n, ps]) => `\n${n}\n${ps.map((p) => p.message).join('\n\n')}`).join('\n');
+    navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
@@ -278,7 +280,7 @@ function SiteCard({ site, staffList, agency, siteMap }: {
       {hasReport ? (
         <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {Object.entries(postsByStaff).map(([staffName, posts]) => {
-            const workPosts = posts.filter((p) => isWorkRelated(p.message));
+            const workPosts = filterWork ? posts.filter((p) => isWorkRelated(p.message)) : posts;
             if (workPosts.length === 0) return null;
             return (
               <div key={staffName}>
@@ -333,12 +335,16 @@ function SiteCard({ site, staffList, agency, siteMap }: {
 }
 
 type Region = '関東' | '九州';
+type Tab = 'talknote' | 'jisseki';
 
 export default function TalknoteCard() {
   const [date, setDate] = useState(todayString());
   const [data, setData] = useState<TalknoteData | null>(null);
+  const [jissekiData, setJissekiData] = useState<TalknoteData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [jissekiLoading, setJissekiLoading] = useState(false);
   const [region, setRegion] = useState<Region>('関東');
+  const [tab, setTab] = useState<Tab>('talknote');
 
   // ログインユーザーの拠点に基づいてデフォルト地域を設定
   useEffect(() => {
@@ -359,15 +365,28 @@ export default function TalknoteCard() {
       .finally(() => setLoading(false));
   }, [date]);
 
+  useEffect(() => {
+    setJissekiLoading(true);
+    fetch(`/api/jisseki?date=${date}`)
+      .then((r) => r.json())
+      .then((d) => setJissekiData(d))
+      .catch(() => setJissekiData(null))
+      .finally(() => setJissekiLoading(false));
+  }, [date]);
+
+  const activeData = tab === 'talknote' ? data : jissekiData;
+  const isLoading = tab === 'talknote' ? loading : jissekiLoading;
+
   // 関東→東京、九州→福岡 に変換してフィルター
   const regionKey = region === '関東' ? '東京' : '福岡';
-  const orderedSites = data
-    ? data.siteOrder.filter((s) => s.staff.length > 0 && (s.region === regionKey || s.region === ''))
+  const orderedSites = activeData
+    ? activeData.siteOrder.filter((s) => s.staff.length > 0 && (s.region === regionKey || s.region === ''))
     : [];
 
-  const totalReports = orderedSites.reduce((sum, s) => {
-    return sum + countWorkPosts(data?.siteMap[s.location] ?? {});
-  }, 0);
+  // 実績報告タブのみ: 現場不明の報告を「その他」として追加
+  const otherSiteEntries = tab === 'jisseki' && jissekiData?.siteMap?.['その他']
+    ? Object.keys(jissekiData.siteMap['その他']).length > 0
+    : false;
 
   return (
     <div className="chart-card" style={{ marginTop: 16, marginBottom: 20, minHeight: 'unset' }}>
@@ -378,10 +397,32 @@ export default function TalknoteCard() {
         justifyContent: 'space-between',
         marginBottom: 12,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <h3 style={{ fontSize: 14, fontWeight: 'bold', color: 'var(--text-main)' }}>
             稼働
           </h3>
+          {/* Talknote/実績報告タブ */}
+          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.06)', borderRadius: 6, padding: 2, gap: 2 }}>
+            {([['talknote', 'Talknote'], ['jisseki', '実績報告']] as [Tab, string][]).map(([t, label]) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  padding: '2px 8px',
+                  borderRadius: 4,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: tab === t ? 'rgba(255,255,255,0.12)' : 'transparent',
+                  color: tab === t ? 'var(--text-main)' : 'var(--text-muted)',
+                  transition: 'background 0.15s',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           {/* 関東/九州トグル */}
           <div style={{ display: 'flex', background: 'rgba(255,255,255,0.06)', borderRadius: 6, padding: 2, gap: 2 }}>
             {(['関東', '九州'] as Region[]).map((r) => (
@@ -441,27 +482,40 @@ export default function TalknoteCard() {
         </div>
       </div>
 
-      {loading && (
+      {isLoading && (
         <div style={{ color: 'var(--text-sub)', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>
           読み込み中...
         </div>
       )}
 
-      {!loading && orderedSites.length === 0 && (
+      {!isLoading && orderedSites.length === 0 && (
         <div style={{ color: 'var(--text-sub)', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>
-          この日のシフトデータはありません
+          {tab === 'jisseki' ? 'この日の実績報告はありません' : 'この日のシフトデータはありません'}
         </div>
       )}
 
-      {!loading && data && orderedSites.map((s) => (
+      {!isLoading && activeData && orderedSites.map((s) => (
         <SiteCard
           key={s.location}
           site={s.location}
           staffList={s.staff}
           agency={s.agency}
-          siteMap={data.siteMap}
+          siteMap={activeData.siteMap}
+          filterWork={tab === 'talknote'}
         />
       ))}
+
+      {/* 実績報告タブ: 現場不明の報告 */}
+      {!isLoading && tab === 'jisseki' && otherSiteEntries && jissekiData && (
+        <SiteCard
+          key="その他"
+          site="その他"
+          staffList={[]}
+          agency=""
+          siteMap={jissekiData.siteMap}
+          filterWork={false}
+        />
+      )}
     </div>
   );
 }
