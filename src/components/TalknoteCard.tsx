@@ -150,17 +150,19 @@ function buildCopyText(postsByStaff: SiteMap[string]): string {
   return parts.join('\n');
 }
 
-function SiteCard({ site, staffList, agency, siteMap, filterWork = true }: {
+function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSiteMap }: {
   site: string;
   staffList: string[];
   agency: string;
   siteMap: SiteMap;
   filterWork?: boolean;
+  badgeSiteMap?: SiteMap;
 }) {
   const postsByStaff = siteMap[site] ?? {};
+  const badgePostsByStaff = badgeSiteMap ? (badgeSiteMap[site] ?? {}) : postsByStaff;
   const workCount = filterWork ? countWorkPosts(postsByStaff) : Object.values(postsByStaff).reduce((s, ps) => s + ps.length, 0);
   const hasReport = workCount > 0;
-  const { mnp, shin } = countMnpNew(postsByStaff);
+  const { mnp, shin } = countMnpNew(badgePostsByStaff);
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -502,6 +504,7 @@ export default function TalknoteCard() {
           agency={s.agency}
           siteMap={activeData.siteMap}
           filterWork={tab === 'talknote'}
+          badgeSiteMap={tab === 'jisseki' && data ? data.siteMap : undefined}
         />
       ))}
 
