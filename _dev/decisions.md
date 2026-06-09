@@ -130,6 +130,15 @@
 
 ---
 
+## 2026-06-09: sync-shift の定期同期を 10分おき → 1時間おきに変更
+- 選択肢: A) 10分おき（現状） / B) 1時間おき
+- 決定: B（1時間おき）
+- 理由: シフト編集時は onEditTrigger が即時 Neon 同期するため、定期実行は保険にすぎない。10分おきだと Neon のオートスリープ（5分）が機能せず常時稼働になり compute hours を無駄消費していた。
+- 対応: `gas/sync-shift/sync-shift.gs` の `everyMinutes(10)` → `everyHours(1)` に変更、clasp push 後に GAS エディタで `setupTriggers()` を再実行して反映済み。
+- 補足: GAS トリガーのオーナーは「setupTriggers() を実行したアカウント」になる。オーナーを変えたい場合は、旧アカウントで `clearTriggers()` → 新アカウントで `setupTriggers()` を実行すれば良い。他アカウントのトリガーは自分では削除できない点に注意。
+
+---
+
 ## 2026-06: 合算データの mergeSheets_Complete を全削除→上書きにする
 - 選択肢: A) 全削除→上書き / B) 追記方式（重複チェックあり）
 - 決定: A（全削除→上書き）
