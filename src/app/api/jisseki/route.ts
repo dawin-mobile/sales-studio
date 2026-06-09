@@ -51,27 +51,13 @@ export async function GET(request: NextRequest) {
   const [y, m, d] = date.split('-');
   const month = `${y}-${m}`;
   const shiftDate = `${parseInt(m)}/${parseInt(d)}`;
+  const targetM = parseInt(m);
+  const targetD = parseInt(d);
 
-  // 実績受信録の受信日時は「GASがメールを処理した時刻」のため、
-  // 営業当日の夜〜翌日朝にかけて記録されることがある。
-  // 当日 + 翌日の受信データを対象にして、シフト照合でスタッフを特定する。
-  const nextDay = new Date(`${date}T00:00:00+09:00`);
-  nextDay.setDate(nextDay.getDate() + 1);
-  const ny = nextDay.getFullYear().toString();
-  const nm = String(nextDay.getMonth() + 1).padStart(2, '0');
-  const nd = String(nextDay.getDate()).padStart(2, '0');
-  const jissekiDatePrefixes = [`${y}/${m}/${d}`, `${ny}/${nm}/${nd}`];
-
-  // 翌日が別月の場合は翌月シートも必要
-  const nextMonth = `${ny}-${nm}`;
-  const needNextMonth = nextMonth !== month;
-
-  const [jissekiRows, tokyoRows, fukuokaRows, nextTokyoRows, nextFukuokaRows] = await Promise.all([
+  const [jissekiRows, tokyoRows, fukuokaRows] = await Promise.all([
     getSheetData('実績受信録').catch(() => [] as string[][]),
     getShiftSheetData(buildSheetName(month, '東京')).catch(() => [] as string[][]),
     getShiftSheetData(buildSheetName(month, '福岡')).catch(() => [] as string[][]),
-    needNextMonth ? getShiftSheetData(buildSheetName(nextMonth, '東京')).catch(() => [] as string[][]) : Promise.resolve([] as string[][]),
-    needNextMonth ? getShiftSheetData(buildSheetName(nextMonth, '福岡')).catch(() => [] as string[][]) : Promise.resolve([] as string[][]),
   ]);
 
   // シフトシートから現場→スタッフのマッピングを構築
@@ -94,10 +80,6 @@ export async function GET(request: NextRequest) {
 
   addSites(tokyoRows, '東京');
   addSites(fukuokaRows, '福岡');
-  if (needNextMonth) {
-    addSites(nextTokyoRows, '東京');
-    addSites(nextFukuokaRows, '福岡');
-  }
 
   // スタッフ名 → 現場名の逆引きマップを作成
   const staffToSite = new Map<string, string>();
@@ -112,10 +94,21 @@ export async function GET(request: NextRequest) {
 
   for (const row of jissekiRows) {
     const receivedAt = row[0] ?? '';
-    if (!jissekiDatePrefixes.some((p) => receivedAt.startsWith(p))) continue;
     const sender = row[1]?.trim() ?? '';
     const message = row[2]?.trim() ?? '';
     if (!sender || !message) continue;
+
+    // メッセージ本文の「M月D日」を優先してフィルタリング。
+    // 実績報告はGASの処理タイミング次第で翌日以降に受信される場合があるため、
+    // 受信日付ではなく報告内容の営業日で照合する。
+    const dateMatch = message.match(/(\d{1,2})月(\d{1,2})日/);
+    if (dateMatch) {
+      if (parseInt(dateMatch[1]) !== targetM || parseInt(dateMatch[2]) !== targetD) continue;
+    } else {
+      // 日付記載がない場合は受信日付（当日）でフォールバック
+      const jissekiDatePrefix = `${y}/${m}/${d}`;
+      if (!receivedAt.startsWith(jissekiDatePrefix)) continue;
+    }
 
     // 送信者名から現場を特定
     let site = 'その他';
