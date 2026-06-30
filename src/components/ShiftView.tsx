@@ -648,7 +648,7 @@ export default function ShiftView({
                           <div className="loc-staff-list">
                             {visibleStaff.length > 0 ? (
                               visibleStaff.map((name) => (
-                                <span key={name} className="loc-staff-chip">{name}</span>
+                                <span key={name} className="loc-staff-chip" style={name.includes('バルーン') ? { background: 'rgba(255,182,193,0.25)', color: '#ffb6c1' } : undefined}>{name}</span>
                               ))
                             ) : (
                               <span style={{ color: 'var(--text-sub)', fontSize: 12 }}>—</span>
