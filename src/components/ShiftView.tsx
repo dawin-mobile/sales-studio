@@ -617,7 +617,7 @@ export default function ShiftView({
                     const isSun = row.dayOfWeek === '日' || row.dayOfWeek === '祝' || row.isHoliday;
                     const agencyColor = agencyColors.get(row.agency) ?? null;
                     const visibleStaff = row.staff.filter(
-                      (s) => s && s.trim() !== '' && !startsWithX(s) && (staffNameSet.size === 0 || staffNameSet.has(s) || isAlwaysStaff(s))
+                      (s) => s && s.trim() !== '' && !startsWithX(s)
                     );
 
                     return (
