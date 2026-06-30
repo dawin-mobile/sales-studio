@@ -3,19 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { UserStat, TabStat } from '@/app/api/access-log/route';
 
-const TAB_COLORS: Record<string, string> = {
-  '獲得状況':   '#4ade80',
-  'ランキング': '#60a5fa',
-  '実績・分析': '#f472b6',
-  'シフト':     '#facc15',
-  'スタッフ':   '#fb923c',
-  '育成管理':   '#a78bfa',
-  '遅刻/早退':  '#f87171',
-};
-
-function color(tab: string) {
-  return TAB_COLORS[tab] ?? '#888';
-}
+const BAR_COLOR = 'rgba(255,255,255,0.75)';
 
 function timeAgo(dateStr: string): string {
   const d = new Date(dateStr.replace(/\//g, '-').replace(' ', 'T'));
@@ -63,7 +51,7 @@ export default function AccessLogView() {
                 <div style={{
                   width: `${(t.count / maxTabCount) * 100}%`,
                   height: '100%',
-                  background: color(t.name),
+                  background: BAR_COLOR,
                   borderRadius: 4,
                   transition: 'width 0.4s ease',
                 }} />
@@ -97,13 +85,13 @@ export default function AccessLogView() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                 {topTabs.map(([tab, cnt]) => (
                   <div key={tab} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 10, color: color(tab), width: 72, flexShrink: 0 }}>{tab}</span>
+                    <span style={{ fontSize: 10, color: 'var(--text-sub)', width: 72, flexShrink: 0 }}>{tab}</span>
                     <div style={{ flex: 1, background: 'rgba(255,255,255,0.05)', borderRadius: 3, height: 5, overflow: 'hidden' }}>
                       <div style={{
                         width: `${(cnt / maxT) * 100}%`,
                         height: '100%',
-                        background: color(tab),
-                        opacity: 0.7,
+                        background: BAR_COLOR,
+                        opacity: 0.6,
                         borderRadius: 3,
                       }} />
                     </div>
