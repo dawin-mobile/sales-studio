@@ -226,6 +226,7 @@ export default function Home() {
   useEffect(() => {
     setDrawerOpen(false);
     setContactsOpen(false);
+    setAccessLogOpen(false);
     setLoginInfoOpen(false);
     document.querySelector<HTMLElement>('.main-content')?.scrollTo({ top: 0 });
     if (session?.user?.name) {
