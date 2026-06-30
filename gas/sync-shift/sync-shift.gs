@@ -129,14 +129,10 @@ function parseShiftRows_(sheet, region) {
     if (!date || !/\d/.test(date)) continue; // 日付なし行をスキップ
     if (row[4] === '場所') continue;          // 副行をスキップ
 
-    const staffNameSet = staffNames.length > 0 ? new Set(staffNames) : null;
     const staff = [];
     for (let c = cfg.staffStart; c < cfg.staffEnd; c++) {
       const v = (row[c] || '').trim();
-      if (!v) continue;
-      // アスクラ・saludを含む名前は常にスタッフとして認識
-      const isAlwaysStaff = v.indexOf('アスクラ') !== -1 || v.indexOf('salud') !== -1;
-      if (isAlwaysStaff || !staffNameSet || staffNameSet.has(v)) staff.push(v);
+      if (v) staff.push(v);
     }
 
     shiftRows.push({

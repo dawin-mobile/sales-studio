@@ -1,4 +1,5 @@
-# Sales Studio
+
+「# Sales Studio
 
 携帯販売スタッフ向けの業績管理・シフト確認Webアプリ。
 
