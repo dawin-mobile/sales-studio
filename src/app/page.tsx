@@ -885,14 +885,22 @@ export default function Home() {
         <div onClick={() => setAccessLogOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 299 }} />
       )}
       {accessLogOpen && (
-        <div className="contacts-panel" style={{ zIndex: 300, overflowY: 'auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid var(--border-color)' }}>
-            <button onClick={() => setAccessLogOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px 8px', marginLeft: -8 }}>
-              <ChevronLeft size={20} strokeWidth={1.75} />
+        <div
+          className="contacts-panel"
+          style={{ zIndex: 300 }}
+          onTouchStart={(e) => { (e.currentTarget as HTMLDivElement).dataset.touchX = String(e.touches[0].clientX); }}
+          onTouchEnd={(e) => {
+            const startX = Number((e.currentTarget as HTMLDivElement).dataset.touchX ?? 0);
+            if (e.changedTouches[0].clientX - startX > 80) setAccessLogOpen(false);
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', padding: '10px 8px', paddingTop: 'calc(10px + env(safe-area-inset-top))', borderBottom: '1px solid var(--border-color)', flexShrink: 0 }}>
+            <button onClick={() => setAccessLogOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px 8px' }}>
+              <ChevronLeft size={24} strokeWidth={1.75} />
             </button>
             <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-main)', marginLeft: 4 }}>アクセスログ</span>
           </div>
-          <div style={{ padding: '16px', paddingBottom: 'calc(50px + env(safe-area-inset-bottom))' }}>
+          <div style={{ padding: '16px', paddingBottom: 'calc(50px + env(safe-area-inset-bottom))', flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
             <AccessLogView />
           </div>
         </div>
