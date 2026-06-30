@@ -227,6 +227,7 @@ export default function Home() {
     setDrawerOpen(false);
     setContactsOpen(false);
     setAccessLogOpen(false);
+    setTenureOpen(false);
     setLoginInfoOpen(false);
     document.querySelector<HTMLElement>('.main-content')?.scrollTo({ top: 0 });
     if (session?.user?.name) {
