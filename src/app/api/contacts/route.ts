@@ -35,10 +35,12 @@ export async function GET() {
     for (let i = 1; i < staffRows.length; i++) {
       const row     = staffRows[i];
       const name    = row[19]?.trim(); // T列: 名前
+      const role    = row[22]?.trim(); // W列: ロール
       const active  = row[23]?.trim(); // X列: 有効
       const contact = row[25]?.trim(); // Z列: 連絡先
 
       if (!name || active?.toUpperCase() !== 'TRUE') continue;
+      if (role !== '社員' && role !== '管理者') continue;
       if (!contact) continue;
 
       // 担当姓が名前の先頭に一致するものを探す
