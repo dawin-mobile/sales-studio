@@ -187,7 +187,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    fetchData(selectedMonth, selectedMonth === defaultMonth);
+    fetchData(selectedMonth);
   }, [selectedMonth, fetchData, defaultMonth]);
 
   // シフトタブ表示中 or 切り替え時に（未取得 or 月が変わっていたら）取得
