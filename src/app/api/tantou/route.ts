@@ -54,13 +54,14 @@ export async function GET() {
     }
   }
 
-  // スタッフ情報: T列(19)=名前, X列(23)=有効, J列(9)=入社日, AC列(28)=役職
-  const positionMap: { name: string; position: string; joinDate: string }[] = [];
+  // スタッフ情報: T列(19)=名前, W列(22)=ロール, X列(23)=有効, J列(9)=入社日, AC列(28)=役職
+  const positionMap: { name: string; position: string; joinDate: string; role: string }[] = [];
   for (let i = 1; i < staffRows.length; i++) {
     const name     = String(staffRows[i][19] || '').trim(); // T列
+    const role     = String(staffRows[i][22] || '').trim(); // W列
     const position = String(staffRows[i][28] || '').trim(); // AC列
     const joinDate = String(staffRows[i][9]  || '').trim(); // J列
-    if (name) positionMap.push({ name, position, joinDate });
+    if (name) positionMap.push({ name, position, joinDate, role });
   }
 
   // 社員ごとに担当アルバイトリストを組み立て
@@ -78,14 +79,16 @@ export async function GET() {
 
     for (const menteeName of mentees) {
       const matched = positionMap.find(p => p.name.includes(menteeName) || menteeName.includes(p.name));
+      if (matched?.role === '業務委託') continue;
       const tenure = calcTenure(matched?.joinDate ?? '');
       result.push({ name: menteeName, position: matched?.position ?? '', supervisor: supervisorName, ...tenure });
     }
   }
 
-  // 担当なしスタッフを末尾に追加
+  // 担当なしスタッフを末尾に追加（業務委託は除外）
   for (const menteeName of unassigned) {
     const matched = positionMap.find(p => p.name.includes(menteeName) || menteeName.includes(p.name));
+    if (matched?.role === '業務委託') continue;
     const tenure = calcTenure(matched?.joinDate ?? '');
     result.push({ name: menteeName, position: matched?.position ?? '', supervisor: '', ...tenure });
   }
