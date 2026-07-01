@@ -99,6 +99,7 @@ export default function Home() {
   const now = new Date();
   const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
+  const [shiftMonth, setShiftMonth] = useState(defaultMonth);
   const staffFallbackCount = useRef(0);
 
   const NO_FALLBACK_USERS = ['橋本章平'];
@@ -191,10 +192,10 @@ export default function Home() {
 
   // シフトタブ表示中 or 切り替え時に（未取得 or 月が変わっていたら）取得
   useEffect(() => {
-    if (activeTab === 'shift' && shiftFetchedMonth !== selectedMonth) {
-      fetchShift(selectedMonth);
+    if (activeTab === 'shift' && shiftFetchedMonth !== shiftMonth) {
+      fetchShift(shiftMonth);
     }
-  }, [activeTab, selectedMonth, shiftFetchedMonth, fetchShift]);
+  }, [activeTab, shiftMonth, shiftFetchedMonth, fetchShift]);
 
   // ページロード時にprefetch（ドロワーを開いた時に即表示するため）
   useEffect(() => {
@@ -242,13 +243,16 @@ export default function Home() {
   const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     staffFallbackCount.current = 0;
     setSelectedMonth(e.target.value);
+    setShiftMonth(e.target.value);
   };
 
   const goMonth = (delta: number) => {
     staffFallbackCount.current = 0;
     const [y, m] = selectedMonth.split('-').map(Number);
     const d = new Date(y, m - 1 + delta, 1);
-    setSelectedMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+    const newMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    setSelectedMonth(newMonth);
+    setShiftMonth(newMonth);
   };
 
   return (
@@ -288,7 +292,7 @@ export default function Home() {
                 <button
                   onClick={() => {
                     fetchData(selectedMonth);
-                    if (activeTab === 'shift') fetchShift(selectedMonth);
+                    if (activeTab === 'shift') fetchShift(shiftMonth);
                   }}
                   title="更新"
                   style={{ background: 'none', border: 'none', padding: 2, cursor: 'pointer', color: '#aaa', display: 'flex', alignItems: 'center', opacity: 0.55 }}
@@ -346,7 +350,7 @@ export default function Home() {
                 <button
                   onClick={() => {
                     fetchData(selectedMonth);
-                    if (activeTab === 'shift') fetchShift(selectedMonth);
+                    if (activeTab === 'shift') fetchShift(shiftMonth);
                   }}
                   title="更新"
                   style={{ background: 'none', border: 'none', padding: 2, cursor: 'pointer', color: '#aaa', display: 'flex', alignItems: 'center', opacity: 0.55 }}
@@ -573,7 +577,7 @@ export default function Home() {
             fukuokaStaffNames={fukuokaStaffNames}
             loading={shiftLoading}
             error={shiftError}
-            selectedMonth={selectedMonth}
+            selectedMonth={shiftMonth}
             userRole={effectiveRole}
           />
         )}
