@@ -121,7 +121,7 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
   const days = data.daysInMonth;
 
   const totalPt = staff.total;
-  const totalSelfClose = staff.calendar.reduce((sum, d) => sum + (d.selfClose || 0), 0);
+  const totalSelfClose = staff.calendar.reduce((sum, d) => Math.round((sum + (d.selfClose || 0)) * 100) / 100, 0);
 
   return (
     <>
