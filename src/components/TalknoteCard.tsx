@@ -150,13 +150,14 @@ function buildCopyText(postsByStaff: SiteMap[string]): string {
   return parts.join('\n');
 }
 
-function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSiteMap }: {
+function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSiteMap, externalCollapsed }: {
   site: string;
   staffList: string[];
   agency: string;
   siteMap: SiteMap;
   filterWork?: boolean;
   badgeSiteMap?: SiteMap;
+  externalCollapsed?: boolean;
 }) {
   const postsByStaff = siteMap[site] ?? {};
   const badgePostsByStaff = badgeSiteMap ? (badgeSiteMap[site] ?? {}) : postsByStaff;
@@ -165,6 +166,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
   const { mnp, shin } = countMnpNew(badgePostsByStaff);
   const [copied, setCopied] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => { if (externalCollapsed !== undefined) setCollapsed(externalCollapsed); }, [externalCollapsed]);
 
   const handleCopy = () => {
     const text = filterWork ? buildCopyText(postsByStaff) : Object.entries(postsByStaff).map(([n, ps]) => `\n${n}\n${ps.map((p) => p.message).join('\n\n')}`).join('\n');
@@ -391,6 +393,7 @@ export default function TalknoteCard() {
 
   const activeData = tab === 'talknote' ? data : jissekiData;
   const isLoading = tab === 'talknote' ? loading : jissekiLoading;
+  const [allCollapsed, setAllCollapsed] = useState<boolean | undefined>(undefined);
 
   // 関東→東京、九州→福岡 に変換してフィルター
   const regionKey = region === '関東' ? '東京' : '福岡';
@@ -509,6 +512,22 @@ export default function TalknoteCard() {
         </div>
       )}
 
+      {!isLoading && orderedSites.length > 0 && (
+        <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+          {[['すべて開く', false], ['すべて閉じる', true]].map(([label, val]) => (
+            <button
+              key={label as string}
+              onClick={() => setAllCollapsed(val as boolean)}
+              style={{
+                fontSize: 11, padding: '3px 10px', borderRadius: 6, cursor: 'pointer',
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)',
+                color: 'var(--text-sub)',
+              }}
+            >{label}</button>
+          ))}
+        </div>
+      )}
+
       {!isLoading && activeData && orderedSites.map((s) => (
         <SiteCard
           key={s.location}
@@ -518,6 +537,7 @@ export default function TalknoteCard() {
           siteMap={activeData.siteMap}
           filterWork={tab === 'talknote'}
           badgeSiteMap={tab === 'jisseki' && data ? data.siteMap : undefined}
+          externalCollapsed={allCollapsed}
         />
       ))}
 
