@@ -165,7 +165,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
   const hasReport = workCount > 0;
   const { mnp, shin } = countMnpNew(badgePostsByStaff);
   const [copied, setCopied] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   useEffect(() => { if (externalCollapsed !== undefined) setCollapsed(externalCollapsed); }, [externalCollapsed]);
 
   const handleCopy = () => {
