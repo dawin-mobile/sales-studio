@@ -164,6 +164,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
   const hasReport = workCount > 0;
   const { mnp, shin } = countMnpNew(badgePostsByStaff);
   const [copied, setCopied] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   const handleCopy = () => {
     const text = filterWork ? buildCopyText(postsByStaff) : Object.entries(postsByStaff).map(([n, ps]) => `\n${n}\n${ps.map((p) => p.message).join('\n\n')}`).join('\n');
@@ -181,19 +182,31 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
       overflow: 'hidden',
     }}>
       {/* ヘッダー */}
-      <div style={{
-        padding: '9px 12px',
-        background: 'rgba(255,255,255,0.025)',
-        borderBottom: hasReport ? '1px solid var(--border-color)' : 'none',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 5,
-      }}>
+      <div
+        onClick={() => setCollapsed((v) => !v)}
+        style={{
+          padding: '9px 12px',
+          background: 'rgba(255,255,255,0.025)',
+          borderBottom: hasReport && !collapsed ? '1px solid var(--border-color)' : 'none',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 5,
+          cursor: 'pointer',
+          userSelect: 'none',
+        }}
+      >
         {/* 1行目: 現場名・代理店・MNP/新規 */}
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-main)', flexShrink: 0 }}>
             {normalizeSiteName(site)}
           </span>
+          <svg
+            width="12" height="12" viewBox="0 0 24 24" fill="none"
+            stroke="rgba(255,255,255,0.35)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+            style={{ flexShrink: 0, transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
 
           {agency && (() => { const c = agencyColor(agency); return (
             <span style={{
@@ -254,7 +267,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
           ))}
           {hasReport && (
             <button
-              onClick={handleCopy}
+              onClick={(e) => { e.stopPropagation(); handleCopy(); }}
               style={{
                 marginLeft: 'auto', flexShrink: 0,
                 background: copied ? 'rgba(74,222,128,0.2)' : 'rgba(255,255,255,0.08)',
@@ -279,7 +292,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
       </div>
 
       {/* コンテンツ */}
-      {hasReport ? (
+      {!collapsed && hasReport ? (
         <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {Object.entries(postsByStaff).map(([staffName, posts]) => {
             const workPosts = filterWork ? posts.filter((p) => isWorkRelated(p.message)) : posts;
@@ -321,7 +334,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
             );
           })}
         </div>
-      ) : (
+      ) : (!collapsed && (
         <div style={{
           padding: '7px 12px',
           fontSize: 11,
@@ -329,7 +342,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
         }}>
           報告なし
         </div>
-      )}
+      ))}
 
 
     </div>
