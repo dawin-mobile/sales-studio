@@ -393,7 +393,7 @@ export default function TalknoteCard() {
 
   const activeData = tab === 'talknote' ? data : jissekiData;
   const isLoading = tab === 'talknote' ? loading : jissekiLoading;
-  const [allCollapsed, setAllCollapsed] = useState<boolean | undefined>(undefined);
+  const [allCollapsed, setAllCollapsed] = useState<boolean>(true);
 
   // 関東→東京、九州→福岡 に変換してフィルター
   const regionKey = region === '関東' ? '東京' : '福岡';
@@ -463,6 +463,34 @@ export default function TalknoteCard() {
               </button>
             ))}
           </div>
+          {/* 一括開閉トグル */}
+          <button
+            onClick={() => setAllCollapsed((v) => !v)}
+            title={allCollapsed ? 'すべて開く' : 'すべて閉じる'}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '2px 4px', display: 'flex', flexDirection: 'column',
+              gap: 2.5, alignItems: 'center', justifyContent: 'center', opacity: 0.5,
+            }}
+            onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+            onMouseLeave={e => (e.currentTarget.style.opacity = '0.5')}
+          >
+            {allCollapsed ? (
+              /* 展開アイコン: 上下に広がる2本の矢印 */
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-main)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="7 20 12 15 17 20" />
+                <line x1="12" y1="15" x2="12" y2="9" />
+                <polyline points="7 4 12 9 17 4" />
+              </svg>
+            ) : (
+              /* 折りたたみアイコン: 内側に向かう2本の矢印 */
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-main)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="7 9 12 14 17 9" />
+                <line x1="12" y1="14" x2="12" y2="20" />
+                <polyline points="7 15 12 10 17 15" />
+              </svg>
+            )}
+          </button>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <button
@@ -512,21 +540,6 @@ export default function TalknoteCard() {
         </div>
       )}
 
-      {!isLoading && orderedSites.length > 0 && (
-        <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-          {[['すべて開く', false], ['すべて閉じる', true]].map(([label, val]) => (
-            <button
-              key={label as string}
-              onClick={() => setAllCollapsed(val as boolean)}
-              style={{
-                fontSize: 11, padding: '3px 10px', borderRadius: 6, cursor: 'pointer',
-                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)',
-                color: 'var(--text-sub)',
-              }}
-            >{label}</button>
-          ))}
-        </div>
-      )}
 
       {!isLoading && activeData && orderedSites.map((s) => (
         <SiteCard
