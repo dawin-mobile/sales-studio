@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { LayoutDashboard, BarChart2, Layers, PieChart, Clock, Calendar, Users, Menu, GraduationCap, UserCheck } from 'lucide-react';
+import { LayoutDashboard, BarChart2, Layers, PieChart, Clock, Calendar, Users, Menu, GraduationCap, UserCheck, FileText } from 'lucide-react';
 import { TabName } from '@/types';
 import { signOut } from 'next-auth/react';
 
@@ -25,6 +25,7 @@ const ALL_MENU_ITEMS: { id: TabName; label: string; icon: React.ReactNode; minRo
   { id: 'growth',         label: '育成管理',       icon: <GraduationCap   {...ICON_PROPS} />, minRole: '社員' },
   { id: 'tardiness',     label: '遅刻/早退',      icon: <Clock           {...ICON_PROPS} />, minRole: '社員' },
   { id: 'tantou',        label: '担当',           icon: <UserCheck       {...ICON_PROPS} />, minRole: '社員' },
+  { id: 'report-score',  label: 'Report Studio',  icon: <FileText        {...ICON_PROPS} />, minRole: '社員' },
   { id: 'profile',        label: 'スタッフ',       icon: <Users           {...ICON_PROPS} /> },
 ];
 
@@ -61,7 +62,7 @@ export default function Sidebar({ activeTab, onTabChange, userName, userRole, se
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
         {ALL_MENU_ITEMS.filter((item) => {
           if (!item.minRole || hasMinRole(userRole, item.minRole)) {
-            if (secretMode) return item.id === 'growth' || item.id === 'tardiness' || item.id === 'tantou';
+            if (secretMode) return item.id === 'growth' || item.id === 'tardiness' || item.id === 'tantou' || item.id === 'report-score';
             return true;
           }
           return false;

@@ -97,7 +97,8 @@ export type TabName =
   | 'growth'
   | 'tardiness'
   | 'access-log'
-  | 'tantou';
+  | 'tantou'
+  | 'report-score';
 
 export interface StaffEvaluation {
   staffName: string;
@@ -110,6 +111,41 @@ export interface StaffEvaluation {
   scores: Record<string, number>;
   knowledge: Record<string, boolean>;
   knowledgeItems: string[];
+}
+
+export type ReportScoreGrade = 'A' | 'B' | 'C' | 'D' | 'E' | '対象外' | '待' | '';
+
+export interface ReportScoreItem {
+  id: number;
+  date: string;
+  youbi: string;
+  venue: string;
+  reporter: string;
+  shu: string;
+  target: string;
+  iku: ReportScoreGrade;
+  gen: ReportScoreGrade;
+  ikuC: string;
+  genC: string;
+  body: string;
+  pending: boolean;
+  aiIkuG: string;
+  aiIkuC: string;
+  aiGenG: string;
+  aiGenC: string;
+}
+
+export interface ReportScoreMissing {
+  date: string;
+  venue: string;
+  sur: string;
+  reporter: string;
+}
+
+export interface ReportScoreData {
+  reports: ReportScoreItem[];
+  missing1: ReportScoreMissing[];
+  missing2: ReportScoreMissing[];
 }
 
 export type AnalysisMode = 'overall' | 'individual' | 'site' | 'compare';

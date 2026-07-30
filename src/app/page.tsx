@@ -40,6 +40,7 @@ import GrowthView from '@/components/GrowthView';
 import TardinessView from '@/components/TardinessView';
 import AccessLogView from '@/components/AccessLogView';
 import TantouView from '@/components/TantouView';
+import ReportScoreView from '@/components/ReportScoreView';
 import AnalyticsView from '@/components/AnalyticsView';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import IncentiveBar from '@/components/IncentiveBar';
@@ -57,6 +58,7 @@ const TAB_TITLES: Record<TabName, string> = {
   'tardiness': '遅刻/早退',
   'access-log': 'アクセスログ',
   'tantou': '担当',
+  'report-score': 'Report Studio',
 };
 
 export default function Home() {
@@ -308,7 +310,7 @@ export default function Home() {
           <div className="header-top-row">
             <div className="header-left">
               <h1 className="page-title">{TAB_TITLES[activeTab]}</h1>
-              {!['profile', 'growth', 'tantou'].includes(activeTab) && (
+              {!['profile', 'growth', 'tantou', 'report-score'].includes(activeTab) && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <button
                     onClick={() => goMonth(-1)}
@@ -396,6 +398,7 @@ export default function Home() {
             {activeTab === 'tardiness' && <TardinessView />}
             {activeTab === 'access-log' && <AccessLogView />}
             {activeTab === 'tantou' && <TantouView />}
+            {activeTab === 'report-score' && <ReportScoreView />}
           </>
         ) : (<>
 
@@ -585,6 +588,8 @@ export default function Home() {
         {activeTab === 'profile' && <ProfileView effectiveRole={effectiveRole} effectiveName={effectiveName} />}
 
         {activeTab === 'growth' && ['社員', '幹部', '管理者'].includes(effectiveRole ?? '') && <GrowthView />}
+
+        {activeTab === 'report-score' && ['社員', '幹部', '管理者'].includes(effectiveRole ?? '') && <ReportScoreView />}
 
         </>)}
       </main>

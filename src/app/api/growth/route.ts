@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSheetData } from '@/lib/sheets';
+import { auth } from '@/lib/auth';
 import { StaffEvaluation } from '@/types';
 
 export const maxDuration = 10;
@@ -7,7 +8,17 @@ export const maxDuration = 10;
 const META_ROWS = 6;
 const STAFF_START_COL = 3;
 
+const ROLE_ORDER = ['業務委託', 'アルバイト', '社員', '幹部', '管理者'];
+function hasMinRole(role: string | undefined, min: string): boolean {
+  return ROLE_ORDER.indexOf(role ?? '') >= ROLE_ORDER.indexOf(min);
+}
+
 export async function GET() {
+  const session = await auth();
+  if (!session || !hasMinRole(session.user?.role, '社員')) {
+    return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+  }
+
   try {
     const [evalRows, knRows] = await Promise.all([
       getSheetData('新人進捗').catch(() => [] as string[][]),
