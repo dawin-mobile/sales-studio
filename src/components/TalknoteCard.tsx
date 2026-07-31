@@ -141,6 +141,8 @@ interface CarrierBreakdown {
 interface JissekiBreakdown {
   au: CarrierBreakdown;
   uq: CarrierBreakdown;
+  mnpTotal: number;
+  shinTotal: number;
   mnpSokketsu: number;
   o19Total: number;
 }
@@ -170,7 +172,7 @@ function detectDevice(msg: string): 'tanmatsu' | 'sim' | null {
 // 実績報告テンプレート生成用: au/UQ×新規・MNP・端末・SIM単・即決・O19を雑投稿から解析
 // 投稿の書き方は人によってバラつくため完全一致は保証されない（個人実績欄に生テキストも残すので目視確認前提）
 function parseJissekiBreakdown(postsByStaff: SiteMap[string]): JissekiBreakdown {
-  const result: JissekiBreakdown = { au: emptyBreakdown(), uq: emptyBreakdown(), mnpSokketsu: 0, o19Total: 0 };
+  const result: JissekiBreakdown = { au: emptyBreakdown(), uq: emptyBreakdown(), mnpTotal: 0, shinTotal: 0, mnpSokketsu: 0, o19Total: 0 };
 
   for (const posts of Object.values(postsByStaff)) {
     for (const post of posts) {
@@ -197,10 +199,13 @@ function parseJissekiBreakdown(postsByStaff: SiteMap[string]): JissekiBreakdown 
         // 「戻り」がMNP表記より前にあれば即決ではない
         if (!before.includes('戻り')) result.mnpSokketsu += count;
       }
+      // 全体合計はキャリア判定できたかどうかに関わらず反映する（内訳のau/UQ振り分けだけキャリア判定に依存）
+      result.mnpTotal += mnpCount;
       if (bucket) bucket.mnp += mnpCount;
       if (bucket && device && mnpCount > 0) bucket[device] += mnpCount;
 
       const shinCount = countShin(msg);
+      result.shinTotal += shinCount;
       if (bucket) bucket.shin += shinCount;
       if (bucket && device && shinCount > 0) bucket[device] += shinCount;
 
@@ -295,9 +300,9 @@ function buildJissekiReport({ site, date, prevText, breakdown, postsByStaff }: {
   const prevBoothMnp = extractNumber(boothCumSection, 'MNP') ?? 0;
   const prevBoothO19 = extractNumber(boothCumSection, 'O19新規') ?? 0;
 
-  const todayShinNew = breakdown.au.shin + breakdown.uq.shin;
-  const todayMnp = breakdown.au.mnp + breakdown.uq.mnp;
-  const todayShinHS = todayShinNew + todayMnp;
+  // 全体の新規HS/MNPはキャリア判定できなかった投稿分も含めた合計値を使う（内訳au+UQの合算だと取りこぼす）
+  const todayMnp = breakdown.mnpTotal;
+  const todayShinHS = breakdown.shinTotal + breakdown.mnpTotal;
   const todayO19 = breakdown.o19Total;
 
   const v = (n: number) => (n > 0 ? String(n) : '');
@@ -523,7 +528,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
               {name}
             </span>
           ))}
-          {hasReport && (
+          {(hasReport || canGenerate) && (
             <div style={{ marginLeft: 'auto', flexShrink: 0, display: 'flex', gap: 6 }}>
               {canGenerate && (
                 <button
@@ -548,6 +553,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
                   </span>
                 </button>
               )}
+              {hasReport && (
               <button
                 onClick={(e) => { e.stopPropagation(); handleCopy(); }}
                 style={{
@@ -568,6 +574,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
                   {copied ? 'コピー済み' : 'コピー'}
                 </span>
               </button>
+              )}
             </div>
           )}
         </div>
