@@ -721,17 +721,16 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
                       transition: 'all 0.2s',
                     }}
                   >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={stateColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      {generated
-                        ? <polyline points="20 6 9 17 4 12" />
-                        : <path d="M12 3v18M3 12h18" />
-                      }
-                    </svg>
+                    {generated && (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={stateColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
                     <span
                       className={generating ? 'jisseki-generating-label' : undefined}
                       style={{ fontSize: 10, color: stateColor, whiteSpace: 'nowrap' }}
                     >
-                      {generating ? 'ready...' : generated ? 'Complete' : 'Generate'}
+                      {generating ? 'Ready...' : generated ? 'Complete' : 'Generate'}
                     </span>
                   </button>
                 );
