@@ -77,8 +77,10 @@ function normalize(s: string): string {
     .replace(/[×✕✖ｘＸ]/g, 'x');
 }
 
-// 除外プレフィックス（新規の直前にあったらカウントしない）
-const SHIN_EXCLUDE_PREFIX = /(?:タブ\S*|光|ひかり|\S*[ろロ]\S*|[Bb]iglobe\S*|ビッグローブ\S*)$/;
+// 除外プレフィックス（新規の直前に固定商材の名前があったらカウントしない＝携帯のHSではない）
+const SHIN_EXCLUDE_PREFIX = /(?:タブ\S*|光|ひかり|[Aa]ir\S*|エアー?|エア\S*|\S*[ろロ]\S*|[Bb]iglobe\S*|ビッグローブ\S*)$/;
+// 除外サフィックス（新規の直後に固定商材の名前があったらカウントしない）
+const SHIN_EXCLUDE_SUFFIX = /^(?:タブ|光|ひかり|[Aa]ir|エアー?|エア|[Bb]iglobe|ビッグローブ)/;
 // 除外キーワード（新規と同じ行・次の行に含まれていたらカウントしない）
 const SHIN_EXCLUDE_LINE = /予定|明日|明後日|来週|翌日|[0-9０-９]{1,2}[\/／][0-9０-９]{1,2}|[0-9０-９]{1,2}月[0-9０-９]{1,2}日/;
 
@@ -95,7 +97,7 @@ function countShin(msg: string): number {
     const nextLine = afterLines[1] ?? '';
     const nextNextLine = afterLines[2] ?? '';
     const fullLine = sameLine + afterLine;
-    if (SHIN_EXCLUDE_PREFIX.test(sameLine)) continue;
+    if (SHIN_EXCLUDE_PREFIX.test(sameLine) || SHIN_EXCLUDE_SUFFIX.test(afterLine)) continue;
     if (SHIN_EXCLUDE_LINE.test(prevLine) || SHIN_EXCLUDE_LINE.test(fullLine) || SHIN_EXCLUDE_LINE.test(nextLine) || SHIN_EXCLUDE_LINE.test(nextNextLine)) continue;
     shin += match[1] ? parseInt(match[1]) : 1;
   }
@@ -149,6 +151,9 @@ interface JissekiBreakdown {
   denki: number;
   gas: number;
   kureka: number;
+  auHikari: number;
+  bbHikari: number;
+  air: number;
 }
 
 // LD項目（電気・ガス・クレカ）／アップの件数を拾う。「クレカ×2」のような表記に対応、数字がなければ1件扱い
@@ -161,20 +166,26 @@ function countLdItem(msg: string, re: RegExp): number {
 }
 const DENKI_RE = /(?:でんき|デンキ|電気)[x×]?\s*(\d+)?/gi;
 const GAS_RE = /(?:ガス|がす)[x×]?\s*(\d+)?/gi;
-// クレカは銀クレ・シルバー・ゴールド・金くれ等の呼び方も全部同じ「クレカ」件数として拾う
-const KUREKA_RE = /(?:金クレカ|金くれか|金クレ|金くれ|きんクレカ|きんくれか|きんクレ|きんくれ|銀クレカ|銀くれか|銀クレ|銀くれ|ぎんクレカ|ぎんくれか|ぎんクレ|ぎんくれ|ゴールド|ごーるど|シルバー|しるばー|クレカ|くれか|クレジットカード)[x×]?\s*(\d+)?/gi;
+// クレカは銀クレ・シルバー・ゴールド・金くれ・Gクレ等の呼び方も全部同じ「クレカ」件数として拾う（ひらがな/カタカナ両対応）
+const KUREKA_RE = /(?:金クレカ|金くれか|金クレ|金くれ|きんクレカ|きんくれか|きんクレ|きんくれ|銀クレカ|銀くれか|銀クレ|銀くれ|ぎんクレカ|ぎんくれか|ぎんクレ|ぎんくれ|Gクレカ|Gくれか|Gクレ|Gくれ|ゴールド|ごーるど|シルバー|しるばー|クレカ|くれか|クレジットカード)[x×]?\s*(\d+)?/gi;
 // SB系ブースの「アップ」（既存客のプラン変更等、新規HSの内数）
 const UP_RE = /アップ(?:セル)?[x×]?\s*(\d+)?/gi;
+// au系ブースの固定商材（事業者変更＝事変はビックローブ光扱い）
+const BB_HIKARI_RE = /(?:事変|じへん|ジヘン|BIGLOBE|ビッグローブ|ビッグロ|びっぐろ|ビッグ|びっぐ)[x×]?\s*(\d+)?/gi;
+const AU_HIKARI_RE = /(?:au光|auひかり|auヒカリ)[x×]?\s*(\d+)?/gi;
+// SB系ブースのソフトバンクAir（SBAir・Air新規・エアー等）
+const AIR_RE = /(?:SB\s*Air|Air|エアー?)[x×]?\s*(\d+)?/gi;
 
 function emptyBreakdown(): CarrierBreakdown {
   return { shin: 0, mnp: 0, tanmatsu: 0, sim: 0, o19: 0 };
 }
 
-// 現場によって扱うキャリアの組が違う（au・UQ系のブース／SB・Y系のブース）。現場名にSBが付いていればSB・Y系
+// 現場によって扱うキャリアの組が違う（au・UQ系のブース／SB・Y系のブース）。催事場所か紐付け店舗にSB・バンクが含まれていればSB・Y系
 type CarrierFamily = 'au-uq' | 'sb-y';
 
-function detectCarrierFamily(site: string): CarrierFamily {
-  return /SB/i.test(site) ? 'sb-y' : 'au-uq';
+function detectCarrierFamily(eventPlace: string, linkedStore: string): CarrierFamily {
+  const SB_MARK = /SB|バンク/i;
+  return SB_MARK.test(eventPlace) || SB_MARK.test(linkedStore) ? 'sb-y' : 'au-uq';
 }
 
 const FAMILY_LABELS: Record<CarrierFamily, { primary: string; secondary: string }> = {
@@ -220,7 +231,7 @@ function detectDevice(msg: string): 'tanmatsu' | 'sim' | null {
 // 実績報告テンプレート生成用: au/UQ×新規・MNP・端末・SIM単・即決・O19を雑投稿から解析
 // 投稿の書き方は人によってバラつくため完全一致は保証されない（個人実績欄に生テキストも残すので目視確認前提）
 function parseJissekiBreakdown(postsByStaff: SiteMap[string], family: CarrierFamily): JissekiBreakdown {
-  const result: JissekiBreakdown = { au: emptyBreakdown(), uq: emptyBreakdown(), mnpTotal: 0, shinTotal: 0, upTotal: 0, mnpSokketsu: 0, o19Total: 0, denki: 0, gas: 0, kureka: 0 };
+  const result: JissekiBreakdown = { au: emptyBreakdown(), uq: emptyBreakdown(), mnpTotal: 0, shinTotal: 0, upTotal: 0, mnpSokketsu: 0, o19Total: 0, denki: 0, gas: 0, kureka: 0, auHikari: 0, bbHikari: 0, air: 0 };
 
   for (const posts of Object.values(postsByStaff)) {
     for (const post of posts) {
@@ -268,6 +279,9 @@ function parseJissekiBreakdown(postsByStaff: SiteMap[string], family: CarrierFam
       result.gas += countLdItem(msg, GAS_RE);
       result.kureka += countLdItem(msg, KUREKA_RE);
       result.upTotal += countLdItem(msg, UP_RE);
+      result.auHikari += countLdItem(msg, AU_HIKARI_RE);
+      result.bbHikari += countLdItem(msg, BB_HIKARI_RE);
+      result.air += countLdItem(msg, AIR_RE);
     }
   }
   return result;
@@ -340,8 +354,8 @@ function buildJissekiReport({ site, date, prevText, postsByStaff }: {
   const linkedStore = prevLinkedStore || '';
   const device = prevDevice || '';
 
-  // キャリアの組（au/UQ系かSB/YM系か）は催事場所の表記から判定する（シフト上の現場名にはSB等の表記がない）
-  const family = detectCarrierFamily(eventPlace);
+  // キャリアの組（au/UQ系かSB/YM系か）は催事場所・紐付け店舗の表記から判定する（シフト上の現場名にはSB等の表記がない）
+  const family = detectCarrierFamily(eventPlace, linkedStore);
   const breakdown = parseJissekiBreakdown(postsByStaff, family);
   const labels = FAMILY_LABELS[family];
   const v = (n: number) => (n > 0 ? String(n) : '');
@@ -392,6 +406,7 @@ function buildJissekiReport({ site, date, prevText, postsByStaff }: {
       '✨ブース全体実績✨',
       `新規HS：${v(todayShinHS)}`,
       `┗MNP：${v(todayMnp)}`,
+      `┗MNP 即決：${v(breakdown.mnpSokketsu)}`,
       `┗新規：${v(todayShin)}`,
       `┗アップ：${v(todayUp)}`,
       '',
@@ -408,7 +423,7 @@ function buildJissekiReport({ site, date, prevText, postsByStaff }: {
       '',
       '🏡✨固定✨🏡',
       'SB光：',
-      'ソフトバンクAir：',
+      `ソフトバンクAir：${v(breakdown.air)}`,
       '',
       '💡✨LD✨💡',
       `おうち電気：${v(breakdown.denki)}`,
@@ -479,8 +494,8 @@ function buildJissekiReport({ site, date, prevText, postsByStaff }: {
     '',
     '',
     '🏡✨固定✨🏡',
-    'au光：',
-    'ビックローブ光：',
+    `au光：${v(breakdown.auHikari)}`,
+    `ビックローブ光：${v(breakdown.bbHikari)}`,
     'JCOM：',
     'ホームルーター:',
     '',
