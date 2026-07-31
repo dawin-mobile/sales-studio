@@ -272,10 +272,20 @@ function parseJissekiBreakdown(postsByStaff: SiteMap[string], family: CarrierFam
       result.shinTotal += shinCount;
       if (bucket) bucket.shin += shinCount;
 
-      // sim・端末は同じ投稿内に両方出てくることがあるので、それぞれ個別にカウントする
+      // sim・端末は同じ投稿内に両方出てくることがある（例: sim×1.端末×1）ので個別にカウントするが、
+      // 片方しか書かれていない場合は「MNP2\nsim」のように件数を書き漏らすことがあるため全体件数を採用する
       if (bucket && (mnpCount > 0 || shinCount > 0)) {
-        bucket.sim += countLdItem(msg, SIM_RE);
-        bucket.tanmatsu += countLdItem(msg, TANMATSU_RE);
+        const simRaw = countLdItem(msg, SIM_RE);
+        const tanmatsuRaw = countLdItem(msg, TANMATSU_RE);
+        const total = mnpCount + shinCount;
+        if (simRaw > 0 && tanmatsuRaw > 0) {
+          bucket.sim += simRaw;
+          bucket.tanmatsu += tanmatsuRaw;
+        } else if (simRaw > 0) {
+          bucket.sim += total;
+        } else if (tanmatsuRaw > 0) {
+          bucket.tanmatsu += total;
+        }
       }
 
       if (/O19/i.test(msg)) {
