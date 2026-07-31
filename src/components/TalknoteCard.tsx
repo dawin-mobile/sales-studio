@@ -707,29 +707,35 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
           ))}
           {(hasReport || canGenerate) && (
             <div style={{ marginLeft: 'auto', flexShrink: 0, display: 'flex', gap: 6 }}>
-              {canGenerate && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleGenerate(); }}
-                  disabled={generating}
-                  style={{
-                    background: generated ? 'rgba(74,222,128,0.2)' : 'rgba(255,255,255,0.08)',
-                    border: `1px solid ${generated ? '#4ade80' : 'rgba(255,255,255,0.15)'}`,
-                    borderRadius: 6, padding: '3px 9px',
-                    cursor: generating ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-                    transition: 'all 0.2s', opacity: generating ? 0.6 : 1,
-                  }}
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={generated ? '#4ade80' : '#bbb'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    {generated
-                      ? <polyline points="20 6 9 17 4 12" />
-                      : <path d="M12 3v18M3 12h18" />
-                    }
-                  </svg>
-                  <span style={{ fontSize: 10, color: generated ? '#4ade80' : '#bbb', whiteSpace: 'nowrap' }}>
-                    {generating ? '生成中...' : generated ? 'コピー済み' : '生成'}
-                  </span>
-                </button>
-              )}
+              {canGenerate && (() => {
+                const stateColor = generating ? '#f87171' : generated ? '#60a5fa' : '#bbb';
+                return (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleGenerate(); }}
+                    disabled={generating}
+                    style={{
+                      background: generating ? 'rgba(248,113,113,0.15)' : generated ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.08)',
+                      border: `1px solid ${generating ? 'rgba(248,113,113,0.4)' : generated ? 'rgba(96,165,250,0.4)' : 'rgba(255,255,255,0.15)'}`,
+                      borderRadius: 6, padding: '3px 9px',
+                      cursor: generating ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={stateColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      {generated
+                        ? <polyline points="20 6 9 17 4 12" />
+                        : <path d="M12 3v18M3 12h18" />
+                      }
+                    </svg>
+                    <span
+                      className={generating ? 'jisseki-generating-label' : undefined}
+                      style={{ fontSize: 10, color: stateColor, whiteSpace: 'nowrap' }}
+                    >
+                      {generating ? 'Generating...' : generated ? 'OK!' : '生成'}
+                    </span>
+                  </button>
+                );
+              })()}
               {hasReport && !canGenerate && (
               <button
                 onClick={(e) => { e.stopPropagation(); handleCopy(); }}

@@ -566,6 +566,11 @@ input[type="password"]:focus {
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+.jisseki-generating-label {
+  animation: blink 0.9s ease-in-out infinite;
+}
 
 .shift-loading-spinner {
   width: 32px;
