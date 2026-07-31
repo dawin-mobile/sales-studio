@@ -299,11 +299,10 @@ function shiftDateBy(dateStr: string, days: number): string {
 }
 
 // 前日の実績報告本文（累計・目標・催事場所等）＋当日の集計結果から実績報告テンプレートを組み立てる
-function buildJissekiReport({ site, date, prevText, breakdown, postsByStaff }: {
+function buildJissekiReport({ site, date, prevText, postsByStaff }: {
   site: string;
   date: string;
   prevText: string;
-  breakdown: JissekiBreakdown;
   postsByStaff: SiteMap[string];
 }): string {
   const sections = splitJissekiSections(prevText);
@@ -315,6 +314,11 @@ function buildJissekiReport({ site, date, prevText, breakdown, postsByStaff }: {
   const eventPlace = prevEventPlace || normalizeSiteName(site);
   const linkedStore = prevLinkedStore || '';
   const device = prevDevice || '';
+
+  // キャリアの組（au/UQ系かSB/YM系か）は催事場所の表記から判定する（シフト上の現場名にはSB等の表記がない）
+  const family = detectCarrierFamily(eventPlace);
+  const breakdown = parseJissekiBreakdown(postsByStaff, family);
+  const labels = FAMILY_LABELS[family];
 
   const goalSection = sections['ブース目標'] ?? '';
   const goalShinHS = extractText(goalSection, '新規HS');
@@ -336,8 +340,6 @@ function buildJissekiReport({ site, date, prevText, breakdown, postsByStaff }: {
 
   const v = (n: number) => (n > 0 ? String(n) : '');
   const personalText = buildCopyText(postsByStaff).trim();
-  const family = detectCarrierFamily(site);
-  const labels = FAMILY_LABELS[family];
 
   return [
     '🙋‍♀️✨実績報告✨🙋‍♂️',
@@ -456,8 +458,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
       const prevText = prevPosts
         ? Object.values(prevPosts).map((posts) => posts.map((p) => p.message).join('\n')).join('\n')
         : '';
-      const breakdown = parseJissekiBreakdown(postsByStaff, detectCarrierFamily(site));
-      const reportText = buildJissekiReport({ site, date, prevText, breakdown, postsByStaff });
+      const reportText = buildJissekiReport({ site, date, prevText, postsByStaff });
       await navigator.clipboard.writeText(reportText);
       setGenerated(true);
       setTimeout(() => setGenerated(false), 2000);
