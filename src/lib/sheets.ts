@@ -81,6 +81,79 @@ export async function getShiftSheetData(sheetName: string): Promise<string[][]> 
   return (res.data.values || []) as string[][];
 }
 
+// 稼働カード用: 月ごとの東京・福岡シフトシートをまとめて取得する。
+//
+// シフトスプレッドシートは1回のアクセスに約2秒かかる（行数ではなくシート自体が重い）。
+// 稼働カードは /api/talknote と /api/jisseki が同時に同じシートを読むため、
+// ①2シートを1リクエストにまとめる ②5分キャッシュ ③取得中は同じPromiseを共有
+// の3つで Sheets API へのアクセス回数を減らしている。
+const SHIFT_CACHE_TTL = 5 * 60 * 1000; // 5分
+
+export type ShiftMonthData = { tokyo: string[][]; fukuoka: string[][] };
+
+const shiftMonthCache = new Map<string, { data: ShiftMonthData; expires: number }>();
+const shiftMonthInflight = new Map<string, Promise<ShiftMonthData>>();
+
+// month: 'YYYY-MM' → '26年7月【東京】' のようなシート名にする
+function buildShiftSheetName(month: string, region: '東京' | '福岡'): string {
+  const [year, mo] = month.split('-');
+  return `${year.slice(2)}年${parseInt(mo)}月【${region}】`;
+}
+
+async function fetchShiftMonth(month: string): Promise<ShiftMonthData> {
+  const sheets = await getSheetsClient();
+  const spreadsheetId = process.env.SHIFT_SPREADSHEET_ID;
+  if (!spreadsheetId) {
+    console.error('[sheets] SHIFT_SPREADSHEET_ID が設定されていません');
+    throw new Error('SHIFT_SPREADSHEET_ID が設定されていません');
+  }
+
+  // 実際に使う列だけに絞る（東京はT列まで、福岡はL列まで）
+  const tokyoRange = `${buildShiftSheetName(month, '東京')}!A:T`;
+  const fukuokaRange = `${buildShiftSheetName(month, '福岡')}!A:L`;
+
+  try {
+    const res = await sheets.spreadsheets.values.batchGet({
+      spreadsheetId,
+      ranges: [tokyoRange, fukuokaRange],
+    });
+    const [tokyo, fukuoka] = res.data.valueRanges ?? [];
+    return {
+      tokyo: (tokyo?.values ?? []) as string[][],
+      fukuoka: (fukuoka?.values ?? []) as string[][],
+    };
+  } catch (e) {
+    // 片方のシートが存在しない月などは batchGet 全体が失敗するため、個別取得に切り替える
+    console.error('[sheets] シフトシートのbatchGetに失敗。個別取得で続行します:', e);
+    const [tokyo, fukuoka] = await Promise.all([
+      getShiftSheetData(tokyoRange).catch(() => [] as string[][]),
+      getShiftSheetData(fukuokaRange).catch(() => [] as string[][]),
+    ]);
+    return { tokyo, fukuoka };
+  }
+}
+
+export async function getShiftMonthData(month: string): Promise<ShiftMonthData> {
+  const cached = shiftMonthCache.get(month);
+  if (cached && cached.expires > Date.now()) return cached.data;
+
+  // 同時に複数のAPIから呼ばれても、取得は1回だけにする
+  const inflight = shiftMonthInflight.get(month);
+  if (inflight) return inflight;
+
+  const promise = fetchShiftMonth(month)
+    .then((data) => {
+      shiftMonthCache.set(month, { data, expires: Date.now() + SHIFT_CACHE_TTL });
+      return data;
+    })
+    .finally(() => {
+      shiftMonthInflight.delete(month);
+    });
+
+  shiftMonthInflight.set(month, promise);
+  return promise;
+}
+
 // B列の背景色がオレンジ系かどうか（祝日判定）
 function isOrangeBackground(color: { red?: number | null; green?: number | null; blue?: number | null } | null | undefined): boolean {
   if (!color) return false;

@@ -4,8 +4,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { talknotePosts } from '@/lib/schema';
 
-export const revalidate = 300; // 5分キャッシュ
-import { getShiftSheetData } from '@/lib/sheets';
+import { getShiftMonthData } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,13 +12,6 @@ const REGION_COLS = {
   '東京': { staffEnd: 19, agencyIdx: 19 },
   '福岡': { staffEnd: 11, agencyIdx: 11 },
 } as const;
-
-function buildSheetName(month: string, region: '東京' | '福岡'): string {
-  const [year, mo] = month.split('-');
-  const yy = year.slice(2);
-  const m = String(parseInt(mo));
-  return `${yy}年${m}月【${region}】`;
-}
 
 function normalizeDate(raw: string): string {
   if (!raw || !/\d/.test(raw)) return raw;
@@ -49,14 +41,13 @@ export async function GET(request: NextRequest) {
   const month = `${y}-${m}`;
   const shiftDate = `${parseInt(m)}/${parseInt(d)}`;
 
-  const [posts, tokyoRows, fukuokaRows] = await Promise.all([
+  const [posts, shift] = await Promise.all([
     db.select()
       .from(talknotePosts)
       .where(eq(talknotePosts.date, date))
       .orderBy(talknotePosts.postedAt)
       .catch(() => []),
-    getShiftSheetData(buildSheetName(month, '東京')).catch(() => []),
-    getShiftSheetData(buildSheetName(month, '福岡')).catch(() => []),
+    getShiftMonthData(month).catch(() => ({ tokyo: [] as string[][], fukuoka: [] as string[][] })),
   ]);
 
   // シフトシートから当日分のサイト順を構築
@@ -77,8 +68,8 @@ export async function GET(request: NextRequest) {
     }
   };
 
-  addSites(tokyoRows, '東京');
-  addSites(fukuokaRows, '福岡');
+  addSites(shift.tokyo, '東京');
+  addSites(shift.fukuoka, '福岡');
 
   // site → staffName → posts[] のマップ
   const siteMap: Record<string, Record<string, { postedAt: string; message: string }[]>> = {};

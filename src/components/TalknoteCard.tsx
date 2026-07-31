@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface ShiftSite {
   location: string;
@@ -846,17 +846,26 @@ export default function TalknoteCard() {
       .finally(() => setLoading(false));
   }, [date]);
 
+  // 実績報告タブは開かれるまで読み込まない（初期表示を軽くするため）。
+  // 一度読んだ日付は再取得しない。
+  const jissekiLoadedDate = useRef<string | null>(null);
   useEffect(() => {
+    if (tab !== 'jisseki') return;
+    if (jissekiLoadedDate.current === date) return;
+    jissekiLoadedDate.current = date;
     setJissekiLoading(true);
     fetch(`/api/jisseki?date=${date}`)
       .then((r) => r.json())
       .then((d) => setJissekiData(d))
       .catch(() => setJissekiData(null))
       .finally(() => setJissekiLoading(false));
-  }, [date]);
+  }, [date, tab]);
 
   const activeData = tab === 'talknote' ? data : jissekiData;
-  const isLoading = tab === 'talknote' ? loading : jissekiLoading;
+  // 実績報告タブに切り替えた直後（fetch開始前）も「読み込み中」にする
+  const isLoading = tab === 'talknote'
+    ? loading
+    : jissekiLoading || jissekiLoadedDate.current !== date;
   const [allCollapsed, setAllCollapsed] = useState<boolean>(true);
 
   // 関東→東京、九州→福岡 に変換してフィルター

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { getSheetData, getShiftSheetData } from '@/lib/sheets';
+import { getSheetData, getShiftMonthData } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,13 +8,6 @@ const REGION_COLS = {
   '東京': { staffEnd: 19, agencyIdx: 19 },
   '福岡': { staffEnd: 11, agencyIdx: 11 },
 } as const;
-
-function buildSheetName(month: string, region: '東京' | '福岡'): string {
-  const [year, mo] = month.split('-');
-  const yy = year.slice(2);
-  const m = String(parseInt(mo));
-  return `${yy}年${m}月【${region}】`;
-}
 
 function normalizeDate(raw: string): string {
   if (!raw || !/\d/.test(raw)) return raw;
@@ -54,10 +47,9 @@ export async function GET(request: NextRequest) {
   const targetM = parseInt(m);
   const targetD = parseInt(d);
 
-  const [jissekiRows, tokyoRows, fukuokaRows] = await Promise.all([
+  const [jissekiRows, shift] = await Promise.all([
     getSheetData('実績受信録').catch(() => [] as string[][]),
-    getShiftSheetData(buildSheetName(month, '東京')).catch(() => [] as string[][]),
-    getShiftSheetData(buildSheetName(month, '福岡')).catch(() => [] as string[][]),
+    getShiftMonthData(month).catch(() => ({ tokyo: [] as string[][], fukuoka: [] as string[][] })),
   ]);
 
   // シフトシートから現場→スタッフのマッピングを構築
@@ -78,8 +70,8 @@ export async function GET(request: NextRequest) {
     }
   };
 
-  addSites(tokyoRows, '東京');
-  addSites(fukuokaRows, '福岡');
+  addSites(shift.tokyo, '東京');
+  addSites(shift.fukuoka, '福岡');
 
   // スタッフ名 → 現場名の逆引きマップを作成
   const staffToSite = new Map<string, string>();
