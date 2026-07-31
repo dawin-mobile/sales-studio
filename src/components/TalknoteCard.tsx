@@ -145,7 +145,23 @@ interface JissekiBreakdown {
   shinTotal: number;
   mnpSokketsu: number;
   o19Total: number;
+  denki: number;
+  gas: number;
+  kureka: number;
 }
+
+// LD項目（電気・ガス・クレカ）の件数を拾う。「クレカ×2」のような表記に対応、数字がなければ1件扱い
+function countLdItem(msg: string, re: RegExp): number {
+  let total = 0;
+  for (const match of msg.matchAll(re)) {
+    total += match[1] ? parseInt(match[1]) : 1;
+  }
+  return total;
+}
+const DENKI_RE = /(?:でんき|デンキ|電気)[x×]?\s*(\d+)?/gi;
+const GAS_RE = /(?:ガス|がす)[x×]?\s*(\d+)?/gi;
+// クレカは銀クレ・シルバー・ゴールド・金くれ等の呼び方も全部同じ「クレカ」件数として拾う
+const KUREKA_RE = /(?:金クレカ|金くれか|金クレ|金くれ|きんクレカ|きんくれか|きんクレ|きんくれ|銀クレカ|銀くれか|銀クレ|銀くれ|ぎんクレカ|ぎんくれか|ぎんクレ|ぎんくれ|ゴールド|ごーるど|シルバー|しるばー|クレカ|くれか|クレジットカード)[x×]?\s*(\d+)?/gi;
 
 function emptyBreakdown(): CarrierBreakdown {
   return { shin: 0, mnp: 0, tanmatsu: 0, sim: 0, o19: 0 };
@@ -201,7 +217,7 @@ function detectDevice(msg: string): 'tanmatsu' | 'sim' | null {
 // 実績報告テンプレート生成用: au/UQ×新規・MNP・端末・SIM単・即決・O19を雑投稿から解析
 // 投稿の書き方は人によってバラつくため完全一致は保証されない（個人実績欄に生テキストも残すので目視確認前提）
 function parseJissekiBreakdown(postsByStaff: SiteMap[string], family: CarrierFamily): JissekiBreakdown {
-  const result: JissekiBreakdown = { au: emptyBreakdown(), uq: emptyBreakdown(), mnpTotal: 0, shinTotal: 0, mnpSokketsu: 0, o19Total: 0 };
+  const result: JissekiBreakdown = { au: emptyBreakdown(), uq: emptyBreakdown(), mnpTotal: 0, shinTotal: 0, mnpSokketsu: 0, o19Total: 0, denki: 0, gas: 0, kureka: 0 };
 
   for (const posts of Object.values(postsByStaff)) {
     for (const post of posts) {
@@ -244,6 +260,10 @@ function parseJissekiBreakdown(postsByStaff: SiteMap[string], family: CarrierFam
         result.o19Total += o19Count;
         if (bucket) bucket.o19 += o19Count;
       }
+
+      result.denki += countLdItem(msg, DENKI_RE);
+      result.gas += countLdItem(msg, GAS_RE);
+      result.kureka += countLdItem(msg, KUREKA_RE);
     }
   }
   return result;
@@ -375,9 +395,9 @@ function buildJissekiReport({ site, date, prevText, postsByStaff }: {
     'ホームルーター:',
     '',
     '💡✨LD✨💡',
-    'au電気：',
-    'ガス：',
-    'クレカ：',
+    `au電気：${v(breakdown.denki)}`,
+    `ガス：${v(breakdown.gas)}`,
+    `クレカ：${v(breakdown.kureka)}`,
     '',
     '⚡️ブース目標⚡️',
     `新規HS：${goalShinHS}`,
@@ -585,7 +605,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
                   </span>
                 </button>
               )}
-              {hasReport && (
+              {hasReport && !canGenerate && (
               <button
                 onClick={(e) => { e.stopPropagation(); handleCopy(); }}
                 style={{
