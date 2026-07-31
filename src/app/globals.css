@@ -1354,7 +1354,8 @@ thead .loc-th-dow { z-index: 30; } /* 最前面 */
     padding-bottom: calc(72px + env(safe-area-inset-bottom));
   }
   .dashboard-split, .compare-grid { grid-template-columns: 1fr; }
-  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  /* KPIカード（総獲得数・MNP等）はスマホでは非表示 */
+  .kpi-grid { display: none; }
   .header-top-row { gap: 8px; }
   /* full-ranking-table は table-layout: fixed で横スクロール不要 */
   /* シフトコントロールをスマホ向けに調整 */
