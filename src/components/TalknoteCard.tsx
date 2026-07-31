@@ -160,21 +160,27 @@ function detectCarrierFamily(site: string): CarrierFamily {
 
 const FAMILY_LABELS: Record<CarrierFamily, { primary: string; secondary: string }> = {
   'au-uq': { primary: 'au', secondary: 'UQ' },
-  'sb-y': { primary: 'SB', secondary: 'Y' },
+  'sb-y': { primary: 'SB', secondary: 'YM' },
 };
 
 // 内部的にはau-uq系の'au'/'uq'キーをそのまま「1つ目のキャリア/2つ目のキャリア」の枠として使い回す
 // 「元キャリア→先キャリア」の形、なければ本文中の先キャリア表記の先勝ちで判定
 function detectCarrier(msg: string, family: CarrierFamily): 'au' | 'uq' | null {
   if (family === 'sb-y') {
-    const arrow = msg.match(/→\s*(SB|ソフトバンク|Y[!！]?(?:モバ(?:イル)?|mobile)?\d*)/i);
-    if (arrow) return /SB|ソフトバンク/i.test(arrow[1]) ? 'au' : 'uq';
-    const sbIdx = msg.search(/SB|ソフトバンク/i);
-    const yIdx = msg.search(/Y[!！]?(?:モバ(?:イル)?|mobile)|ワイモバ(?:イル)?|YM\b|Y\d/i);
-    if (sbIdx === -1 && yIdx === -1) return null;
-    if (yIdx === -1) return 'au';
-    if (sbIdx === -1) return 'uq';
-    return sbIdx < yIdx ? 'au' : 'uq';
+    // SB系ブースでも「au」「UQ」表記で書かれることがある（au→SB扱い、UQ→YM扱い）。Y単体表記もYM扱い
+    const PRIMARY = /SB|ソフトバンク|\bau\b/i;
+    const SECONDARY = /\bUQ\b|\bYM\b|Y[!！]?(?:モバ(?:イル)?|mobile)|ワイモバ(?:イル)?|Y\d|\bY\b/i;
+    const arrow = msg.match(/→\s*(\S+)/);
+    if (arrow) {
+      if (SECONDARY.test(arrow[1])) return 'uq';
+      if (PRIMARY.test(arrow[1])) return 'au';
+    }
+    const pIdx = msg.search(PRIMARY);
+    const sIdx = msg.search(SECONDARY);
+    if (pIdx === -1 && sIdx === -1) return null;
+    if (sIdx === -1) return 'au';
+    if (pIdx === -1) return 'uq';
+    return pIdx < sIdx ? 'au' : 'uq';
   }
   const arrow = msg.match(/→\s*(au|uq)/i);
   if (arrow) return arrow[1].toLowerCase() === 'uq' ? 'uq' : 'au';
