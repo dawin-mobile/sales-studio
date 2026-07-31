@@ -81,24 +81,24 @@ function normalize(s: string): string {
 const SHIN_EXCLUDE_PREFIX = /(?:タブ\S*|光|ひかり|[Aa]ir\S*|エアー?|エア\S*|\S*[ろロ]\S*|[Bb]iglobe\S*|ビッグローブ\S*)$/;
 // 除外サフィックス（新規の直後に固定商材の名前があったらカウントしない）
 const SHIN_EXCLUDE_SUFFIX = /^(?:タブ|光|ひかり|[Aa]ir|エアー?|エア|[Bb]iglobe|ビッグローブ)/;
-// 除外キーワード（新規と同じ行・次の行に含まれていたらカウントしない）
-const SHIN_EXCLUDE_LINE = /予定|明日|明後日|来週|翌日|[0-9０-９]{1,2}[\/／][0-9０-９]{1,2}|[0-9０-９]{1,2}月[0-9０-９]{1,2}日/;
+// 除外キーワード（未確定・翌日以降の予約は今日の実績としてカウントしない）
+const SHIN_EXCLUDE_LINE = /予定|予約|明日|明後日|来週|翌日|[0-9０-９]{1,2}[\/／][0-9０-９]{1,2}|[0-9０-９]{1,2}月[0-9０-９]{1,2}日|[0-9０-９]{1,2}日/;
 
 function countShin(msg: string): number {
   let shin = 0;
-  for (const match of msg.matchAll(/新規(?:\([^)]*\))?[x×]?\s*(\d+)?/g)) {
+  for (const match of msg.matchAll(/新規(?:\([^)]*\))?[x×]?[ \t　]*(\d+)?/g)) {
     const before = msg.slice(0, match.index);
     const after = msg.slice((match.index ?? 0) + match[0].length);
     const beforeLines = before.split('\n');
     const sameLine = beforeLines.pop() ?? '';
-    const prevLine = beforeLines.pop() ?? '';
     const afterLines = after.split('\n');
     const afterLine = afterLines[0] ?? '';
     const nextLine = afterLines[1] ?? '';
     const nextNextLine = afterLines[2] ?? '';
     const fullLine = sameLine + afterLine;
     if (SHIN_EXCLUDE_PREFIX.test(sameLine) || SHIN_EXCLUDE_SUFFIX.test(afterLine)) continue;
-    if (SHIN_EXCLUDE_LINE.test(prevLine) || SHIN_EXCLUDE_LINE.test(fullLine) || SHIN_EXCLUDE_LINE.test(nextLine) || SHIN_EXCLUDE_LINE.test(nextNextLine)) continue;
+    // 「予定」「明日」等がメッセージ内のこの箇所より前にあれば、間に別の行（お客様名等）を挟んでいても除外する
+    if (SHIN_EXCLUDE_LINE.test(before) || SHIN_EXCLUDE_LINE.test(fullLine) || SHIN_EXCLUDE_LINE.test(nextLine) || SHIN_EXCLUDE_LINE.test(nextNextLine)) continue;
     shin += match[1] ? parseInt(match[1]) : 1;
   }
   return shin;
@@ -116,13 +116,12 @@ function countMnpNew(postsByStaff: SiteMap[string]): { mnp: number; shin: number
         const after = msg.slice((match.index ?? 0) + match[0].length);
         const beforeLines = before.split('\n');
         const sameLine = beforeLines.pop() ?? '';
-        const prevLine = beforeLines.pop() ?? '';
         const afterLines = after.split('\n');
         const afterLine = afterLines[0] ?? '';
         const nextLine = afterLines[1] ?? '';
         const nextNextLine = afterLines[2] ?? '';
         const fullLine = sameLine + afterLine;
-        if (SHIN_EXCLUDE_LINE.test(prevLine) || SHIN_EXCLUDE_LINE.test(fullLine) || SHIN_EXCLUDE_LINE.test(nextLine) || SHIN_EXCLUDE_LINE.test(nextNextLine)) continue;
+        if (SHIN_EXCLUDE_LINE.test(before) || SHIN_EXCLUDE_LINE.test(fullLine) || SHIN_EXCLUDE_LINE.test(nextLine) || SHIN_EXCLUDE_LINE.test(nextNextLine)) continue;
         mnp += match[1] ? parseInt(match[1]) : 1;
       }
 
@@ -156,26 +155,36 @@ interface JissekiBreakdown {
   air: number;
 }
 
-// LD項目（電気・ガス・クレカ）／アップの件数を拾う。「クレカ×2」のような表記に対応、数字がなければ1件扱い
+// LD項目（電気・ガス・クレカ）／アップ等の件数を拾う。「クレカ×2」のような表記に対応、数字がなければ1件扱い
+// 未確定・翌日以降の予約（明日/予定/予約等）が手前にあれば除外する。
+// 「予約」等のマーカーはその後に続く別項目の説明であることが多いため、次の行までは見ない（見ると手前の別項目を誤って除外してしまう）
 function countLdItem(msg: string, re: RegExp): number {
   let total = 0;
   for (const match of msg.matchAll(re)) {
+    const before = msg.slice(0, match.index);
+    const after = msg.slice((match.index ?? 0) + match[0].length);
+    const beforeLines = before.split('\n');
+    const sameLine = beforeLines.pop() ?? '';
+    const afterLine = after.split('\n')[0] ?? '';
+    const fullLine = sameLine + afterLine;
+    if (SHIN_EXCLUDE_LINE.test(before) || SHIN_EXCLUDE_LINE.test(fullLine)) continue;
     total += match[1] ? parseInt(match[1]) : 1;
   }
   return total;
 }
-const DENKI_RE = /(?:でんき|デンキ|電気)[x×]?\s*(\d+)?/gi;
-const GAS_RE = /(?:ガス|がす)[x×]?\s*(\d+)?/gi;
+// 数字を拾う区切りは同じ行の空白のみ許容（改行をまたぐと次の行の無関係な数字を拾ってしまうため）
+const DENKI_RE = /(?:でんき|デンキ|電気)[x×]?[ \t　]*(\d+)?/gi;
+const GAS_RE = /(?:ガス|がす)[x×]?[ \t　]*(\d+)?/gi;
 // クレカは銀クレ・シルバー・ゴールド・金くれ・Gクレ等の呼び方も全部同じ「クレカ」件数として拾う（ひらがな/カタカナ両対応）
 // 「ゴールドクレカ」のような組み合わせ表記を「ゴールド」＋「クレカ」で二重カウントしないよう、長い表記を先に置く
-const KUREKA_RE = /(?:金クレカ|金くれか|きんクレカ|きんくれか|銀クレカ|銀くれか|ぎんクレカ|ぎんくれか|Gクレカ|Gくれか|ゴールドクレカ|ごーるどくれか|シルバークレカ|しるばーくれか|金クレ|金くれ|きんクレ|きんくれ|銀クレ|銀くれ|ぎんクレ|ぎんくれ|Gクレ|Gくれ|ゴールド|ごーるど|シルバー|しるばー|クレカ|くれか|クレジットカード)[x×]?\s*(\d+)?/gi;
+const KUREKA_RE = /(?:金クレカ|金くれか|きんクレカ|きんくれか|銀クレカ|銀くれか|ぎんクレカ|ぎんくれか|Gクレカ|Gくれか|ゴールドクレカ|ごーるどくれか|シルバークレカ|しるばーくれか|金クレ|金くれ|きんクレ|きんくれ|銀クレ|銀くれ|ぎんクレ|ぎんくれ|Gクレ|Gくれ|ゴールド|ごーるど|シルバー|しるばー|クレカ|くれか|クレジットカード)[x×]?[ \t　]*(\d+)?/gi;
 // SB系ブースの「アップ」（既存客のプラン変更等、新規HSの内数）
-const UP_RE = /アップ(?:セル)?[x×]?\s*(\d+)?/gi;
+const UP_RE = /アップ(?:セル)?[x×]?[ \t　]*(\d+)?/gi;
 // au系ブースの固定商材（事業者変更＝事変はビックローブ光扱い）
-const BB_HIKARI_RE = /(?:事変|じへん|ジヘン|BIGLOBE|ビッグローブ|ビッグロ|びっぐろ|ビッグ|びっぐ)[x×]?\s*(\d+)?/gi;
-const AU_HIKARI_RE = /(?:au光|auひかり|auヒカリ)[x×]?\s*(\d+)?/gi;
+const BB_HIKARI_RE = /(?:事変|じへん|ジヘン|BIGLOBE|ビッグローブ|ビッグロ|びっぐろ|ビッグ|びっぐ)[x×]?[ \t　]*(\d+)?/gi;
+const AU_HIKARI_RE = /(?:au光|auひかり|auヒカリ)[x×]?[ \t　]*(\d+)?/gi;
 // SB系ブースのソフトバンクAir（SBAir・Air新規・エアー等）
-const AIR_RE = /(?:SB\s*Air|Air|エアー?)[x×]?\s*(\d+)?/gi;
+const AIR_RE = /(?:SB\s*Air|Air|エアー?)[x×]?[ \t　]*(\d+)?/gi;
 
 function emptyBreakdown(): CarrierBreakdown {
   return { shin: 0, mnp: 0, tanmatsu: 0, sim: 0, o19: 0 };
@@ -247,13 +256,12 @@ function parseJissekiBreakdown(postsByStaff: SiteMap[string], family: CarrierFam
         const after = msg.slice((match.index ?? 0) + match[0].length);
         const beforeLines = before.split('\n');
         const sameLine = beforeLines.pop() ?? '';
-        const prevLine = beforeLines.pop() ?? '';
         const afterLines = after.split('\n');
         const afterLine = afterLines[0] ?? '';
         const nextLine = afterLines[1] ?? '';
         const nextNextLine = afterLines[2] ?? '';
         const fullLine = sameLine + afterLine;
-        if (SHIN_EXCLUDE_LINE.test(prevLine) || SHIN_EXCLUDE_LINE.test(fullLine) || SHIN_EXCLUDE_LINE.test(nextLine) || SHIN_EXCLUDE_LINE.test(nextNextLine)) continue;
+        if (SHIN_EXCLUDE_LINE.test(before) || SHIN_EXCLUDE_LINE.test(fullLine) || SHIN_EXCLUDE_LINE.test(nextLine) || SHIN_EXCLUDE_LINE.test(nextNextLine)) continue;
         const count = match[1] ? parseInt(match[1]) : 1;
         mnpCount += count;
         // 「戻り」がMNP表記より前にあれば即決ではない
