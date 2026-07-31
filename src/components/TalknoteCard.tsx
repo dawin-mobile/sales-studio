@@ -130,6 +130,235 @@ function countMnpNew(postsByStaff: SiteMap[string]): { mnp: number; shin: number
   return { mnp, shin };
 }
 
+interface CarrierBreakdown {
+  shin: number;
+  mnp: number;
+  tanmatsu: number;
+  sim: number;
+  o19: number;
+}
+
+interface JissekiBreakdown {
+  au: CarrierBreakdown;
+  uq: CarrierBreakdown;
+  mnpSokketsu: number;
+  o19Total: number;
+}
+
+function emptyBreakdown(): CarrierBreakdown {
+  return { shin: 0, mnp: 0, tanmatsu: 0, sim: 0, o19: 0 };
+}
+
+// 「元キャリア→au/UQ」の形、なければ本文中のau/UQ表記の先勝ちで判定
+function detectCarrier(msg: string): 'au' | 'uq' | null {
+  const arrow = msg.match(/→\s*(au|uq)/i);
+  if (arrow) return arrow[1].toLowerCase() === 'uq' ? 'uq' : 'au';
+  const uqIdx = msg.search(/\bUQ\b/i);
+  const auIdx = msg.search(/\bau\b/i);
+  if (uqIdx === -1 && auIdx === -1) return null;
+  if (uqIdx === -1) return 'au';
+  if (auIdx === -1) return 'uq';
+  return uqIdx < auIdx ? 'uq' : 'au';
+}
+
+function detectDevice(msg: string): 'tanmatsu' | 'sim' | null {
+  if (/sim/i.test(msg)) return 'sim';
+  if (/端末/.test(msg)) return 'tanmatsu';
+  return null;
+}
+
+// 実績報告テンプレート生成用: au/UQ×新規・MNP・端末・SIM単・即決・O19を雑投稿から解析
+// 投稿の書き方は人によってバラつくため完全一致は保証されない（個人実績欄に生テキストも残すので目視確認前提）
+function parseJissekiBreakdown(postsByStaff: SiteMap[string]): JissekiBreakdown {
+  const result: JissekiBreakdown = { au: emptyBreakdown(), uq: emptyBreakdown(), mnpSokketsu: 0, o19Total: 0 };
+
+  for (const posts of Object.values(postsByStaff)) {
+    for (const post of posts) {
+      const msg = normalize(post.message);
+      const carrier = detectCarrier(msg);
+      const device = detectDevice(msg);
+      const bucket = carrier ? result[carrier] : null;
+
+      let mnpCount = 0;
+      for (const match of msg.matchAll(/MNP(\d+)?/gi)) {
+        const before = msg.slice(0, match.index);
+        const after = msg.slice((match.index ?? 0) + match[0].length);
+        const beforeLines = before.split('\n');
+        const sameLine = beforeLines.pop() ?? '';
+        const prevLine = beforeLines.pop() ?? '';
+        const afterLines = after.split('\n');
+        const afterLine = afterLines[0] ?? '';
+        const nextLine = afterLines[1] ?? '';
+        const nextNextLine = afterLines[2] ?? '';
+        const fullLine = sameLine + afterLine;
+        if (SHIN_EXCLUDE_LINE.test(prevLine) || SHIN_EXCLUDE_LINE.test(fullLine) || SHIN_EXCLUDE_LINE.test(nextLine) || SHIN_EXCLUDE_LINE.test(nextNextLine)) continue;
+        const count = match[1] ? parseInt(match[1]) : 1;
+        mnpCount += count;
+        // 「戻り」がMNP表記より前にあれば即決ではない
+        if (!before.includes('戻り')) result.mnpSokketsu += count;
+      }
+      if (bucket) bucket.mnp += mnpCount;
+      if (bucket && device && mnpCount > 0) bucket[device] += mnpCount;
+
+      const shinCount = countShin(msg);
+      if (bucket) bucket.shin += shinCount;
+      if (bucket && device && shinCount > 0) bucket[device] += shinCount;
+
+      if (/O19/i.test(msg)) {
+        const o19Match = msg.match(/O19\D*(\d+)?/i);
+        const o19Count = o19Match && o19Match[1] ? parseInt(o19Match[1]) : 1;
+        result.o19Total += o19Count;
+        if (bucket) bucket.o19 += o19Count;
+      }
+    }
+  }
+  return result;
+}
+
+// 実績報告テンプレートの見出し（本文中に1回だけ出る想定でセクション分割に使う）
+const JISSEKI_HEADINGS = ['ブース全体実績', '内訳', '固定', 'LD', 'ブース目標', '店舗込累計', 'ブース累計', '個人実績'];
+
+function splitJissekiSections(text: string): Record<string, string> {
+  const positions: { name: string; idx: number }[] = [];
+  for (const h of JISSEKI_HEADINGS) {
+    const idx = text.indexOf(h);
+    if (idx !== -1) positions.push({ name: h, idx });
+  }
+  positions.sort((a, b) => a.idx - b.idx);
+  const sections: Record<string, string> = {};
+  positions.forEach((p, i) => {
+    const end = i + 1 < positions.length ? positions[i + 1].idx : text.length;
+    sections[p.name] = text.slice(p.idx, end);
+  });
+  return sections;
+}
+
+function extractNumber(text: string, label: string): number | null {
+  const re = new RegExp('[┗\\s]*' + label + '\\s*[:：]\\s*([0-9０-９]+)');
+  const m = normalize(text).match(re);
+  return m ? parseInt(m[1]) : null;
+}
+
+function extractText(text: string, label: string): string {
+  // 値が空欄のとき \s* が改行をまたいで次の行を拾わないよう、コロン後は同じ行内の空白のみ許容
+  const re = new RegExp(label + '\\s*[:：][ \\t　]*(.*)');
+  const m = text.match(re);
+  return m ? m[1].trim() : '';
+}
+
+const WEEKDAY_KANJI = ['日', '月', '火', '水', '木', '金', '土'];
+
+function formatDateJp(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  return `${m}月${d}日（${WEEKDAY_KANJI[dt.getDay()]}）`;
+}
+
+function shiftDateBy(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + days);
+  const yy = dt.getFullYear();
+  const mm = String(dt.getMonth() + 1).padStart(2, '0');
+  const dd = String(dt.getDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+}
+
+// 前日の実績報告本文（累計・目標・催事場所等）＋当日の集計結果から実績報告テンプレートを組み立てる
+function buildJissekiReport({ site, date, prevText, breakdown, postsByStaff }: {
+  site: string;
+  date: string;
+  prevText: string;
+  breakdown: JissekiBreakdown;
+  postsByStaff: SiteMap[string];
+}): string {
+  const sections = splitJissekiSections(prevText);
+
+  const prevEventPlace = extractText(prevText, '催事場所');
+  const prevLinkedStore = extractText(prevText, '紐付け店舗');
+  const prevDevice = extractText(prevText, '集客装置');
+
+  const eventPlace = prevEventPlace || normalizeSiteName(site);
+  const linkedStore = prevLinkedStore || '';
+  const device = prevDevice || '';
+
+  const goalSection = sections['ブース目標'] ?? '';
+  const goalShinHS = extractText(goalSection, '新規HS');
+  const goalMnp = extractText(goalSection, 'MNP');
+
+  const storeCumSection = sections['店舗込累計'] ?? '';
+  const prevStoreShinHS = extractNumber(storeCumSection, '新規HS') ?? 0;
+  const prevStoreMnp = extractNumber(storeCumSection, 'MNP') ?? 0;
+
+  const boothCumSection = sections['ブース累計'] ?? '';
+  const prevBoothShinHS = extractNumber(boothCumSection, '新規HS') ?? 0;
+  const prevBoothMnp = extractNumber(boothCumSection, 'MNP') ?? 0;
+  const prevBoothO19 = extractNumber(boothCumSection, 'O19新規') ?? 0;
+
+  const todayShinNew = breakdown.au.shin + breakdown.uq.shin;
+  const todayMnp = breakdown.au.mnp + breakdown.uq.mnp;
+  const todayShinHS = todayShinNew + todayMnp;
+  const todayO19 = breakdown.o19Total;
+
+  const v = (n: number) => (n > 0 ? String(n) : '');
+  const personalText = buildCopyText(postsByStaff).trim();
+
+  return [
+    '🙋‍♀️✨実績報告✨🙋‍♂️',
+    formatDateJp(date),
+    `催事場所：${eventPlace}`,
+    `紐付け店舗：${linkedStore}`,
+    `集客装置：${device}`,
+    '',
+    '✨ブース全体実績✨',
+    `新規HS：${v(todayShinHS)}(O19除く)`,
+    `┗MNP：${v(todayMnp)}`,
+    `┗MNP 即決：${v(breakdown.mnpSokketsu)}`,
+    `O19新規：${v(todayO19)}`,
+    '',
+    '👊✨内訳✨👊',
+    `┗ au 新規：${v(breakdown.au.shin)}(O19除く)`,
+    `┗ au MNP：${v(breakdown.au.mnp)}`,
+    `┗端末：${v(breakdown.au.tanmatsu)}`,
+    `┗SIM単：${v(breakdown.au.sim)}`,
+    `O19新規：${v(breakdown.au.o19)}`,
+    '',
+    `┗UQ 新規：${v(breakdown.uq.shin)}(O19除く)`,
+    `┗UQ MNP：${v(breakdown.uq.mnp)}`,
+    `┗端末：${v(breakdown.uq.tanmatsu)}`,
+    `┗SIM単：${v(breakdown.uq.sim)}`,
+    `O19新規：${v(breakdown.uq.o19)}`,
+    '',
+    '',
+    '🏡✨固定✨🏡',
+    'au光：',
+    'ビックローブ光：',
+    'JCOM：',
+    'ホームルーター:',
+    '',
+    '💡✨LD✨💡',
+    'au電気：',
+    'ガス：',
+    'クレカ：',
+    '',
+    '⚡️ブース目標⚡️',
+    `新規HS：${goalShinHS}`,
+    `┗MNP：${goalMnp}`,
+    '',
+    '✌️✨店舗込累計（イベント期間中）✨✌️',
+    `新規HS：${v(prevStoreShinHS + todayShinHS)}(O19除く)`,
+    `┗MNP：${v(prevStoreMnp + todayMnp)}`,
+    '',
+    '✨ブース累計（イベント期間中）✨',
+    `新規HS：${v(prevBoothShinHS + todayShinHS)}(O19除く)`,
+    `┗MNP：${v(prevBoothMnp + todayMnp)}`,
+    `O19新規：${v(prevBoothO19 + todayO19)}`,
+    '',
+    '💖✨個人実績💖',
+    personalText,
+  ].join('\n');
+}
+
 function todayString() {
   const now = new Date();
   const y = now.getFullYear();
@@ -150,7 +379,7 @@ function buildCopyText(postsByStaff: SiteMap[string]): string {
   return parts.join('\n');
 }
 
-function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSiteMap, externalCollapsed }: {
+function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSiteMap, externalCollapsed, date, canGenerate = false }: {
   site: string;
   staffList: string[];
   agency: string;
@@ -158,6 +387,8 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
   filterWork?: boolean;
   badgeSiteMap?: SiteMap;
   externalCollapsed?: boolean;
+  date?: string;
+  canGenerate?: boolean;
 }) {
   const postsByStaff = siteMap[site] ?? {};
   const badgePostsByStaff = badgeSiteMap ? (badgeSiteMap[site] ?? {}) : postsByStaff;
@@ -166,6 +397,8 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
   const { mnp, shin } = countMnpNew(badgePostsByStaff);
   const [copied, setCopied] = useState(false);
   const [collapsed, setCollapsed] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [generated, setGenerated] = useState(false);
   useEffect(() => { if (externalCollapsed !== undefined) setCollapsed(externalCollapsed); }, [externalCollapsed]);
 
   const handleCopy = () => {
@@ -174,6 +407,29 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
+  };
+
+  const handleGenerate = async () => {
+    if (!date || generating) return;
+    setGenerating(true);
+    try {
+      const prevDate = shiftDateBy(date, -1);
+      const res = await fetch(`/api/jisseki?date=${prevDate}`);
+      const prevData: TalknoteData = await res.json();
+      const prevPosts = prevData?.siteMap?.[site];
+      const prevText = prevPosts
+        ? Object.values(prevPosts).map((posts) => posts.map((p) => p.message).join('\n')).join('\n')
+        : '';
+      const breakdown = parseJissekiBreakdown(postsByStaff);
+      const reportText = buildJissekiReport({ site, date, prevText, breakdown, postsByStaff });
+      await navigator.clipboard.writeText(reportText);
+      setGenerated(true);
+      setTimeout(() => setGenerated(false), 2000);
+    } catch {
+      // 前日データ取得失敗時などは何もしない
+    } finally {
+      setGenerating(false);
+    }
   };
 
   return (
@@ -268,27 +524,51 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
             </span>
           ))}
           {hasReport && (
-            <button
-              onClick={(e) => { e.stopPropagation(); handleCopy(); }}
-              style={{
-                marginLeft: 'auto', flexShrink: 0,
-                background: copied ? 'rgba(74,222,128,0.2)' : 'rgba(255,255,255,0.08)',
-                border: `1px solid ${copied ? '#4ade80' : 'rgba(255,255,255,0.15)'}`,
-                borderRadius: 6, padding: '3px 9px',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-                transition: 'all 0.2s',
-              }}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={copied ? '#4ade80' : '#bbb'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                {copied
-                  ? <polyline points="20 6 9 17 4 12" />
-                  : <><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></>
-                }
-              </svg>
-              <span style={{ fontSize: 10, color: copied ? '#4ade80' : '#bbb', whiteSpace: 'nowrap' }}>
-                {copied ? 'コピー済み' : 'コピー'}
-              </span>
-            </button>
+            <div style={{ marginLeft: 'auto', flexShrink: 0, display: 'flex', gap: 6 }}>
+              {canGenerate && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleGenerate(); }}
+                  disabled={generating}
+                  style={{
+                    background: generated ? 'rgba(74,222,128,0.2)' : 'rgba(255,255,255,0.08)',
+                    border: `1px solid ${generated ? '#4ade80' : 'rgba(255,255,255,0.15)'}`,
+                    borderRadius: 6, padding: '3px 9px',
+                    cursor: generating ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                    transition: 'all 0.2s', opacity: generating ? 0.6 : 1,
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={generated ? '#4ade80' : '#bbb'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    {generated
+                      ? <polyline points="20 6 9 17 4 12" />
+                      : <path d="M12 3v18M3 12h18" />
+                    }
+                  </svg>
+                  <span style={{ fontSize: 10, color: generated ? '#4ade80' : '#bbb', whiteSpace: 'nowrap' }}>
+                    {generating ? '生成中...' : generated ? 'コピー済み' : '生成'}
+                  </span>
+                </button>
+              )}
+              <button
+                onClick={(e) => { e.stopPropagation(); handleCopy(); }}
+                style={{
+                  background: copied ? 'rgba(74,222,128,0.2)' : 'rgba(255,255,255,0.08)',
+                  border: `1px solid ${copied ? '#4ade80' : 'rgba(255,255,255,0.15)'}`,
+                  borderRadius: 6, padding: '3px 9px',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                  transition: 'all 0.2s',
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={copied ? '#4ade80' : '#bbb'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  {copied
+                    ? <polyline points="20 6 9 17 4 12" />
+                    : <><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></>
+                  }
+                </svg>
+                <span style={{ fontSize: 10, color: copied ? '#4ade80' : '#bbb', whiteSpace: 'nowrap' }}>
+                  {copied ? 'コピー済み' : 'コピー'}
+                </span>
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -551,6 +831,8 @@ export default function TalknoteCard() {
           filterWork={tab === 'talknote'}
           badgeSiteMap={tab === 'jisseki' && data ? data.siteMap : undefined}
           externalCollapsed={allCollapsed}
+          date={date}
+          canGenerate={tab === 'talknote'}
         />
       ))}
 
