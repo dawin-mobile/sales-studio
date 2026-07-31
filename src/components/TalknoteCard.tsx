@@ -232,11 +232,9 @@ function detectCarrier(msg: string, family: CarrierFamily): 'au' | 'uq' | null {
   return uqIdx < auIdx ? 'uq' : 'au';
 }
 
-function detectDevice(msg: string): 'tanmatsu' | 'sim' | null {
-  if (/sim/i.test(msg)) return 'sim';
-  if (/端末/.test(msg)) return 'tanmatsu';
-  return null;
-}
+// 1つの投稿にsim×1・端末×1のように両方含まれることがあるため、どちらか一方に決め打ちせず個別に件数を拾う
+const SIM_RE = /sim[x×]?[ \t　]*(\d+)?/gi;
+const TANMATSU_RE = /端末[x×]?[ \t　]*(\d+)?/gi;
 
 // 実績報告テンプレート生成用: au/UQ×新規・MNP・端末・SIM単・即決・O19を雑投稿から解析
 // 投稿の書き方は人によってバラつくため完全一致は保証されない（個人実績欄に生テキストも残すので目視確認前提）
@@ -247,7 +245,6 @@ function parseJissekiBreakdown(postsByStaff: SiteMap[string], family: CarrierFam
     for (const post of posts) {
       const msg = normalize(post.message);
       const carrier = detectCarrier(msg, family);
-      const device = detectDevice(msg);
       const bucket = carrier ? result[carrier] : null;
 
       let mnpCount = 0;
@@ -270,12 +267,16 @@ function parseJissekiBreakdown(postsByStaff: SiteMap[string], family: CarrierFam
       // 全体合計はキャリア判定できたかどうかに関わらず反映する（内訳のau/UQ振り分けだけキャリア判定に依存）
       result.mnpTotal += mnpCount;
       if (bucket) bucket.mnp += mnpCount;
-      if (bucket && device && mnpCount > 0) bucket[device] += mnpCount;
 
       const shinCount = countShin(msg);
       result.shinTotal += shinCount;
       if (bucket) bucket.shin += shinCount;
-      if (bucket && device && shinCount > 0) bucket[device] += shinCount;
+
+      // sim・端末は同じ投稿内に両方出てくることがあるので、それぞれ個別にカウントする
+      if (bucket && (mnpCount > 0 || shinCount > 0)) {
+        bucket.sim += countLdItem(msg, SIM_RE);
+        bucket.tanmatsu += countLdItem(msg, TANMATSU_RE);
+      }
 
       if (/O19/i.test(msg)) {
         const o19Match = msg.match(/O19\D*(\d+)?/i);
