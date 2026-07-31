@@ -151,8 +151,31 @@ function emptyBreakdown(): CarrierBreakdown {
   return { shin: 0, mnp: 0, tanmatsu: 0, sim: 0, o19: 0 };
 }
 
-// 「元キャリア→au/UQ」の形、なければ本文中のau/UQ表記の先勝ちで判定
-function detectCarrier(msg: string): 'au' | 'uq' | null {
+// 現場によって扱うキャリアの組が違う（au・UQ系のブース／SB・Y系のブース）。現場名にSBが付いていればSB・Y系
+type CarrierFamily = 'au-uq' | 'sb-y';
+
+function detectCarrierFamily(site: string): CarrierFamily {
+  return /SB/i.test(site) ? 'sb-y' : 'au-uq';
+}
+
+const FAMILY_LABELS: Record<CarrierFamily, { primary: string; secondary: string }> = {
+  'au-uq': { primary: 'au', secondary: 'UQ' },
+  'sb-y': { primary: 'SB', secondary: 'Y' },
+};
+
+// 内部的にはau-uq系の'au'/'uq'キーをそのまま「1つ目のキャリア/2つ目のキャリア」の枠として使い回す
+// 「元キャリア→先キャリア」の形、なければ本文中の先キャリア表記の先勝ちで判定
+function detectCarrier(msg: string, family: CarrierFamily): 'au' | 'uq' | null {
+  if (family === 'sb-y') {
+    const arrow = msg.match(/→\s*(SB|ソフトバンク|Y[!！]?(?:モバ(?:イル)?|mobile)?\d*)/i);
+    if (arrow) return /SB|ソフトバンク/i.test(arrow[1]) ? 'au' : 'uq';
+    const sbIdx = msg.search(/SB|ソフトバンク/i);
+    const yIdx = msg.search(/Y[!！]?(?:モバ(?:イル)?|mobile)|ワイモバ(?:イル)?|YM\b|Y\d/i);
+    if (sbIdx === -1 && yIdx === -1) return null;
+    if (yIdx === -1) return 'au';
+    if (sbIdx === -1) return 'uq';
+    return sbIdx < yIdx ? 'au' : 'uq';
+  }
   const arrow = msg.match(/→\s*(au|uq)/i);
   if (arrow) return arrow[1].toLowerCase() === 'uq' ? 'uq' : 'au';
   const uqIdx = msg.search(/\bUQ\b/i);
@@ -171,13 +194,13 @@ function detectDevice(msg: string): 'tanmatsu' | 'sim' | null {
 
 // 実績報告テンプレート生成用: au/UQ×新規・MNP・端末・SIM単・即決・O19を雑投稿から解析
 // 投稿の書き方は人によってバラつくため完全一致は保証されない（個人実績欄に生テキストも残すので目視確認前提）
-function parseJissekiBreakdown(postsByStaff: SiteMap[string]): JissekiBreakdown {
+function parseJissekiBreakdown(postsByStaff: SiteMap[string], family: CarrierFamily): JissekiBreakdown {
   const result: JissekiBreakdown = { au: emptyBreakdown(), uq: emptyBreakdown(), mnpTotal: 0, shinTotal: 0, mnpSokketsu: 0, o19Total: 0 };
 
   for (const posts of Object.values(postsByStaff)) {
     for (const post of posts) {
       const msg = normalize(post.message);
-      const carrier = detectCarrier(msg);
+      const carrier = detectCarrier(msg, family);
       const device = detectDevice(msg);
       const bucket = carrier ? result[carrier] : null;
 
@@ -307,6 +330,8 @@ function buildJissekiReport({ site, date, prevText, breakdown, postsByStaff }: {
 
   const v = (n: number) => (n > 0 ? String(n) : '');
   const personalText = buildCopyText(postsByStaff).trim();
+  const family = detectCarrierFamily(site);
+  const labels = FAMILY_LABELS[family];
 
   return [
     '🙋‍♀️✨実績報告✨🙋‍♂️',
@@ -322,14 +347,14 @@ function buildJissekiReport({ site, date, prevText, breakdown, postsByStaff }: {
     `O19新規：${v(todayO19)}`,
     '',
     '👊✨内訳✨👊',
-    `┗ au 新規：${v(breakdown.au.shin)}(O19除く)`,
-    `┗ au MNP：${v(breakdown.au.mnp)}`,
+    `┗ ${labels.primary} 新規：${v(breakdown.au.shin)}(O19除く)`,
+    `┗ ${labels.primary} MNP：${v(breakdown.au.mnp)}`,
     `┗端末：${v(breakdown.au.tanmatsu)}`,
     `┗SIM単：${v(breakdown.au.sim)}`,
     `O19新規：${v(breakdown.au.o19)}`,
     '',
-    `┗UQ 新規：${v(breakdown.uq.shin)}(O19除く)`,
-    `┗UQ MNP：${v(breakdown.uq.mnp)}`,
+    `┗${labels.secondary} 新規：${v(breakdown.uq.shin)}(O19除く)`,
+    `┗${labels.secondary} MNP：${v(breakdown.uq.mnp)}`,
     `┗端末：${v(breakdown.uq.tanmatsu)}`,
     `┗SIM単：${v(breakdown.uq.sim)}`,
     `O19新規：${v(breakdown.uq.o19)}`,
@@ -425,7 +450,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
       const prevText = prevPosts
         ? Object.values(prevPosts).map((posts) => posts.map((p) => p.message).join('\n')).join('\n')
         : '';
-      const breakdown = parseJissekiBreakdown(postsByStaff);
+      const breakdown = parseJissekiBreakdown(postsByStaff, detectCarrierFamily(site));
       const reportText = buildJissekiReport({ site, date, prevText, breakdown, postsByStaff });
       await navigator.clipboard.writeText(reportText);
       setGenerated(true);
