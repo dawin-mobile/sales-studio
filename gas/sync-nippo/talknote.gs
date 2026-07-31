@@ -66,13 +66,28 @@ function fetchAndSyncTalknote() {
         message.markRead();
         jissekiCount++;
       } else {
-        // 通常メッセージ → トークノート受信録 + DB同期
+        // 全社以外のノート投稿はスキップ（取りこぼし防止）
+        if (subject.includes('ノートに投稿しました') && !subject.includes('「全社」')) {
+          message.markRead();
+          continue;
+        }
+        // 全社ノート投稿 or 直接メッセージ → トークノート受信録 + DB同期
         let senderName = '不明';
-        const nameMatch = subject.match(/Talknote\s*[：:]\s*(.+?)さんからメッセージ/);
-        if (nameMatch && nameMatch[1]) senderName = nameMatch[1].trim();
+        const noteNameMatch = subject.match(/Talknote\s*[：:]\s*(.+?)さんが[「『]全社[」』]/);
+        if (noteNameMatch && noteNameMatch[1]) {
+          senderName = noteNameMatch[1].trim();
+        } else {
+          const dmNameMatch = subject.match(/Talknote\s*[：:]\s*(.+?)さんからメッセージ/);
+          if (dmNameMatch && dmNameMatch[1]) senderName = dmNameMatch[1].trim();
+        }
         let msgContent = '（内容をうまく取得できませんでした）';
-        const bodyMatch = body.match(/からのメッセージ\s*[：:]\s*([\s\S]*?)(?=\n+返信はこちらから)/);
-        if (bodyMatch && bodyMatch[1]) msgContent = bodyMatch[1].trim();
+        const noteBodyMatch = body.match(/さんの投稿\s*[：:]\s*([\s\S]*?)(?=\n+返信はこちらから)/);
+        if (noteBodyMatch && noteBodyMatch[1]) {
+          msgContent = noteBodyMatch[1].trim();
+        } else {
+          const dmBodyMatch = body.match(/からのメッセージ\s*[：:]\s*([\s\S]*?)(?=\n+返信はこちらから)/);
+          if (dmBodyMatch && dmBodyMatch[1]) msgContent = dmBodyMatch[1].trim();
+        }
         sheet.appendRow([
           Utilities.formatDate(date, 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss'),
           senderName,
