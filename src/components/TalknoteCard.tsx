@@ -143,6 +143,7 @@ interface JissekiBreakdown {
   uq: CarrierBreakdown;
   mnpTotal: number;
   shinTotal: number;
+  upTotal: number;
   mnpSokketsu: number;
   o19Total: number;
   denki: number;
@@ -150,7 +151,7 @@ interface JissekiBreakdown {
   kureka: number;
 }
 
-// LD項目（電気・ガス・クレカ）の件数を拾う。「クレカ×2」のような表記に対応、数字がなければ1件扱い
+// LD項目（電気・ガス・クレカ）／アップの件数を拾う。「クレカ×2」のような表記に対応、数字がなければ1件扱い
 function countLdItem(msg: string, re: RegExp): number {
   let total = 0;
   for (const match of msg.matchAll(re)) {
@@ -162,6 +163,8 @@ const DENKI_RE = /(?:でんき|デンキ|電気)[x×]?\s*(\d+)?/gi;
 const GAS_RE = /(?:ガス|がす)[x×]?\s*(\d+)?/gi;
 // クレカは銀クレ・シルバー・ゴールド・金くれ等の呼び方も全部同じ「クレカ」件数として拾う
 const KUREKA_RE = /(?:金クレカ|金くれか|金クレ|金くれ|きんクレカ|きんくれか|きんクレ|きんくれ|銀クレカ|銀くれか|銀クレ|銀くれ|ぎんクレカ|ぎんくれか|ぎんクレ|ぎんくれ|ゴールド|ごーるど|シルバー|しるばー|クレカ|くれか|クレジットカード)[x×]?\s*(\d+)?/gi;
+// SB系ブースの「アップ」（既存客のプラン変更等、新規HSの内数）
+const UP_RE = /アップ(?:セル)?[x×]?\s*(\d+)?/gi;
 
 function emptyBreakdown(): CarrierBreakdown {
   return { shin: 0, mnp: 0, tanmatsu: 0, sim: 0, o19: 0 };
@@ -217,7 +220,7 @@ function detectDevice(msg: string): 'tanmatsu' | 'sim' | null {
 // 実績報告テンプレート生成用: au/UQ×新規・MNP・端末・SIM単・即決・O19を雑投稿から解析
 // 投稿の書き方は人によってバラつくため完全一致は保証されない（個人実績欄に生テキストも残すので目視確認前提）
 function parseJissekiBreakdown(postsByStaff: SiteMap[string], family: CarrierFamily): JissekiBreakdown {
-  const result: JissekiBreakdown = { au: emptyBreakdown(), uq: emptyBreakdown(), mnpTotal: 0, shinTotal: 0, mnpSokketsu: 0, o19Total: 0, denki: 0, gas: 0, kureka: 0 };
+  const result: JissekiBreakdown = { au: emptyBreakdown(), uq: emptyBreakdown(), mnpTotal: 0, shinTotal: 0, upTotal: 0, mnpSokketsu: 0, o19Total: 0, denki: 0, gas: 0, kureka: 0 };
 
   for (const posts of Object.values(postsByStaff)) {
     for (const post of posts) {
@@ -264,6 +267,7 @@ function parseJissekiBreakdown(postsByStaff: SiteMap[string], family: CarrierFam
       result.denki += countLdItem(msg, DENKI_RE);
       result.gas += countLdItem(msg, GAS_RE);
       result.kureka += countLdItem(msg, KUREKA_RE);
+      result.upTotal += countLdItem(msg, UP_RE);
     }
   }
   return result;
@@ -287,15 +291,16 @@ function splitJissekiSections(text: string): Record<string, string> {
   return sections;
 }
 
+// ラベルとコロンの間に補足文言（「新規HS アップ含め：」等）が挟まっても拾えるよう [^:：\n]* で許容する
 function extractNumber(text: string, label: string): number | null {
-  const re = new RegExp('[┗\\s]*' + label + '\\s*[:：]\\s*([0-9０-９]+)');
+  const re = new RegExp('[┗\\s]*' + label + '[^:：\\n]*[:：]\\s*([0-9０-９]+)');
   const m = normalize(text).match(re);
   return m ? parseInt(m[1]) : null;
 }
 
 function extractText(text: string, label: string): string {
   // 値が空欄のとき \s* が改行をまたいで次の行を拾わないよう、コロン後は同じ行内の空白のみ許容
-  const re = new RegExp(label + '\\s*[:：][ \\t　]*(.*)');
+  const re = new RegExp(label + '[^:：\\n]*[:：][ \\t　]*(.*)');
   const m = text.match(re);
   return m ? m[1].trim() : '';
 }
@@ -339,6 +344,99 @@ function buildJissekiReport({ site, date, prevText, postsByStaff }: {
   const family = detectCarrierFamily(eventPlace);
   const breakdown = parseJissekiBreakdown(postsByStaff, family);
   const labels = FAMILY_LABELS[family];
+  const v = (n: number) => (n > 0 ? String(n) : '');
+  const personalText = buildCopyText(postsByStaff).trim();
+
+  const header = [
+    '🙋‍♀️✨実績報告✨🙋‍♂️',
+    formatDateJp(date),
+    `催事場所：${eventPlace}`,
+    `紐付け店舗：${linkedStore}`,
+    `集客装置：${device}`,
+    '',
+  ];
+
+  // SB/YM系ブースはau/UQ系と全く違うテンプレート構造（O19なし、代わりに新規/アップの内訳、固定・LDの項目名も別）
+  if (family === 'sb-y') {
+    const goalSection = sections['ブース目標'] ?? '';
+    const goalHS = extractText(goalSection, '新規HS');
+    const goalMnp = extractText(goalSection, 'MNP');
+    const goalShin = extractText(goalSection, '┗新規');
+    const goalUp = extractText(goalSection, '┗アップ');
+
+    const storeCumSection = sections['店舗込累計'] ?? '';
+    const prevStoreMnp = extractNumber(storeCumSection, 'MNP') ?? 0;
+    const prevStoreShin = extractNumber(storeCumSection, '┗新規') ?? 0;
+    const prevStoreUp = extractNumber(storeCumSection, '┗アップ') ?? 0;
+
+    const boothCumSection = sections['ブース累計'] ?? '';
+    const prevBoothMnp = extractNumber(boothCumSection, 'MNP') ?? 0;
+    const prevBoothShin = extractNumber(boothCumSection, '┗新規') ?? 0;
+    const prevBoothUp = extractNumber(boothCumSection, '┗アップ') ?? 0;
+
+    const todayMnp = breakdown.mnpTotal;
+    const todayShin = breakdown.shinTotal;
+    const todayUp = breakdown.upTotal;
+    const todayShinHS = todayMnp + todayShin + todayUp;
+
+    const newStoreMnp = prevStoreMnp + todayMnp;
+    const newStoreShin = prevStoreShin + todayShin;
+    const newStoreUp = prevStoreUp + todayUp;
+
+    const newBoothMnp = prevBoothMnp + todayMnp;
+    const newBoothShin = prevBoothShin + todayShin;
+    const newBoothUp = prevBoothUp + todayUp;
+
+    return [
+      ...header,
+      '✨ブース全体実績✨',
+      `新規HS：${v(todayShinHS)}`,
+      `┗MNP：${v(todayMnp)}`,
+      `┗新規：${v(todayShin)}`,
+      `┗アップ：${v(todayUp)}`,
+      '',
+      '👊✨内訳✨👊',
+      `┗ ${labels.primary} 新規：${v(breakdown.au.shin)}`,
+      `┗ ${labels.primary} MNP：${v(breakdown.au.mnp)}`,
+      `┗端末：${v(breakdown.au.tanmatsu)}`,
+      `┗SIM単：${v(breakdown.au.sim)}`,
+      '',
+      `┗${labels.secondary} 新規：${v(breakdown.uq.shin)}`,
+      `┗${labels.secondary} MNP：${v(breakdown.uq.mnp)}`,
+      `┗端末：${v(breakdown.uq.tanmatsu)}`,
+      `┗SIM単：${v(breakdown.uq.sim)}`,
+      '',
+      '🏡✨固定✨🏡',
+      'SB光：',
+      'ソフトバンクAir：',
+      '',
+      '💡✨LD✨💡',
+      `おうち電気：${v(breakdown.denki)}`,
+      `ガス：${v(breakdown.gas)}`,
+      `クレカ：${v(breakdown.kureka)}`,
+      '',
+      '⚡️ブース目標⚡️',
+      `新規HS アップ含め：${goalHS}`,
+      `┗MNP：${goalMnp}`,
+      `┗新規：${goalShin}`,
+      `┗アップ：${goalUp}`,
+      '',
+      '✌️✨店舗込累計（イベント期間中）✨✌️',
+      `新規HSアップ含め：${v(newStoreMnp + newStoreShin + newStoreUp)}`,
+      `┗MNP：${v(newStoreMnp)}`,
+      `┗新規：${v(newStoreShin)}`,
+      `┗アップ：${v(newStoreUp)}`,
+      '',
+      '✨ブース累計（イベント期間中）✨',
+      `新規HSアップ含め：${v(newBoothMnp + newBoothShin + newBoothUp)}`,
+      `┗MNP：${v(newBoothMnp)}`,
+      `┗新規：${v(newBoothShin)}`,
+      `┗アップ：${v(newBoothUp)}`,
+      '',
+      '💖✨個人実績✨💖',
+      personalText,
+    ].join('\n');
+  }
 
   const goalSection = sections['ブース目標'] ?? '';
   const goalShinHS = extractText(goalSection, '新規HS');
@@ -358,16 +456,8 @@ function buildJissekiReport({ site, date, prevText, postsByStaff }: {
   const todayShinHS = breakdown.shinTotal + breakdown.mnpTotal;
   const todayO19 = breakdown.o19Total;
 
-  const v = (n: number) => (n > 0 ? String(n) : '');
-  const personalText = buildCopyText(postsByStaff).trim();
-
   return [
-    '🙋‍♀️✨実績報告✨🙋‍♂️',
-    formatDateJp(date),
-    `催事場所：${eventPlace}`,
-    `紐付け店舗：${linkedStore}`,
-    `集客装置：${device}`,
-    '',
+    ...header,
     '✨ブース全体実績✨',
     `新規HS：${v(todayShinHS)}(O19除く)`,
     `┗MNP：${v(todayMnp)}`,
