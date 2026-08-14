@@ -725,7 +725,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
                       className={generating ? 'jisseki-generating-label' : undefined}
                       style={{ fontSize: 10, color: stateColor, whiteSpace: 'nowrap' }}
                     >
-                      {generating ? 'Ready...' : generated ? 'Complete' : 'Generate'}
+                      {generating ? '生成中...' : generated ? '生成完了' : '実績報告生成'}
                     </span>
                   </button>
                 );
