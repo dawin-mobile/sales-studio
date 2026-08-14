@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
   ]);
 
   // シフトシートから現場→スタッフのマッピングを構築
-  const siteOrder: { location: string; staff: string[]; agency: string; region: string }[] = [];
+  const siteOrder: { location: string; staff: string[]; agency: string; region: string; carrier: string }[] = [];
   const seen = new Set<string>();
 
   const addSites = (rows: string[][], region: '東京' | '福岡') => {
@@ -66,7 +66,8 @@ export async function GET(request: NextRequest) {
       if (seen.has(location)) continue;
       seen.add(location);
       const staff = row.slice(7, staffEnd).filter((s) => s && s.trim() !== '');
-      siteOrder.push({ location, staff, agency: row[agencyIdx] ?? '', region });
+      // C列＝キャリア（au / SB / 増強 等）。実績報告のテンプレート判定に使う
+      siteOrder.push({ location, staff, agency: row[agencyIdx] ?? '', region, carrier: row[2] ?? '' });
     }
   };
 

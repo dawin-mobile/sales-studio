@@ -7,6 +7,7 @@ interface ShiftSite {
   staff: string[];
   agency: string;
   region: string;
+  carrier?: string;
 }
 
 interface SiteMap {
@@ -190,12 +191,17 @@ function emptyBreakdown(): CarrierBreakdown {
   return { shin: 0, mnp: 0, tanmatsu: 0, sim: 0, o19: 0 };
 }
 
-// 現場によって扱うキャリアの組が違う（au・UQ系のブース／SB・Y系のブース）。催事場所か紐付け店舗にSB・バンクが含まれていればSB・Y系
+// 現場によって扱うキャリアの組が違う（au・UQ系のブース／SB・Y系のブース）。
+// SB現場はシフトシートのキャリア列（C列）が必ず「SB」になる運用なので、C列だけで判定する
 type CarrierFamily = 'au-uq' | 'sb-y';
 
-function detectCarrierFamily(eventPlace: string, linkedStore: string): CarrierFamily {
-  const SB_MARK = /SB|バンク/i;
-  return SB_MARK.test(eventPlace) || SB_MARK.test(linkedStore) ? 'sb-y' : 'au-uq';
+// 全角「ＳＢ」で入力されることもあるため英字を半角化してから判定する
+function toHalfWidthAlpha(s: string): string {
+  return s.replace(/[Ａ-Ｚａ-ｚ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+}
+
+function detectCarrierFamily(shiftCarrier: string): CarrierFamily {
+  return /SB/i.test(toHalfWidthAlpha(shiftCarrier)) ? 'sb-y' : 'au-uq';
 }
 
 const FAMILY_LABELS: Record<CarrierFamily, { primary: string; secondary: string }> = {
@@ -358,11 +364,12 @@ function shiftDateBy(dateStr: string, days: number): string {
 }
 
 // 前日の実績報告本文（累計・目標・催事場所等）＋当日の集計結果から実績報告テンプレートを組み立てる
-function buildJissekiReport({ site, date, prevText, postsByStaff }: {
+function buildJissekiReport({ site, date, prevText, postsByStaff, shiftCarrier }: {
   site: string;
   date: string;
   prevText: string;
   postsByStaff: SiteMap[string];
+  shiftCarrier?: string;
 }): string {
   const sections = splitJissekiSections(prevText);
 
@@ -374,8 +381,8 @@ function buildJissekiReport({ site, date, prevText, postsByStaff }: {
   const linkedStore = prevLinkedStore || '';
   const device = prevDevice || '';
 
-  // キャリアの組（au/UQ系かSB/YM系か）は催事場所・紐付け店舗の表記から判定する（シフト上の現場名にはSB等の表記がない）
-  const family = detectCarrierFamily(eventPlace, linkedStore);
+  // キャリアの組（au/UQ系かSB/YM系か）はシフトシートのC列で判定する（SB現場は必ず「SB」が入る運用）
+  const family = detectCarrierFamily(shiftCarrier ?? '');
   const breakdown = parseJissekiBreakdown(postsByStaff, family);
   const labels = FAMILY_LABELS[family];
   const v = (n: number) => (n > 0 ? String(n) : '');
@@ -562,7 +569,7 @@ function buildCopyText(postsByStaff: SiteMap[string]): string {
   return parts.join('\n');
 }
 
-function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSiteMap, externalCollapsed, date, canGenerate = false }: {
+function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSiteMap, externalCollapsed, date, canGenerate = false, carrier }: {
   site: string;
   staffList: string[];
   agency: string;
@@ -572,6 +579,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
   externalCollapsed?: boolean;
   date?: string;
   canGenerate?: boolean;
+  carrier?: string;
 }) {
   const postsByStaff = siteMap[site] ?? {};
   const badgePostsByStaff = badgeSiteMap ? (badgeSiteMap[site] ?? {}) : postsByStaff;
@@ -603,7 +611,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
       const prevText = prevPosts
         ? Object.values(prevPosts).map((posts) => posts.map((p) => p.message).join('\n')).join('\n')
         : '';
-      const reportText = buildJissekiReport({ site, date, prevText, postsByStaff });
+      const reportText = buildJissekiReport({ site, date, prevText, postsByStaff, shiftCarrier: carrier });
       await navigator.clipboard.writeText(reportText);
       setGenerated(true);
       setTimeout(() => setGenerated(false), 2000);
@@ -1026,6 +1034,7 @@ export default function TalknoteCard() {
           externalCollapsed={allCollapsed}
           date={date}
           canGenerate={tab === 'talknote'}
+          carrier={s.carrier}
         />
       ))}
 
