@@ -569,6 +569,53 @@ function buildCopyText(postsByStaff: SiteMap[string]): string {
   return parts.join('\n');
 }
 
+// 「あとから決まる文章」をクリップボードにコピーする。
+//
+// iOS Safari は、タップ直後の同じ処理の中でしかクリップボードへの書き込みを許可しない。
+// fetch を await してから navigator.clipboard.writeText() を呼ぶと拒否され、
+// 実績報告生成が「生成完了」にならない端末があった（成否は通信の速さやiOSの版で変わる）。
+//
+// 対策として、タップ直後に ClipboardItem へ「文章を返すPromise」を渡して write() を予約する。
+// この形なら中身が後から決まってもiOSがコピーを許可する（Safariが公式に用意している方法）。
+// ClipboardItem が無い環境では、従来どおり文章が出来てから writeText / execCommand を使う。
+function copyTextAsync(textPromise: Promise<string>): Promise<boolean> {
+  if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
+    const blobPromise = textPromise.then((t) => new Blob([t], { type: 'text/plain' }));
+    return navigator.clipboard
+      .write([new ClipboardItem({ 'text/plain': blobPromise })])
+      .then(() => true)
+      .catch(() => textPromise.then(copyTextSync).catch(() => false));
+  }
+  return textPromise.then(copyTextSync).catch(() => false);
+}
+
+function copyTextSync(text: string): Promise<boolean> {
+  if (navigator.clipboard?.writeText) {
+    return navigator.clipboard.writeText(text)
+      .then(() => true)
+      .catch(() => copyByExecCommand(text));
+  }
+  return Promise.resolve(copyByExecCommand(text));
+}
+
+// navigator.clipboard が使えない環境（アプリ内ブラウザ等）向けの古い方法
+function copyByExecCommand(text: string): boolean {
+  try {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';
+    document.body.appendChild(textarea);
+    textarea.select();
+    textarea.setSelectionRange(0, text.length);
+    const ok = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSiteMap, externalCollapsed, date, canGenerate = false, carrier }: {
   site: string;
   staffList: string[];
@@ -594,16 +641,19 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
 
   const handleCopy = () => {
     const text = filterWork ? buildCopyText(postsByStaff) : Object.entries(postsByStaff).map(([n, ps]) => `\n${n}\n${ps.map((p) => p.message).join('\n\n')}`).join('\n');
-    navigator.clipboard.writeText(text).then(() => {
+    copyTextSync(text).then((ok) => {
+      if (!ok) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = () => {
     if (!date || generating) return;
     setGenerating(true);
-    try {
+
+    // 前日データの取得〜本文組み立て（従来どおり）
+    const buildText = async () => {
       const prevDate = shiftDateBy(date, -1);
       const res = await fetch(`/api/jisseki?date=${prevDate}`);
       const prevData: TalknoteData = await res.json();
@@ -611,15 +661,17 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
       const prevText = prevPosts
         ? Object.values(prevPosts).map((posts) => posts.map((p) => p.message).join('\n')).join('\n')
         : '';
-      const reportText = buildJissekiReport({ site, date, prevText, postsByStaff, shiftCarrier: carrier });
-      await navigator.clipboard.writeText(reportText);
-      setGenerated(true);
-      setTimeout(() => setGenerated(false), 2000);
-    } catch {
-      // 前日データ取得失敗時などは何もしない
-    } finally {
-      setGenerating(false);
-    }
+      return buildJissekiReport({ site, date, prevText, postsByStaff, shiftCarrier: carrier });
+    };
+
+    // ここは await せずに同期的にコピーを予約する（copyTextAsync のコメント参照）
+    copyTextAsync(buildText())
+      .then((ok) => {
+        if (!ok) return;
+        setGenerated(true);
+        setTimeout(() => setGenerated(false), 2000);
+      })
+      .finally(() => setGenerating(false));
   };
 
   return (
