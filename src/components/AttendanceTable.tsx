@@ -10,6 +10,7 @@ interface AttendanceTableProps {
   loginName?: string;
   userRole?: string;
   onNoData?: () => void;
+  onStaffChange?: (name: string) => void; // 育成アプリのリンク先を選択中スタッフに合わせるため親へ通知
 }
 
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
@@ -27,7 +28,7 @@ const rows: { label: string; key: CalendarKey; isTotal?: boolean }[] = [
   { label: 'クレカ', key: 'credit' },
 ];
 
-export default function AttendanceTable({ data, selectedMonth, loginName, userRole, onNoData }: AttendanceTableProps) {
+export default function AttendanceTable({ data, selectedMonth, loginName, userRole, onNoData, onStaffChange }: AttendanceTableProps) {
   const allStaff = data.staffOrder?.length ? data.staffOrder : data.ranking;
   const initialName = (loginName && allStaff.find((s) => s.name === loginName))
     ? loginName
@@ -45,6 +46,11 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loginName, data.ranking]);
+
+  // 選択中スタッフを親に伝える（育成アプリのリンク先に使う）
+  useEffect(() => {
+    onStaffChange?.(staffName);
+  }, [staffName, onStaffChange]);
 
   const staff = data.ranking.find((s) => s.name === staffName);
 

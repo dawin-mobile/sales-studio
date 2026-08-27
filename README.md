@@ -126,7 +126,10 @@ NEXTAUTH_URL=
 GOOGLE_SERVICE_ACCOUNT_KEY=
 SPREADSHEET_ID=
 SYNC_SECRET=
+IKUSEI_SSO_SECRET=
 ```
+
+`IKUSEI_SSO_SECRET` は育成アプリ（別アプリ）とのSSO用の共通シークレット。育成アプリ側の `SSO_SHARED_SECRET` と**同じ値**を設定する。未設定でもアプリは動作するが、「育成アプリ」ボタンが合言葉入力画面へフォールバックする。
 
 ---
 
