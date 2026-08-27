@@ -31,6 +31,7 @@ function generateCalendar(daysInMonth: number): CalendarDay[] {
       elec,
       credit,
       site: Math.random() > 0.15 ? pickSite() : '',
+      fare: Math.random() > 0.15 ? rand(400, 1500) : 0,
     };
   });
 }

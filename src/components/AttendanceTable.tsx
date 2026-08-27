@@ -214,6 +214,18 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
                   </td>
                 ))}
               </tr>
+              <tr>
+                <td className="cal-label-col">交通費</td>
+                {Array.from({ length: days }, (_, i) => {
+                  const fare = staff.calendar[i].fare ?? 0;
+                  return (
+                    <td key={i} className={fare === 0 ? 'cal-data-cell zero' : 'cal-data-cell'}
+                      style={missingDays.has(i + 1) ? { background: 'rgba(180,30,30,0.25)' } : undefined}>
+                      {fare === 0 ? '-' : fare.toLocaleString()}
+                    </td>
+                  );
+                })}
+              </tr>
             </tbody>
           </table>
         </div>

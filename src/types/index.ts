@@ -17,6 +17,7 @@ export interface CalendarDay {
   elec: number;
   credit: number;
   site: string;
+  fare: number; // 交通費（往復＋タクシー代、円）
 }
 
 export interface Staff {

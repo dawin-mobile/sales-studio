@@ -19,6 +19,8 @@ const COL = {
   LIFE: 15,
   CREDIT: 16,
   SELF_CLOSE: 17,
+  FARE: 32,  // AG列: 往復交通費（公共交通機関）
+  TAXI: 33,  // AH列: タクシー代・有料特急（事前承諾が必要なもの）
 };
 
 function getNum(row: string[], idx: number): number {
@@ -52,7 +54,7 @@ export function aggregateMainSheet(
         dailyTotal: new Array(daysInMonth).fill(0),
         dailyBySite: {},
         calendar: Array.from({ length: daysInMonth }, (): CalendarDay => ({
-          pt: 0, selfClose: 0, mnp: 0, new: 0, uq: 0, nw: 0, elec: 0, credit: 0, site: '',
+          pt: 0, selfClose: 0, mnp: 0, new: 0, uq: 0, nw: 0, elec: 0, credit: 0, site: '', fare: 0,
         })),
       };
     }
@@ -120,6 +122,8 @@ export function aggregateMainSheet(
       cDay.nw = safeAdd(cDay.nw, hikari);
       cDay.elec = safeAdd(cDay.elec, life);
       cDay.credit = safeAdd(cDay.credit, credit);
+      // 交通費は往復とタクシー代を合わせた実費（円）。同じ日に複数行あれば合算する
+      cDay.fare = cDay.fare + getNum(row, COL.FARE) + getNum(row, COL.TAXI);
       if (siteName) cDay.site = siteName;
 
       if (siteName) {
