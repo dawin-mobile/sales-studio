@@ -6,10 +6,17 @@ import { shiftRows, salesRecords } from '@/lib/schema';
 
 export const dynamic = 'force-dynamic';
 
+// 日報を提出しない役職者（事業部長など）はアラート対象外
+const NIPPO_ALERT_EXEMPT_USER_IDS = ['hashimoto'];
+
 export async function GET() {
   const session = await auth();
   if (!session?.user?.name) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (NIPPO_ALERT_EXEMPT_USER_IDS.includes(session.user.id)) {
+    return NextResponse.json({ missingDates: [] });
   }
 
   const userName = session.user.name;
