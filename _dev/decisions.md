@@ -329,3 +329,17 @@
   - `TalknoteCard.tsx` の `detectCarrierFamily` を `detectCarrierFamily(shiftCarrier)` に変更。**C列に「SB」が含まれればsb-y、それ以外は全部au-uq**という単純な二択にし、従来の催事場所・紐付け店舗の文字列判定は廃止
   - C列は全角「ＳＢ」で入力されることがあるため、`toHalfWidthAlpha`で英字を半角化してから判定する（大文字小文字も無視）
 - 理由: 翔に確認したところ「SB現場はC列が絶対にSBになる」運用とのことなので、C列だけで判定できる。フォールバックを残すと、C列が「増強」の現場で店舗名の文字列から誤判定するリスクの方が大きい
+
+---
+
+## 2026-08-27: 日報未提出アラートの除外ユーザーをAPI側の定数リストで管理
+- 背景: 事業部長の橋本（ID: `hashimoto`）は日報を提出しない運用だが、シフトには入るため `/api/nippo-check` が毎回「日報未提出です」を返していた
+- 選択肢:
+  - A: `NippoAlert.tsx`（フロント）でユーザーIDを見て非表示にする
+  - B: `/api/nippo-check` の入口で除外ユーザーを弾く
+  - C: スタッフ情報シートに「日報免除」列を追加して運用側で管理する
+- 決定: **B**。`NIPPO_ALERT_EXEMPT_USER_IDS` という定数配列を `src/app/api/nippo-check/route.ts` に置き、`session.user.id` が含まれていれば `missingDates: []` を即返す
+- 理由:
+  - Aだと無駄なDB照会（shiftRows + salesRecords）が毎回走り、将来このAPIを別画面から使ったときに漏れる
+  - Cが本来は理想（コード変更なしで運用側が管理できる）だが、対象が現状1人のためシート列追加・列マッピング更新のコストに見合わない。**対象者が増えてきたらCへ移行する**
+- 補足: 判定は `session.user.name`（氏名）ではなく `session.user.id`（ログインID）で行う。氏名は同姓の衝突や表記ゆれがあり、既存の照合ロジックも `startsWith` による曖昧一致をしているため、一意なIDの方が安全
