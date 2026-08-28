@@ -95,17 +95,28 @@ function StaffCard({ summary, selected, onClick }: {
   return (
     <button
       onClick={onClick}
+      aria-pressed={selected}
       style={{
         textAlign: 'left', cursor: 'pointer',
-        background: selected ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)',
-        border: `1px solid ${selected ? 'rgba(255,255,255,0.5)' : border}`,
+        // 枠線は常に回数に応じた色（赤/橙）のまま。選択中を枠線で示すと警告色が消えてしまうため、
+        // 選択中は背景の明るさとチェックマークで表す
+        background: selected ? 'rgba(255,255,255,0.13)' : 'rgba(255,255,255,0.03)',
+        border: `1px solid ${border}`,
         borderRadius: 10, padding: '10px 12px',
         display: 'flex', flexDirection: 'column', gap: 6,
-        transition: 'background 0.15s, border-color 0.15s',
+        transition: 'background 0.15s',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-main)' }}>{summary.name}</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 4 }}>
+          {selected && (
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          )}
+          {summary.name}
+        </span>
         <span style={{ fontSize: 17, fontWeight: 700, color: totalColor, whiteSpace: 'nowrap' }}>
           {summary.total}<span style={{ fontSize: 11, fontWeight: 500, marginLeft: 1 }}>回</span>
         </span>
@@ -127,7 +138,7 @@ function StaffCard({ summary, selected, onClick }: {
 
 function EmptyCard({ message }: { message: string }) {
   return (
-    <div className="chart-card" style={{
+    <div className="kintai-view chart-card" style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       padding: '48px 24px', gap: 12, textAlign: 'center',
     }}>
@@ -179,7 +190,7 @@ export default function TardinessView({ selectedMonth }: { selectedMonth: string
     : records;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div className="kintai-view" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="chart-card" style={{ padding: '14px 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
           <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>{records.length}件</span>
@@ -216,16 +227,18 @@ export default function TardinessView({ selectedMonth }: { selectedMonth: string
             <button
               onClick={() => { setSelectedStaff(null); setOpenIdx(null); }}
               style={{
-                fontSize: 11, color: 'var(--text-sub)', cursor: 'pointer',
-                background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)',
+                fontSize: 11, color: 'var(--text-main)', cursor: 'pointer',
+                background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.25)',
                 borderRadius: 6, padding: '4px 10px',
               }}
-            >{selectedStaff} で絞り込み中 — 解除</button>
+            >{selectedStaff} で絞り込み中 — 解除 ✕</button>
           </div>
         )}
 
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          {/* minWidth がないとスマホで「理由」列が潰れて縦1文字ずつになる。
+              足りない分は親の overflow-x で横スクロールさせる */}
+          <table style={{ width: '100%', minWidth: 460, borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr>
                 {['日付', 'スタッフ', '区分', '現場', '理由'].map((h) => (
@@ -262,7 +275,7 @@ function FragmentRow({ rec, open, onToggle }: { rec: KintaiRecord; open: boolean
         <td style={{ ...cellStyle, fontWeight: 600 }}>{rec.staff || '—'}</td>
         <td style={cellStyle}><KindBadge kind={rec.kind} /></td>
         <td style={cellStyle}>{rec.site || '—'}</td>
-        <td style={{ ...cellStyle, color: 'var(--text-sub)', whiteSpace: 'normal' }}>{rec.reason || '—'}</td>
+        <td style={{ ...cellStyle, color: 'var(--text-sub)', whiteSpace: 'normal', minWidth: 84 }}>{rec.reason || '—'}</td>
       </tr>
       {open && (
         <tr>

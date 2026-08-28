@@ -1387,3 +1387,43 @@ thead .loc-th-dow { z-index: 30; } /* 最前面 */
   .ikusei-link-btn { padding: 6px 10px; font-size: 12px; }
   .incentive-tick-num { font-size: 11px !important; }
 }
+
+/* 勤怠タブの背景（遅刻ペナルティのポスター）。スマホのみ表示する。
+   ::before で固定表示し、暗いオーバーレイを重ねて本文の可読性を確保している */
+.kintai-view { position: relative; }
+
+@media (max-width: 768px) {
+  .kintai-view::before {
+    content: '';
+    position: absolute;
+    /* カードより少し広げて、画面の端まで敷いているように見せる */
+    inset: -12px -16px;
+    background-image: url('/kintai-bg.jpg');
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
+    opacity: 0.20;
+    pointer-events: none;
+    z-index: 0;
+  }
+  /* 背景の上に本文を出す */
+  .kintai-view > * { position: relative; z-index: 1; }
+
+  /* カードを半透明にして背景画像を透かす。
+     ぼかしを入れて背景の細かい模様を落とし、文字が読める濃さを保つ */
+  .kintai-view .chart-card,
+  .kintai-view.chart-card {
+    background: rgba(20, 20, 20, 0.78);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+  }
+
+  /* backdrop-filter が効かない端末では、透過を控えめにして可読性を優先する */
+  @supports not ((backdrop-filter: blur(6px)) or (-webkit-backdrop-filter: blur(6px))) {
+    .kintai-view .chart-card,
+    .kintai-view.chart-card {
+      background: rgba(20, 20, 20, 0.90);
+    }
+  }
+}
