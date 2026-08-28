@@ -395,7 +395,7 @@ export default function Home() {
         {secretMode && ['社員', '幹部', '管理者'].includes(effectiveRole ?? '') ? (
           <>
             {activeTab === 'growth' && <GrowthView />}
-            {activeTab === 'tardiness' && <TardinessView />}
+            {activeTab === 'tardiness' && <TardinessView selectedMonth={selectedMonth} />}
             {activeTab === 'access-log' && <AccessLogView />}
             {activeTab === 'tantou' && <TantouView />}
             {activeTab === 'report-score' && <ReportScoreView />}

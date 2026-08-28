@@ -65,8 +65,14 @@ const SHEET_TYPE     = 'グラフ用データ_家族構成';
 const SHEET_TALKNOTE = 'トークノート受信録';
 const SHEET_JISSEKI  = '実績受信録';
 const SHEET_SHURYO   = '終了報告受信録';
+const SHEET_KINTAI   = '勤怠報告受信録';
 const SHEET_EVAL      = '新人進捗';
 const SHEET_KNOWLEDGE = '知識';
+
+// 勤怠報告（当欠・遅刻・早退）を投稿するノートの判定キーワード。
+// ノート名の記号（★や☆）は変わりうるので、記号ではなくこの語で判定する。
+// 九州版のノートができたら、そのノート名に含まれる語をここに足すだけでよい。
+const KINTAI_NOTE_KEYWORDS = ['勤怠報告'];
 
 // ============================================================
 //  共通関数

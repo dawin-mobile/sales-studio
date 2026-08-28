@@ -6,12 +6,14 @@
 //    通常メッセージ  → 「トークノート受信録」シートに記録 → DBへ送信
 //    実績報告ノート  → 「実績受信録」シートに記録（DBには送らない）
 //    ☆関東社員☆ノート → 「終了報告受信録」シートに記録（DBには送らない）
+//    ★勤怠報告★ノート → 「勤怠報告受信録」シートに記録（DBには送らない）
 //
 //  【自動実行】15分おき → fetchAndSyncTalknote()
 //  【手動実行（過去データ取込用）】
 //    fetchTalknoteEmails_PastData() … 通常メッセージの過去50件を取込
 //    fetchJissekiEmails_PastData()  … 実績報告の過去200件を取込
 //    fetchShuryoEmails_PastData()   … 終了報告の過去200件を取込
+//    fetchKintaiEmails_PastData()   … 勤怠報告の過去200件を取込
 // ============================================================
 
 // 未読メールを取得してシートに記録し、DBへ同期する（自動実行用）
@@ -43,10 +45,13 @@ function fetchAndSyncTalknote() {
       const body    = message.getPlainBody();
       const isJisseki = subject.includes('実績報告') && subject.includes('ノートに投稿しました');
       const isShuryo  = subject.includes('☆関東社員☆') && subject.includes('ノートに投稿しました');
+      // 勤怠報告（当欠・遅刻・早退）。ノート名の記号（★関東社員★）ではなく「勤怠報告」の語で判定する
+      const isKintai  = subject.includes('ノートに投稿しました')
+                        && KINTAI_NOTE_KEYWORDS.some(function(kw) { return subject.includes(kw); });
 
-      if (isJisseki || isShuryo) {
-        // 実績報告 or ☆関東社員☆ → 専用シートに追記（DBへは送らない）
-        const sheetName = isJisseki ? SHEET_JISSEKI : SHEET_SHURYO;
+      if (isJisseki || isShuryo || isKintai) {
+        // 実績報告 / ☆関東社員☆ / 勤怠報告 → 専用シートに追記（DBへは送らない）
+        const sheetName = isJisseki ? SHEET_JISSEKI : (isKintai ? SHEET_KINTAI : SHEET_SHURYO);
         let targetSheet = ss.getSheetByName(sheetName);
         if (!targetSheet) {
           targetSheet = ss.insertSheet(sheetName);
@@ -242,4 +247,56 @@ function fetchShuryoEmails_PastData() {
     }
   }
   Logger.log('[終了報告] ' + count + '件を終了報告受信録に記録しました');
+}
+
+
+// 過去の勤怠報告メールだけを勤怠報告受信録に取り込む（手動実行用）
+// ※最新200件。ノートを作った直後の取りこぼしを拾うのに使う
+function fetchKintaiEmails_PastData() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let kintaiSheet = ss.getSheetByName(SHEET_KINTAI);
+  if (!kintaiSheet) {
+    kintaiSheet = ss.insertSheet(SHEET_KINTAI);
+    kintaiSheet.appendRow(['受信日時', '送信者', 'メッセージ内容']);
+  }
+
+  // すでに取り込んだ投稿を二重に記録しないよう、受信日時＋送信者で照合する
+  const existing = {};
+  const lastRow = kintaiSheet.getLastRow();
+  if (lastRow > 1) {
+    const rows = kintaiSheet.getRange(1, 1, lastRow, 2).getValues();
+    for (const r of rows) existing[String(r[0]) + '|' + String(r[1])] = true;
+  }
+
+  const threads = GmailApp.search('from:no-reply@talknote.com 勤怠報告 ノートに投稿しました', 0, 200);
+  if (threads.length === 0) { Logger.log('[勤怠報告] 対象メールが見つかりませんでした'); return; }
+
+  let count = 0;
+  let skipped = 0;
+  for (const thread of threads) {
+    for (const message of thread.getMessages()) {
+      const date    = message.getDate();
+      const subject = message.getSubject();
+      const body    = message.getPlainBody();
+
+      if (!subject.includes('ノートに投稿しました')) continue;
+      if (!KINTAI_NOTE_KEYWORDS.some(function(kw) { return subject.includes(kw); })) continue;
+
+      let senderName = '不明';
+      const nameMatch = subject.match(/Talknote\s*[：:]\s*(.+?)さんが[「『].*?[」』]ノートに投稿しました/);
+      if (nameMatch && nameMatch[1]) senderName = nameMatch[1].trim();
+
+      let msgContent = '（内容をうまく取得できませんでした）';
+      const bodyMatch = body.match(/さんの投稿\s*[：:]\s*([\s\S]*?)(?=\n+返信はこちらから)/);
+      if (bodyMatch && bodyMatch[1]) msgContent = bodyMatch[1].trim();
+
+      const stamp = Utilities.formatDate(date, 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss');
+      if (existing[stamp + '|' + senderName]) { skipped++; continue; }
+
+      kintaiSheet.appendRow([stamp, senderName, msgContent]);
+      existing[stamp + '|' + senderName] = true;
+      count++;
+    }
+  }
+  Logger.log('[勤怠報告] ' + count + '件を勤怠報告受信録に記録しました（重複スキップ ' + skipped + '件）');
 }
