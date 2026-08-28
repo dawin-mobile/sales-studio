@@ -66,35 +66,80 @@ function parseReceivedAt(raw: string): Date | null {
   );
 }
 
-export function parseKintaiRow(row: string[]): KintaiRecord | null {
+// 1つの投稿に複数人分が書かれることがあるため、「勤怠：」の行を区切りにして分割する。
+// 最初のブロックだけは、その手前にある「日付：」を含めたいので先頭から取る。
+//
+//   日付：8月28日(金)      ┐
+//   勤怠：早退             │ ブロック1（馬塲さん）
+//   スタッフ：馬塲         ┘
+//   勤怠：遅刻             ┐ ブロック2（西山さん）
+//   スタッフ：西山         ┘
+//
+// 「勤怠：」がないブロック（現場移動の連絡など）は区切りにならず、
+// 直前の人のブロックに含まれる＝独立した記録にはならない
+function splitKintaiBlocks(body: string): string[] {
+  const starts: number[] = [];
+  const re = /^[ \t　]*勤怠[ \t　]*[：:]/gm;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(body)) !== null) starts.push(m.index);
+  if (starts.length === 0) return [];
+
+  // 「日付：」は「勤怠：」より上に書かれるため、区切り位置をその分だけ手前にずらす。
+  // そうしないと2人目の日付が1人目のブロックに入ってしまう
+  const bounds = starts.map((start, i) => (i === 0 ? 0 : moveBoundaryBack(body, start)));
+
+  return bounds.map((from, i) => {
+    const to = i + 1 < bounds.length ? bounds[i + 1] : body.length;
+    return body.slice(from, to);
+  });
+}
+
+// 「勤怠：」の直前にある空行と「日付：」の行を、次のブロック側に含める
+function moveBoundaryBack(body: string, start: number): number {
+  let pos = start;
+  while (pos > 0) {
+    const prevBreak = body.lastIndexOf('\n', pos - 2);
+    const lineStart = prevBreak + 1;
+    const line = body.slice(lineStart, pos - 1);
+    const isBlank = line.trim() === '';
+    const isDate = /^[ \t　]*日付[ \t　]*[：:]/.test(line);
+    if (!isBlank && !isDate) break;
+    pos = lineStart;
+  }
+  return pos;
+}
+
+export function parseKintaiRow(row: string[]): KintaiRecord[] {
   const receivedRaw = (row[0] ?? '').trim();
   const reporter = (row[1] ?? '').trim();
   const body = row[2] ?? '';
-  if (!receivedRaw && !body.trim()) return null;
-  if (receivedRaw === '受信日時') return null; // ヘッダー行
+  if (!receivedRaw && !body.trim()) return [];
+  if (receivedRaw === '受信日時') return []; // ヘッダー行
 
-  // 「勤怠：」が書かれていない投稿は勤怠報告ではないので取り込まない。
-  // 1つの投稿に「※〇〇くん」と別スタッフの補足が続くことがあるが、
-  // そのブロックには勤怠区分が書かれておらず遅刻か早退か判断できないため、
-  // 独立した記録としては扱わない（投稿全文は raw に残る）
-  const kindField = extractField(body, '勤怠');
-  if (!kindField) return null;
+  // 「勤怠：」が書かれていない投稿は勤怠報告ではないので取り込まない
+  const blocks = splitKintaiBlocks(body);
+  if (blocks.length === 0) return [];
 
   const receivedAt = parseReceivedAt(receivedRaw);
-  const dateField = extractField(body, '日付');
+  // 日付は投稿の先頭に1回だけ書かれることが多い。2人目以降のブロックに
+  // 日付がなければ、先頭ブロックの日付を引き継ぐ
+  const firstDate = receivedAt ? resolveDate(extractField(blocks[0], '日付'), receivedAt) : '';
 
-  return {
-    date: receivedAt ? resolveDate(dateField, receivedAt) : '',
-    kind: detectKind(kindField),
-    staff: extractField(body, 'スタッフ'),
-    site: extractField(body, '勤務地'),
-    reason: extractField(body, '理由'),
-    workTime: extractField(body, '勤務時間'),
-    breakTime: extractField(body, '休憩'),
-    reporter,
-    receivedAt: receivedRaw,
-    raw: body.trim(),
-  };
+  return blocks.map((block) => {
+    const ownDate = receivedAt ? resolveDate(extractField(block, '日付'), receivedAt) : '';
+    return {
+      date: ownDate || firstDate,
+      kind: detectKind(extractField(block, '勤怠')),
+      staff: extractField(block, 'スタッフ'),
+      site: extractField(block, '勤務地'),
+      reason: extractField(block, '理由'),
+      workTime: extractField(block, '勤務時間'),
+      breakTime: extractField(block, '休憩'),
+      reporter,
+      receivedAt: receivedRaw,
+      raw: block.trim(),
+    };
+  });
 }
 
 export async function GET(request: NextRequest) {
@@ -112,8 +157,7 @@ export async function GET(request: NextRequest) {
     const rows = await getSheetData(KINTAI_SHEET).catch(() => [] as string[][]);
 
     const records = rows
-      .map(parseKintaiRow)
-      .filter((r): r is KintaiRecord => r !== null)
+      .flatMap(parseKintaiRow)
       // 日付が読めなかった投稿は受信日時で月を判定する（黙って消さない）
       .filter((r) => !month || (r.date || r.receivedAt.replace(/\//g, '-')).startsWith(month))
       .sort((a, b) => (b.date || b.receivedAt).localeCompare(a.date || a.receivedAt));
