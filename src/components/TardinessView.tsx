@@ -186,7 +186,6 @@ export default function TardinessView({ selectedMonth }: { selectedMonth: string
     <div className="kintai-view" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="chart-card kintai-fade-in" style={{ padding: '14px 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
-          <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>{records.length}件</span>
           {(['当欠', '遅刻', '早退', 'その他'] as KintaiKind[]).map((k) =>
             counts[k] ? (
               <span key={k} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
