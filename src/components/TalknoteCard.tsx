@@ -665,7 +665,17 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
     };
 
     // ここは await せずに同期的にコピーを予約する（copyTextAsync のコメント参照）
-    copyTextAsync(buildText())
+    const copying = copyTextAsync(buildText());
+
+    // アクセスログに記録する。コピーの予約より後に呼ぶこと
+    // （先に非同期処理を挟むとiOSがクリップボードへの書き込みを拒否する）
+    fetch('/api/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tab: '実績報告生成' }),
+    }).catch(() => {});
+
+    copying
       .then((ok) => {
         if (!ok) return;
         setGenerated(true);
