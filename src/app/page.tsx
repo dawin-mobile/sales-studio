@@ -219,7 +219,7 @@ export default function Home() {
   useEffect(() => {
     if (secretMode) {
       prevTab.current = activeTab;
-      setActiveTab('growth');
+      setActiveTab('tardiness');
     } else {
       setActiveTab(prevTab.current);
     }
