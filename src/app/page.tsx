@@ -55,7 +55,7 @@ const TAB_TITLES: Record<TabName, string> = {
   'shift': 'シフト',
   'profile': 'スタッフ',
   'growth': '育成管理',
-  'tardiness': '遅刻/早退',
+  'tardiness': '勤怠',
   'access-log': 'アクセスログ',
   'tantou': '担当',
   'report-score': 'Report Studio',

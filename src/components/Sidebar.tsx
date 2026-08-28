@@ -23,7 +23,7 @@ const ALL_MENU_ITEMS: { id: TabName; label: string; icon: React.ReactNode; minRo
   { id: 'analytics',      label: '実績・分析',     icon: <PieChart        {...ICON_PROPS} /> },
   { id: 'shift',          label: 'シフト',         icon: <Calendar        {...ICON_PROPS} /> },
   { id: 'growth',         label: '育成管理',       icon: <GraduationCap   {...ICON_PROPS} />, minRole: '社員' },
-  { id: 'tardiness',     label: '遅刻/早退',      icon: <Clock           {...ICON_PROPS} />, minRole: '社員' },
+  { id: 'tardiness',     label: '勤怠',           icon: <Clock           {...ICON_PROPS} />, minRole: '社員' },
   { id: 'tantou',        label: '担当',           icon: <UserCheck       {...ICON_PROPS} />, minRole: '社員' },
   { id: 'report-score',  label: 'Report Studio',  icon: <FileText        {...ICON_PROPS} />, minRole: '社員' },
   { id: 'profile',        label: 'スタッフ',       icon: <Users           {...ICON_PROPS} /> },

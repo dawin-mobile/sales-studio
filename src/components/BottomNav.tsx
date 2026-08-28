@@ -20,7 +20,7 @@ const ALL_NAV_ITEMS: { id: TabName; icon: React.ReactNode; label: string }[] = [
 
 const SECRET_NAV_ITEMS: { id: TabName; icon: React.ReactNode; label: string }[] = [
   { id: 'growth',     icon: <GraduationCap size={20} strokeWidth={1.75} />, label: '育成管理' },
-  { id: 'tardiness',  icon: <Clock         size={20} strokeWidth={1.75} />, label: '遅刻/早退' },
+  { id: 'tardiness',  icon: <Clock         size={20} strokeWidth={1.75} />, label: '勤怠' },
   { id: 'tantou',     icon: <UserCheck     size={20} strokeWidth={1.75} />, label: '担当' },
   { id: 'report-score', icon: <FileText    size={20} strokeWidth={1.75} />, label: 'Report Studio' },
 ];

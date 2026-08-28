@@ -132,7 +132,7 @@ function EmptyCard({ message }: { message: string }) {
       padding: '48px 24px', gap: 12, textAlign: 'center',
     }}>
       <span style={{ fontSize: 36 }}>🕐</span>
-      <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-main)' }}>遅刻 / 早退</div>
+      <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-main)' }}>勤怠</div>
       <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>{message}</div>
     </div>
   );
