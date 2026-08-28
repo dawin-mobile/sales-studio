@@ -44,6 +44,87 @@ function formatDate(rec: KintaiRecord): string {
   return `${parseInt(m)}/${parseInt(d)}（${wd}）`;
 }
 
+interface StaffSummary {
+  name: string;
+  counts: Record<KintaiKind, number>;
+  total: number;
+}
+
+// 同じ人が「馬塲」「馬塲 光優」のように姓だけ／フルネームで書かれることがあるため、
+// 空白を除いて前方一致するものは同一人物としてまとめる（既存APIの照合と同じ考え方）。
+// 表示名は長いほう（フルネーム）を採用する
+function summarizeByStaff(records: KintaiRecord[]): StaffSummary[] {
+  const groups: { keys: string[]; name: string; counts: Record<KintaiKind, number>; total: number }[] = [];
+  const norm = (n: string) => n.replace(/[\s　]/g, '');
+
+  for (const rec of records) {
+    const name = rec.staff.trim() || '（記載なし）';
+    const key = norm(name);
+    let g = groups.find((x) => x.keys.some((k) => k === key || k.startsWith(key) || key.startsWith(k)));
+    if (!g) {
+      g = { keys: [], name, counts: { 当欠: 0, 遅刻: 0, 早退: 0, その他: 0 }, total: 0 };
+      groups.push(g);
+    }
+    if (!g.keys.includes(key)) g.keys.push(key);
+    if (name.length > g.name.length) g.name = name;
+    g.counts[rec.kind] += 1;
+    g.total += 1;
+  }
+
+  // 回数が多い順。同数なら当欠の多い人を上にする
+  return groups
+    .map(({ name, counts, total }) => ({ name, counts, total }))
+    .sort((a, b) => b.total - a.total || b.counts['当欠'] - a.counts['当欠'] || a.name.localeCompare(b.name));
+}
+
+// 何回から「多い」とみなすか。3回以上で赤、2回で橙
+const ALERT_TOTAL = 3;
+const WARN_TOTAL = 2;
+
+function StaffCard({ summary, selected, onClick }: {
+  summary: StaffSummary;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  const level = summary.total >= ALERT_TOTAL ? 'alert' : summary.total >= WARN_TOTAL ? 'warn' : 'normal';
+  const border = level === 'alert' ? 'rgba(248,113,113,0.55)'
+    : level === 'warn' ? 'rgba(251,146,60,0.45)'
+    : 'var(--border-color)';
+  const totalColor = level === 'alert' ? '#f87171' : level === 'warn' ? '#fb923c' : 'var(--text-main)';
+
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        textAlign: 'left', cursor: 'pointer',
+        background: selected ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)',
+        border: `1px solid ${selected ? 'rgba(255,255,255,0.5)' : border}`,
+        borderRadius: 10, padding: '10px 12px',
+        display: 'flex', flexDirection: 'column', gap: 6,
+        transition: 'background 0.15s, border-color 0.15s',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-main)' }}>{summary.name}</span>
+        <span style={{ fontSize: 17, fontWeight: 700, color: totalColor, whiteSpace: 'nowrap' }}>
+          {summary.total}<span style={{ fontSize: 11, fontWeight: 500, marginLeft: 1 }}>回</span>
+        </span>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+        {(['当欠', '遅刻', '早退', 'その他'] as KintaiKind[]).map((k) =>
+          summary.counts[k] ? (
+            <span key={k} style={{
+              fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 20, whiteSpace: 'nowrap',
+              background: KIND_COLORS[k].bg, color: KIND_COLORS[k].text,
+              border: `1px solid ${KIND_COLORS[k].border}`,
+            }}>{k} {summary.counts[k]}</span>
+          ) : null
+        )}
+      </div>
+    </button>
+  );
+}
+
 function EmptyCard({ message }: { message: string }) {
   return (
     <div className="chart-card" style={{
@@ -61,11 +142,13 @@ export default function TardinessView({ selectedMonth }: { selectedMonth: string
   const [records, setRecords] = useState<KintaiRecord[] | null>(null);
   const [error, setError] = useState('');
   const [openIdx, setOpenIdx] = useState<number | null>(null);
+  const [selectedStaff, setSelectedStaff] = useState<string | null>(null);
 
   useEffect(() => {
     setRecords(null);
     setError('');
     setOpenIdx(null);
+    setSelectedStaff(null);
     fetch(`/api/kintai?month=${selectedMonth}`)
       .then(async (r) => {
         const d = await r.json();
@@ -87,6 +170,14 @@ export default function TardinessView({ selectedMonth }: { selectedMonth: string
     return acc;
   }, {});
 
+  const summaries = summarizeByStaff(records);
+  // カードで選んだスタッフだけに明細を絞る
+  const shown = selectedStaff
+    ? records.filter((r) => (r.staff.trim() || '（記載なし）') === selectedStaff
+        || selectedStaff.startsWith(r.staff.trim())
+        || r.staff.trim().startsWith(selectedStaff))
+    : records;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="chart-card" style={{ padding: '14px 16px' }}>
@@ -102,6 +193,37 @@ export default function TardinessView({ selectedMonth }: { selectedMonth: string
           )}
         </div>
 
+        {/* スタッフ別。回数が多い人ほど枠が目立つ。押すと下の明細がその人だけになる */}
+        <div style={{
+          display: 'grid', gap: 8, marginBottom: 14,
+          gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+        }}>
+          {summaries.map((sum) => (
+            <StaffCard
+              key={sum.name}
+              summary={sum}
+              selected={selectedStaff === sum.name}
+              onClick={() => {
+                setSelectedStaff(selectedStaff === sum.name ? null : sum.name);
+                setOpenIdx(null);
+              }}
+            />
+          ))}
+        </div>
+
+        {selectedStaff && (
+          <div style={{ marginBottom: 8 }}>
+            <button
+              onClick={() => { setSelectedStaff(null); setOpenIdx(null); }}
+              style={{
+                fontSize: 11, color: 'var(--text-sub)', cursor: 'pointer',
+                background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)',
+                borderRadius: 6, padding: '4px 10px',
+              }}
+            >{selectedStaff} で絞り込み中 — 解除</button>
+          </div>
+        )}
+
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
@@ -116,7 +238,7 @@ export default function TardinessView({ selectedMonth }: { selectedMonth: string
               </tr>
             </thead>
             <tbody>
-              {records.map((rec, i) => (
+              {shown.map((rec, i) => (
                 <FragmentRow
                   key={`${rec.receivedAt}-${i}`}
                   rec={rec}
