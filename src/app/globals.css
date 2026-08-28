@@ -1422,17 +1422,18 @@ thead .loc-th-dow { z-index: 30; } /* 最前面 */
      ぼかしを入れて背景の細かい模様を落とし、文字が読める濃さを保つ */
   .kintai-view .chart-card,
   .kintai-view.chart-card {
-    background: rgba(20, 20, 20, 0.78);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    background: rgba(20, 20, 20, 0.60);
+    /* 透過を上げるほど背景の細かい模様が文字と干渉するので、ぼかしも強める */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.10);
   }
 
   /* backdrop-filter が効かない端末では、透過を控えめにして可読性を優先する */
-  @supports not ((backdrop-filter: blur(6px)) or (-webkit-backdrop-filter: blur(6px))) {
+  @supports not ((backdrop-filter: blur(10px)) or (-webkit-backdrop-filter: blur(10px))) {
     .kintai-view .chart-card,
     .kintai-view.chart-card {
-      background: rgba(20, 20, 20, 0.90);
+      background: rgba(20, 20, 20, 0.85);
     }
   }
 }
