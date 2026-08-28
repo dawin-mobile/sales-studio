@@ -99,8 +99,8 @@ function StaffCard({ summary, selected, onClick }: {
       style={{
         textAlign: 'left', cursor: 'pointer',
         // 枠線は常に回数に応じた色（赤/橙）のまま。選択中を枠線で示すと警告色が消えてしまうため、
-        // 選択中は背景の明るさとチェックマークで表す
-        background: selected ? 'rgba(255,255,255,0.13)' : 'rgba(255,255,255,0.03)',
+        // 選択中は背景の明るさで表す（もう一度押せば解除できる）
+        background: selected ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.03)',
         border: `1px solid ${border}`,
         borderRadius: 10, padding: '10px 12px',
         display: 'flex', flexDirection: 'column', gap: 6,
@@ -108,15 +108,7 @@ function StaffCard({ summary, selected, onClick }: {
       }}
     >
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 4 }}>
-          {selected && (
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          )}
-          {summary.name}
-        </span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-main)' }}>{summary.name}</span>
         <span style={{ fontSize: 17, fontWeight: 700, color: totalColor, whiteSpace: 'nowrap' }}>
           {summary.total}<span style={{ fontSize: 11, fontWeight: 500, marginLeft: 1 }}>回</span>
         </span>
@@ -222,18 +214,6 @@ export default function TardinessView({ selectedMonth }: { selectedMonth: string
           ))}
         </div>
 
-        {selectedStaff && (
-          <div style={{ marginBottom: 8 }}>
-            <button
-              onClick={() => { setSelectedStaff(null); setOpenIdx(null); }}
-              style={{
-                fontSize: 11, color: 'var(--text-main)', cursor: 'pointer',
-                background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.25)',
-                borderRadius: 6, padding: '4px 10px',
-              }}
-            >{selectedStaff} で絞り込み中 — 解除 ✕</button>
-          </div>
-        )}
 
         <div style={{ overflowX: 'auto' }}>
           {/* minWidth がないとスマホで「理由」列が潰れて縦1文字ずつになる。
