@@ -163,8 +163,9 @@ export default function TardinessView({ selectedMonth }: { selectedMonth: string
   }, [selectedMonth]);
 
   if (error) return <EmptyCard message={error} />;
+  // 読み込み中は文字を出さず、背景画像だけを見せる（データが揃ったらカードがふわっと出る）
   if (records === null) {
-    return <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-sub)' }}>読み込み中...</div>;
+    return <div className="kintai-view" style={{ minHeight: 200 }} />;
   }
   if (records.length === 0) return <EmptyCard message="この月の勤怠報告はありません" />;
 
@@ -183,7 +184,7 @@ export default function TardinessView({ selectedMonth }: { selectedMonth: string
 
   return (
     <div className="kintai-view" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div className="chart-card" style={{ padding: '14px 16px' }}>
+      <div className="chart-card kintai-fade-in" style={{ padding: '14px 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
           <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>{records.length}件</span>
           {(['当欠', '遅刻', '早退', 'その他'] as KintaiKind[]).map((k) =>

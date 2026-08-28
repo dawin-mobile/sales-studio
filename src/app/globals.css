@@ -1392,6 +1392,14 @@ thead .loc-th-dow { z-index: 30; } /* 最前面 */
    ::before で固定表示し、暗いオーバーレイを重ねて本文の可読性を確保している */
 .kintai-view { position: relative; }
 
+/* 読み込み後にカードだけをふわっと出す（背景画像が先に見えるようにするため）。
+   prefers-reduced-motion のときは既存の共通指定で無効化される */
+@keyframes kintai-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+.kintai-fade-in { animation: kintai-fade-in 0.35s ease-out; }
+
 @media (max-width: 768px) {
   .kintai-view::before {
     content: '';
