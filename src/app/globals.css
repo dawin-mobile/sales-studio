@@ -1400,7 +1400,8 @@ thead .loc-th-dow { z-index: 30; } /* 最前面 */
     position: fixed;
     inset: 0;
     background-image: url('/kintai-bg.jpg');
-    background-size: cover;
+    /* 画面いっぱい（cover）だと大きすぎるので、画面の高さの75%に収める */
+    background-size: auto 75%;
     background-position: center center;
     background-repeat: no-repeat;
     opacity: 0.20;
