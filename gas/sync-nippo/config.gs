@@ -8,7 +8,6 @@
 //  主な設定項目：
 //    CONFIG     … VercelアプリのURLとAPIシークレットキー
 //    DAWIN      … シフト表・日報フォーム・スタッフ情報のスプレッドシートID
-//    STAFF_SYNC … スタッフ情報の転記元スプレッドシート設定
 //    SHEET_*    … このスプレッドシート内の各シート名
 // ============================================================
 
@@ -46,13 +45,6 @@ const DAWIN = {
   // このプレフィックスで始まる名前は「別人」として扱う（同姓問題の回避）
   distinctPrefixes: ['FFU','salud','✖','EZ','アスクラ','HE','出来れば'],
   ignoreSuffixes:   ['ガール','バルーン'],
-};
-
-// スタッフ情報の転記元スプレッドシート設定
-const STAFF_SYNC = {
-  sourceSpreadsheetId: '1vtXt9UJ87EGtjNEiVYH2R4nUQQdgKmYGMsE04WU-G_A', // 転記元
-  sourceSheetName:     'シート1',
-  targetSheetName:     'スタッフ情報',
 };
 
 // ============================================================
