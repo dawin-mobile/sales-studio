@@ -131,7 +131,7 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
 
   return (
     <>
-      <div className="analysis-controls" style={{ flexWrap: 'nowrap', alignItems: 'center' }}>
+      <div className="analysis-controls attendance-stats-row" style={{ alignItems: 'center' }}>
         <div className="control-group">
           {userRole !== 'アルバイト' && userRole !== '業務委託' && <span className="control-label">スタッフ選択</span>}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -147,14 +147,14 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
             {positionBadge}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 16, marginLeft: 8 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.3 }}>
-            <span style={{ fontSize: 10, color: 'var(--text-sub)' }}>獲得</span>
-            <span style={{ fontSize: 35, fontWeight: 600, color: 'var(--text-main)', lineHeight: 1 }}>{totalPt}<span style={{ fontSize: 15, marginLeft: 2 }}>pt</span></span>
+        <div className="stat-figures">
+          <div className="stat-figure">
+            <span className="stat-figure-label">獲得</span>
+            <span className="stat-figure-value">{totalPt}<span className="stat-figure-unit">pt</span></span>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.3 }}>
-            <span style={{ fontSize: 10, color: 'var(--text-sub)' }}>自己クロ</span>
-            <span style={{ fontSize: 35, fontWeight: 600, color: 'var(--text-main)', lineHeight: 1 }}>{totalSelfClose}<span style={{ fontSize: 15, marginLeft: 2 }}>pt</span></span>
+          <div className="stat-figure">
+            <span className="stat-figure-label">自己クロ</span>
+            <span className="stat-figure-value">{totalSelfClose}<span className="stat-figure-unit">pt</span></span>
           </div>
         </div>
       </div>
