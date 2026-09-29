@@ -24,17 +24,19 @@
  *   ② DB同期              1時間おき → syncAll
  *   ③ 明日のシフト通知     毎日18時  → mainTomorrow_ShiftNotify
  *   ④ 日報催促            毎日21時  → mainToday_ReportReminder
- *   ⑤ シート編集時の即時同期 編集のたびに → onEditTrigger
+ *   ⑤ 動物占いの補完      毎日6時  → fillAnimalColumns
+ *   ⑥ シート編集時の即時同期 編集のたびに → onEditTrigger
  */
 function setupTriggers_Bot() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
 
-  ScriptApp.newTrigger('onEditTrigger').forSpreadsheet(ss).onEdit().create();                    // ⑤ 編集時
+  ScriptApp.newTrigger('onEditTrigger').forSpreadsheet(ss).onEdit().create();                    // ⑥ 編集時
   ScriptApp.newTrigger('fetchAndSyncTalknote').timeBased().everyMinutes(15).create();            // ① 15分おき
   ScriptApp.newTrigger('syncAll').timeBased().everyHours(1).create();                           // ② 1時間おき
   ScriptApp.newTrigger('mainTomorrow_ShiftNotify').timeBased().atHour(18).everyDays(1).create(); // ③ 18時
   ScriptApp.newTrigger('mainToday_ReportReminder').timeBased().atHour(21).everyDays(1).create(); // ④ 21時
+  ScriptApp.newTrigger('fillAnimalColumns').timeBased().atHour(6).everyDays(1).create();         // ⑤ 6時
 
   Logger.log('Bot用トリガーを設定しました ✅（dawinmobilebot@gmail.com）');
 }
