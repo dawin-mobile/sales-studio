@@ -82,7 +82,9 @@ export default function IncentiveBar({ total, selfClose, attendanceDays, missing
   return (
     <div className="chart-card" style={{ marginBottom: 12, minHeight: 'auto' }}>
       {/* ヘッダー（出勤日数が渡されていれば現在クラスの左に並べる） */}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 16 }}>
+      {/* 「現在クラス」側は幅確保用の見えない文字を重ねているため、ベースライン
+          揃えだと高さがずれる。上端（flex-start）でそろえる */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
         {attendanceDays !== undefined && (
           <span style={{ display: 'flex', flexDirection: 'column' }}>
             <span style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
