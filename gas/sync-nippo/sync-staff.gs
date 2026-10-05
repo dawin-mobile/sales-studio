@@ -64,11 +64,25 @@ function syncStaffProfilesToDB() {
 //
 //  ⚠️ 値が1つでも入っている行はまるごとスキップする。
 //     人が手で直した内容を翌朝に上書きしないため。
+//     ただし転記時代の名残である「生年月日を入力してください」のような
+//     案内文だけは、値ではなく空欄とみなす（そうしないと永久に埋まらない）。
 // ============================================================
 
 const ANIMAL_COL_BIRTHDAY = 5;   // E列（生年月日）※1始まり
 const ANIMAL_COL_START    = 11;  // K列（動物名）  ※1始まり。K〜Oの5列を扱う
 const ANIMAL_COL_COUNT    = 5;   // K, L, M, N, O
+
+// セルが「実質空」かどうかを判定する。
+// 転記元スプレッドシートの数式が残した案内文やエラー表示は、
+// 人が入れた値ではないため空欄扱いにする（そのままだと永久に埋まらない）。
+//   例: 「生年月日を入力してください」「#N/A ()」「#REF!」
+function isBlankAnimalCell_(value) {
+  const t = String(value == null ? '' : value).trim();
+  if (t === '') return true;
+  if (t.indexOf('入力してください') !== -1) return true;
+  if (t.charAt(0) === '#') return true;   // #N/A・#REF! などの数式エラーの名残
+  return false;
+}
 
 function fillAnimalColumns() {
   const ss    = SpreadsheetApp.getActiveSpreadsheet();
@@ -86,8 +100,8 @@ function fillAnimalColumns() {
   let filled = 0, skipped = 0, noBirthday = 0;
 
   for (let i = 0; i < numRows; i++) {
-    // K〜Oのどれかに値が入っていたら、その行は触らない
-    const hasValue = animals[i].some(v => String(v == null ? '' : v).trim() !== '');
+    // K〜Oのどれかに値が入っていたら、その行は触らない（案内文は値とみなさない）
+    const hasValue = animals[i].some(v => !isBlankAnimalCell_(v));
     if (hasValue) { skipped++; continue; }
 
     const a = getAnimalByBirthday_(birthdays[i][0]);
