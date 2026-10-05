@@ -57,6 +57,7 @@ const SHEET_TYPE     = 'グラフ用データ_家族構成';
 const SHEET_TALKNOTE = 'トークノート受信録';
 const SHEET_JISSEKI  = '実績受信録';
 const SHEET_SHURYO   = '終了報告受信録';
+const SHEET_MODORI   = '戻り報告受信録';
 const SHEET_KINTAI   = '勤怠報告受信録';
 const SHEET_EVAL      = '新人進捗';
 const SHEET_KNOWLEDGE = '知識';
@@ -65,6 +66,10 @@ const SHEET_KNOWLEDGE = '知識';
 // ノート名の記号（★や☆）は変わりうるので、記号ではなくこの語で判定する。
 // 九州版のノートができたら、そのノート名に含まれる語をここに足すだけでよい。
 const KINTAI_NOTE_KEYWORDS = ['勤怠報告'];
+
+// 戻り報告（別日に戻ってきた分の獲得）を投稿するノートの判定キーワード。
+// 当日分は日報に入れるが、自分がその現場にいない日に戻ってきた分はここに投稿される。
+const MODORI_NOTE_KEYWORDS = ['戻り報告'];
 
 // ============================================================
 //  共通関数
