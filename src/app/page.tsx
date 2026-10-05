@@ -119,6 +119,9 @@ export default function Home() {
   }, [effectiveName]);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  // 実績・分析で選んだスタッフ。月を切り替えると読み込み中に
+  // AnalyticsView ごと消えるため、選択はここで覚えておく
+  const [pickedStaff, setPickedStaff] = useState('');
 
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState('更新中...');
@@ -568,7 +571,7 @@ export default function Home() {
             )}
 
             {activeTab === 'analytics' && (
-              <AnalyticsView data={data} selectedMonth={selectedMonth} loginName={effectiveName} userRole={effectiveRole} onNoData={handleNoDataForStaff} />
+              <AnalyticsView data={data} selectedMonth={selectedMonth} loginName={effectiveName} userRole={effectiveRole} onNoData={handleNoDataForStaff} pickedStaff={pickedStaff} onStaffPick={setPickedStaff} />
             )}
           </>
         )}

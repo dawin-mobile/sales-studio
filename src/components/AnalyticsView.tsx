@@ -13,21 +13,27 @@ interface AnalyticsViewProps {
   loginName?: string;
   userRole?: string;
   onNoData?: () => void;
+  // 月を切り替えると読み込み中にこのコンポーネントごと消えるため、
+  // 選んだ相手はページ側で覚えてもらう（渡されなければ自前で持つ）
+  pickedStaff?: string;
+  onStaffPick?: (name: string) => void;
 }
 
 type InnerTab = 'attendance' | 'yearly' | 'analysis';
 
-export default function AnalyticsView({ data, selectedMonth, loginName, userRole, onNoData }: AnalyticsViewProps) {
+export default function AnalyticsView({ data, selectedMonth, loginName, userRole, onNoData, pickedStaff: pickedStaffProp, onStaffPick: onStaffPickProp }: AnalyticsViewProps) {
   const [innerTab, setInnerTab] = useState<InnerTab>('attendance');
   // 「個人実績」のスタッフ選択で選ばれている人。育成アプリのリンク先に使う
   const [selectedStaff, setSelectedStaff] = useState(loginName ?? '');
   // 人が自分で選んだ相手。タブを切り替えると各タブは作り直されるため、
   // ここで覚えておいて初期値として渡さないと、ログインユーザーに戻ってしまう
-  const [pickedStaff, setPickedStaff] = useState('');
+  const [localPicked, setLocalPicked] = useState('');
+  const pickedStaff = pickedStaffProp ?? localPicked;
 
   // どのタブで選んでも、覚えておく相手と育成アプリのリンク先をそろえる
   const handleStaffPick = (name: string) => {
-    setPickedStaff(name);
+    if (onStaffPickProp) onStaffPickProp(name);
+    else setLocalPicked(name);
     setSelectedStaff(name);
   };
 
