@@ -78,13 +78,13 @@ export default function IncentiveBar({ total, selfClose, attendanceDays, missing
   return (
     <div className="chart-card" style={{ marginBottom: 12, minHeight: 'auto' }}>
       {/* ヘッダー（出勤日数が渡されていれば現在クラスの左に並べる） */}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, flexWrap: 'wrap', marginBottom: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 16 }}>
         {attendanceDays !== undefined && (
           <span style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-              <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>出勤</span>
-              <span style={{ fontSize: 18, fontWeight: 'bold', color: 'var(--text-main)' }}>{attendanceDays}</span>
-              <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>日</span>
+            <span style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
+              <span style={{ fontSize: 10, color: 'var(--text-sub)' }}>出勤</span>
+              <span style={{ fontSize: 16, fontWeight: 'bold', color: 'var(--text-main)' }}>{attendanceDays}</span>
+              <span style={{ fontSize: 10, color: 'var(--text-sub)' }}>日</span>
             </span>
             {/* 未提出は添え書きなので、出勤日数の下に小さく置く */}
             {missingCount > 0 && (
@@ -94,9 +94,10 @@ export default function IncentiveBar({ total, selfClose, attendanceDays, missing
             )}
           </span>
         )}
-        <span>
-          <span style={{ fontSize: 11, color: 'var(--text-sub)', marginRight: 6 }}>現在クラス</span>
-          <span style={{ fontSize: 18, fontWeight: 'bold', color: tierColor(currentIdx) }}>{current.name}</span>
+        {/* 現在クラスはカードの右端に寄せる */}
+        <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'baseline', gap: 5 }}>
+          <span style={{ fontSize: 10, color: 'var(--text-sub)' }}>現在クラス</span>
+          <span style={{ fontSize: 16, fontWeight: 'bold', color: tierColor(currentIdx) }}>{current.name}</span>
         </span>
       </div>
 
