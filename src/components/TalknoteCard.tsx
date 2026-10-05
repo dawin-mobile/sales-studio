@@ -61,13 +61,29 @@ const WORK_KEYWORDS = [
   'docomo', 'ドコモ', 'UQ', '楽天', 'ワイモバイル', 'ahamo',
 ];
 
-function isWorkRelated(message: string): boolean {
-  return WORK_KEYWORDS.some((kw) => message.toLowerCase().includes(kw.toLowerCase()));
+// 商材キーワードを含んでしまう人名（例: 「福光」の中の「光」）を本文から取り除く。
+// 朝のスタート報告（現場名＋メンバーの羅列）が実績報告として拾われるのを防ぐため。
+// キーワードを含まない名前は触らない。無関係な名前まで消すと別の誤判定を招く。
+function stripNameNoise(message: string, names: string[]): string {
+  let out = message;
+  for (const name of names) {
+    const t = name.trim();
+    // 1文字の名前は本文の別の語を巻き込んで消すおそれがあるため対象外
+    if (t.length < 2) continue;
+    if (!WORK_KEYWORDS.some((kw) => t.toLowerCase().includes(kw.toLowerCase()))) continue;
+    out = out.split(t).join(' ');
+  }
+  return out;
 }
 
-function countWorkPosts(postsByStaff: SiteMap[string]): number {
+function isWorkRelated(message: string, names: string[] = []): boolean {
+  const text = names.length ? stripNameNoise(message, names) : message;
+  return WORK_KEYWORDS.some((kw) => text.toLowerCase().includes(kw.toLowerCase()));
+}
+
+function countWorkPosts(postsByStaff: SiteMap[string], names: string[] = []): number {
   return Object.values(postsByStaff).reduce(
-    (sum, posts) => sum + posts.filter((p) => isWorkRelated(p.message)).length,
+    (sum, posts) => sum + posts.filter((p) => isWorkRelated(p.message, names)).length,
     0
   );
 }
@@ -557,10 +573,10 @@ function todayString() {
   return `${y}-${m}-${d}`;
 }
 
-function buildCopyText(postsByStaff: SiteMap[string]): string {
+function buildCopyText(postsByStaff: SiteMap[string], names: string[] = []): string {
   const parts: string[] = [];
   for (const [staffName, posts] of Object.entries(postsByStaff)) {
-    const workPosts = posts.filter((p) => isWorkRelated(p.message));
+    const workPosts = posts.filter((p) => isWorkRelated(p.message, names));
     if (workPosts.length === 0) continue;
     parts.push('');
     parts.push(staffName);
@@ -616,12 +632,13 @@ function copyByExecCommand(text: string): boolean {
   }
 }
 
-function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSiteMap, externalCollapsed, date, canGenerate = false, carrier }: {
+function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSiteMap, externalCollapsed, date, canGenerate = false, carrier, allStaffNames = [] }: {
   site: string;
   staffList: string[];
   agency: string;
   siteMap: SiteMap;
   filterWork?: boolean;
+  allStaffNames?: string[];
   badgeSiteMap?: SiteMap;
   externalCollapsed?: boolean;
   date?: string;
@@ -630,7 +647,11 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
 }) {
   const postsByStaff = siteMap[site] ?? {};
   const badgePostsByStaff = badgeSiteMap ? (badgeSiteMap[site] ?? {}) : postsByStaff;
-  const workCount = filterWork ? countWorkPosts(postsByStaff) : Object.values(postsByStaff).reduce((s, ps) => s + ps.length, 0);
+  // 実績かどうかの判定で人名を誤って拾わないよう、名前の一覧を渡す。
+  // その現場のメンバーだけだと、シフト外の人の名前が書かれた投稿を取りこぼすため、
+  // その日の全現場のメンバー（allStaffNames）も含める。
+  const nameHints = [...allStaffNames, ...staffList, ...Object.keys(postsByStaff)];
+  const workCount = filterWork ? countWorkPosts(postsByStaff, nameHints) : Object.values(postsByStaff).reduce((s, ps) => s + ps.length, 0);
   const hasReport = workCount > 0;
   const { mnp, shin } = countMnpNew(badgePostsByStaff);
   const [copied, setCopied] = useState(false);
@@ -640,7 +661,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
   useEffect(() => { if (externalCollapsed !== undefined) setCollapsed(externalCollapsed); }, [externalCollapsed]);
 
   const handleCopy = () => {
-    const text = filterWork ? buildCopyText(postsByStaff) : Object.entries(postsByStaff).map(([n, ps]) => `\n${n}\n${ps.map((p) => p.message).join('\n\n')}`).join('\n');
+    const text = filterWork ? buildCopyText(postsByStaff, nameHints) : Object.entries(postsByStaff).map(([n, ps]) => `\n${n}\n${ps.map((p) => p.message).join('\n\n')}`).join('\n');
     copyTextSync(text).then((ok) => {
       if (!ok) return;
       setCopied(true);
@@ -831,7 +852,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
       {!collapsed && hasReport ? (
         <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {Object.entries(postsByStaff).map(([staffName, posts]) => {
-            const workPosts = filterWork ? posts.filter((p) => isWorkRelated(p.message)) : posts;
+            const workPosts = filterWork ? posts.filter((p) => isWorkRelated(p.message, nameHints)) : posts;
             if (workPosts.length === 0) return null;
             return (
               <div key={staffName}>
@@ -942,6 +963,12 @@ export default function TalknoteCard() {
   const regionKey = region === '関東' ? '東京' : '福岡';
   const orderedSites = activeData
     ? activeData.siteOrder.filter((s) => s.staff.length > 0 && (s.region === regionKey || s.region === ''))
+    : [];
+
+  // その日に出勤している全スタッフの名前（地域を問わず）。
+  // 「福光」のように商材キーワードを含む名前を実績判定から除くために使う。
+  const allStaffNames = activeData
+    ? Array.from(new Set(activeData.siteOrder.flatMap((s) => s.staff)))
     : [];
 
   // 実績報告タブのみ: 現場不明の報告を「その他」として追加
@@ -1097,6 +1124,7 @@ export default function TalknoteCard() {
           date={date}
           canGenerate={tab === 'talknote'}
           carrier={s.carrier}
+          allStaffNames={allStaffNames}
         />
       ))}
 
