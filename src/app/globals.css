@@ -536,8 +536,9 @@ input[type="password"]:focus {
    スタッフ名の横に数字を並べる。狭い画面でも折り返さず1行に収めたいので、
    数字を画面幅に応じて縮めつつ、スタッフ選択側の幅を譲る */
 .attendance-stats-row { flex-wrap: nowrap; }
-.attendance-stats-row .control-group { flex: 1 1 auto; min-width: 80px; }
-.attendance-stats-row .control-select { min-width: 0; width: 100%; }
+/* スタッフ選択は名前が収まる最小幅にとどめ、余った横幅は数字側に渡す */
+.attendance-stats-row .control-group { flex: 0 1 auto; min-width: 0; }
+.attendance-stats-row .control-select { min-width: 0; width: auto; max-width: 100%; }
 
 .stat-figures {
   display: flex;
