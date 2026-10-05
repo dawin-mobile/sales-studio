@@ -49,11 +49,10 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
 
   // loginName が後から届いた場合（セッション取得遅延）やデータ更新時に追従
   useEffect(() => {
-    const list = data.staffOrder?.length ? data.staffOrder : data.ranking;
-    if (loginName && list.find((s) => s.name === loginName)) {
+    if (loginName && allStaff.find((s) => s.name === loginName)) {
       setStaffName(loginName);
-    } else if (list.length > 0 && !list.find((s) => s.name === staffName)) {
-      setStaffName(list[0].name);
+    } else if (allStaff.length > 0 && !allStaff.find((s) => s.name === staffName)) {
+      setStaffName(allStaff[0].name);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loginName, data.ranking]);
@@ -108,6 +107,10 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
     }}>{position}</span>
   ) : null;
 
+  // データがない月・出勤していないスタッフのとき。
+  // プルダウンの選択肢は data.ranking（データのある人だけ）ではなく allStaff を使う。
+  // ranking にすると、出勤していない人を選んだとき value に合う option がなく、
+  // ブラウザが先頭の人（＝別人）を表示してしまう。
   if (!staff || !staff.calendar) {
     return (
       <>
@@ -119,7 +122,7 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
                 <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>{staffName}</span>
               ) : (
                 <select className="control-select" value={staffName} onChange={(e) => { setStaffName(e.target.value); setManuallySelected(true); }}>
-                  {data.ranking.map((s) => (
+                  {allStaff.map((s) => (
                     <option key={s.name} value={s.name}>{s.name}</option>
                   ))}
                 </select>
@@ -150,7 +153,7 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
               <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>{staffName}</span>
             ) : (
               <select className="control-select" value={staffName} onChange={(e) => { setStaffName(e.target.value); setManuallySelected(true); }}>
-                {(data.staffOrder?.length ? data.staffOrder : data.ranking).map((s) => (
+                {allStaff.map((s) => (
                   <option key={s.name} value={s.name}>{s.name}</option>
                 ))}
               </select>
