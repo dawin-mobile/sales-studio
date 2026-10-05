@@ -564,6 +564,13 @@ input[type="password"]:focus {
 .stat-figure-value--xs { font-size: clamp(20px, 5.3vw, 30px); }
 .stat-figure-value--xs .stat-figure-unit { font-size: clamp(9px, 2vw, 12px); }
 
+/* 獲得ptの下に出す「うち戻り ◯pt」（別日に戻ってきた分の内数） */
+.stat-figure-note { font-size: 10px; color: var(--text-sub); margin-top: 3px; white-space: nowrap; }
+
+/* 戻り分を含む日に付ける印 */
+.cal-modori-mark { color: #f59e0b; font-weight: 700; margin-left: 1px; }
+.cal-modori-note { padding: 8px 12px; font-size: 11px; color: var(--text-sub); }
+
 @media (max-width: 480px) {
   .attendance-stats-row { gap: 10px; padding: 14px; }
   .stat-figures { gap: 12px; margin-left: 0; }

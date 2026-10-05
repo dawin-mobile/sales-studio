@@ -3,6 +3,30 @@
 import { useState, useMemo, useEffect } from 'react';
 import { DashboardData, Staff } from '@/types';
 import IncentiveBar from './IncentiveBar';
+import { modoriToCalendarRow, ModoriItems } from '@/lib/modori';
+
+// /api/modori が返す1件分（別日に戻ってきた分の獲得）
+interface ModoriEntry {
+  date: string;
+  day: number;
+  staff: string;
+  site: string;
+  pt: number;
+  selfClose: number;
+  items: ModoriItems;
+}
+
+// 戻り報告の送信者名（「中村 翔」）とアプリ上のスタッフ名（「中村翔」）を照合する。
+// 表記ゆれ（姓だけ／フルネーム）があるため、空白を除いて前方一致で見る。
+// /api/jisseki の matchStaff と同じ考え方。
+function sameStaff(sender: string, staffName: string): boolean {
+  const a = sender.replace(/\s/g, '');
+  const b = staffName.replace(/\s/g, '');
+  if (!a || !b) return false;
+  return a === b || a.startsWith(b) || b.startsWith(a);
+}
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
 
 interface AttendanceTableProps {
   data: DashboardData;
@@ -85,6 +109,47 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
       .catch(() => {});
   }, [staffName, loginName]);
 
+  // 戻り報告（別日に戻ってきた分）を取得する。月が変わったら取り直す
+  const [modoriEntries, setModoriEntries] = useState<ModoriEntry[]>([]);
+  useEffect(() => {
+    let canceled = false;
+    fetch(`/api/modori?month=${selectedMonth}`)
+      .then((r) => r.json())
+      .then((json) => { if (!canceled && Array.isArray(json.entries)) setModoriEntries(json.entries); })
+      .catch(() => { if (!canceled) setModoriEntries([]); });
+    return () => { canceled = true; };
+  }, [selectedMonth]);
+
+  // 選択中のスタッフの戻り分を、日ごとにまとめる
+  const modoriByDay = useMemo(() => {
+    const map = new Map<number, { pt: number; selfClose: number; mnp: number; new: number; uq: number; nw: number; elec: number; credit: number }>();
+    for (const e of modoriEntries) {
+      if (!sameStaff(e.staff, staffName)) continue;
+      const row = modoriToCalendarRow(e.items);
+      const cur = map.get(e.day) ?? { pt: 0, selfClose: 0, mnp: 0, new: 0, uq: 0, nw: 0, elec: 0, credit: 0 };
+      map.set(e.day, {
+        pt:        round2(cur.pt + e.pt),
+        selfClose: round2(cur.selfClose + e.selfClose),
+        mnp:       round2(cur.mnp + row.mnp),
+        new:       round2(cur.new + row.new),
+        uq:        round2(cur.uq + row.uq),
+        nw:        round2(cur.nw + row.nw),
+        elec:      round2(cur.elec + row.elec),
+        credit:    round2(cur.credit + row.credit),
+      });
+    }
+    return map;
+  }, [modoriEntries, staffName]);
+
+  const modoriTotalPt = useMemo(
+    () => round2([...modoriByDay.values()].reduce((sum, v) => sum + v.pt, 0)),
+    [modoriByDay]
+  );
+  const modoriTotalSelfClose = useMemo(
+    () => round2([...modoriByDay.values()].reduce((sum, v) => sum + v.selfClose, 0)),
+    [modoriByDay]
+  );
+
   const yearMonth = useMemo(() => {
     const parts = selectedMonth.split('-');
     return { year: parseInt(parts[0]), month: parseInt(parts[1]) - 1 };
@@ -140,8 +205,11 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
 
   const days = data.daysInMonth;
 
-  const totalPt = staff.total;
-  const totalSelfClose = staff.calendar.reduce((sum, d) => Math.round((sum + (d.selfClose || 0)) * 100) / 100, 0);
+  // 合計には戻り分を含める（インセンのクラス判定もこの数字で行う）
+  const totalPt = round2(staff.total + modoriTotalPt);
+  const totalSelfClose = round2(
+    staff.calendar.reduce((sum, d) => Math.round((sum + (d.selfClose || 0)) * 100) / 100, 0) + modoriTotalSelfClose
+  );
 
   return (
     <>
@@ -165,6 +233,9 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
           <div className="stat-figure">
             <span className="stat-figure-label">獲得</span>
             <span className={`stat-figure-value ${figureSizeClass(totalPt)}`}>{totalPt}<span className="stat-figure-unit">pt</span></span>
+            {modoriTotalPt > 0 && (
+              <span className="stat-figure-note">うち戻り {modoriTotalPt}pt</span>
+            )}
           </div>
           <div className="stat-figure">
             <span className="stat-figure-label">自己クロ</span>
@@ -182,7 +253,11 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
               <tr>
                 <th className="cal-label-col">日付</th>
                 {Array.from({ length: days }, (_, i) => (
-                  <th key={i} style={missingDays.has(i + 1) ? { background: 'rgba(180,30,30,0.35)' } : undefined}>{i + 1}</th>
+                  <th key={i} style={missingDays.has(i + 1) ? { background: 'rgba(180,30,30,0.35)' } : undefined}>
+                    {i + 1}
+                    {/* 戻り分を含む日に印を付ける（セルの数字は戻りを足した合算） */}
+                    {modoriByDay.has(i + 1) && <span className="cal-modori-mark">*</span>}
+                  </th>
                 ))}
               </tr>
               <tr>
@@ -207,9 +282,11 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
                 <tr key={row.key}>
                   <td className={`cal-label-col ${row.isTotal ? 'row-total' : ''}`}>{row.label}</td>
                   {Array.from({ length: days }, (_, i) => {
-                    const val = staff.calendar[i][row.key];
-                    const displayVal = val === 0 || val === undefined ? '-' : val;
-                    const cls = val === 0 || val === undefined ? 'cal-data-cell zero' : 'cal-data-cell';
+                    const base = staff.calendar[i][row.key] ?? 0;
+                    const add = modoriByDay.get(i + 1)?.[row.key] ?? 0;
+                    const val = round2(base + add);
+                    const displayVal = val === 0 ? '-' : val;
+                    const cls = val === 0 ? 'cal-data-cell zero' : 'cal-data-cell';
                     return (
                       <td key={i} className={`${cls} ${row.isTotal ? 'row-total' : ''}`}
                         style={missingDays.has(i + 1) ? { background: 'rgba(180,30,30,0.25)' } : undefined}>
@@ -243,6 +320,11 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
             </tbody>
           </table>
         </div>
+        {modoriTotalPt > 0 && (
+          <div className="cal-modori-note">
+            <span className="cal-modori-mark">*</span> の日は戻り分（別日に戻ってきた獲得）を含みます
+          </div>
+        )}
       </div>
     </>
   );

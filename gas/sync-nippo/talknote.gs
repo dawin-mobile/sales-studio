@@ -18,6 +18,17 @@
 //    fetchModoriEmails_PastData()   … 戻り報告の過去200件を取込
 // ============================================================
 
+// 重複チェック用のキーを作る。
+// シートのA列（受信日時）は日付として保存されるため getValues() は Date を返す。
+// 書き込み時の文字列 'yyyy/MM/dd HH:mm:ss' と形をそろえないと一致せず、
+// 重複チェックがすり抜けて同じ投稿が二重に入る。
+function stampKey_(value) {
+  if (Object.prototype.toString.call(value) === '[object Date]') {
+    return Utilities.formatDate(value, 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss');
+  }
+  return String(value).trim();
+}
+
 // 受信録シートを用意する。
 // シートが無ければ作り、「あるけど空（手でタブだけ作った状態）」ならヘッダーを入れる。
 // ※ ヘッダーを入れないと1行目からデータが入り、読む側が1件取りこぼす
@@ -280,7 +291,7 @@ function fetchKintaiEmails_PastData() {
   const lastRow = kintaiSheet.getLastRow();
   if (lastRow > 1) {
     const rows = kintaiSheet.getRange(1, 1, lastRow, 2).getValues();
-    for (const r of rows) existing[String(r[0]) + '|' + String(r[1])] = true;
+    for (const r of rows) existing[stampKey_(r[0]) + '|' + String(r[1]).trim()] = true;
   }
 
   const threads = GmailApp.search('from:no-reply@talknote.com 勤怠報告 ノートに投稿しました', 0, 200);
@@ -306,10 +317,10 @@ function fetchKintaiEmails_PastData() {
       if (bodyMatch && bodyMatch[1]) msgContent = bodyMatch[1].trim();
 
       const stamp = Utilities.formatDate(date, 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss');
-      if (existing[stamp + '|' + senderName]) { skipped++; continue; }
+      if (existing[stamp + '|' + senderName.trim()]) { skipped++; continue; }
 
       kintaiSheet.appendRow([stamp, senderName, msgContent]);
-      existing[stamp + '|' + senderName] = true;
+      existing[stamp + '|' + senderName.trim()] = true;
       count++;
     }
   }
@@ -330,7 +341,7 @@ function fetchModoriEmails_PastData() {
   const lastRow = modoriSheet.getLastRow();
   if (lastRow > 1) {
     const rows = modoriSheet.getRange(1, 1, lastRow, 2).getValues();
-    for (const r of rows) existing[String(r[0]) + '|' + String(r[1])] = true;
+    for (const r of rows) existing[stampKey_(r[0]) + '|' + String(r[1]).trim()] = true;
   }
 
   const threads = GmailApp.search('from:no-reply@talknote.com 戻り報告 ノートに投稿しました', 0, 200);
@@ -356,10 +367,10 @@ function fetchModoriEmails_PastData() {
       if (bodyMatch && bodyMatch[1]) msgContent = bodyMatch[1].trim();
 
       const stamp = Utilities.formatDate(date, 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss');
-      if (existing[stamp + '|' + senderName]) { skipped++; continue; }
+      if (existing[stamp + '|' + senderName.trim()]) { skipped++; continue; }
 
       modoriSheet.appendRow([stamp, senderName, msgContent]);
-      existing[stamp + '|' + senderName] = true;
+      existing[stamp + '|' + senderName.trim()] = true;
       count++;
     }
   }
