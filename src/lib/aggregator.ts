@@ -41,6 +41,8 @@ export function aggregateMainSheet(
   const daysInMonth = new Date(targetYear, targetMonthIdx + 1, 0).getDate();
 
   const staffMap: Record<string, Staff> = {};
+  // スタッフ名 → 日報を出した日（0始まりの日インデックス）の集合
+  const reportedDays: Record<string, Set<number>> = {};
   const siteDetails: Record<string, SiteDetail> = {};
   const kpi: KPI = { total: 0, mnp: 0, new: 0, change: 0, hikari: 0, tablet: 0, other: 0 };
   const prevKpi: KPI = { total: 0, mnp: 0, new: 0, change: 0, hikari: 0, tablet: 0, other: 0 };
@@ -49,7 +51,7 @@ export function aggregateMainSheet(
     if (!staffMap[name]) {
       staffMap[name] = {
         name,
-        total: 0, mnp: 0, new: 0, change: 0, hikari: 0, tablet: 0, other: 0, selfClose: 0,
+        total: 0, mnp: 0, new: 0, change: 0, hikari: 0, tablet: 0, other: 0, selfClose: 0, reportDays: 0,
         sites: {}, ages: {}, types: {},
         dailyTotal: new Array(daysInMonth).fill(0),
         dailyBySite: {},
@@ -107,6 +109,9 @@ export function aggregateMainSheet(
       }
 
       const dayIndex = d.getDate() - 1;
+      // 日報を出した日数。同じ日に複数行（現場掛け持ち等）あっても1日と数える
+      if (!reportedDays[name]) reportedDays[name] = new Set<number>();
+      reportedDays[name].add(dayIndex);
       s.dailyTotal[dayIndex] = safeAdd(s.dailyTotal[dayIndex], rowTotal);
       if (siteName) {
         if (!s.dailyBySite[siteName]) s.dailyBySite[siteName] = new Array(daysInMonth).fill(0);
@@ -155,6 +160,11 @@ export function aggregateMainSheet(
       prevKpi.other = safeAdd(prevKpi.other, other);
     }
   });
+
+  // 集計し終えたところで、日報を出した日数を確定させる
+  for (const [name, days] of Object.entries(reportedDays)) {
+    if (staffMap[name]) staffMap[name].reportDays = days.size;
+  }
 
   const ranking = Object.values(staffMap).sort((a, b) => b.total - a.total);
 

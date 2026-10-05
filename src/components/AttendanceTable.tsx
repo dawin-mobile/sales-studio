@@ -106,18 +106,23 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
   }, [staff, manuallySelected, onNoData]);
 
   // ログインユーザーの未提出日（日番号のSet）
+  // 日報の未提出日。自分の分だけでなく、選択中のスタッフ・選択中の月でも取る
+  // （出勤日数＝提出した日数＋未提出の日数 を出すため）。他人の分は社員以上のみAPIが返す
   const [missingDays, setMissingDays] = useState<Set<number>>(new Set());
   useEffect(() => {
-    if (staffName !== loginName) { setMissingDays(new Set()); return; }
-    fetch('/api/nippo-check')
+    if (!staffName) { setMissingDays(new Set()); return; }
+    let canceled = false;
+    const params = new URLSearchParams({ staff: staffName, month: selectedMonth });
+    fetch(`/api/nippo-check?${params}`)
       .then((r) => r.json())
       .then((data) => {
-        if (!Array.isArray(data.missingDates)) return;
-        const days = new Set<number>(data.missingDates.map((d: string) => parseInt(d.split('-')[2])));
-        setMissingDays(days);
+        if (canceled) return;
+        if (!Array.isArray(data.missingDates)) { setMissingDays(new Set()); return; }
+        setMissingDays(new Set<number>(data.missingDates.map((d: string) => parseInt(d.split('-')[2]))));
       })
-      .catch(() => {});
-  }, [staffName, loginName]);
+      .catch(() => { if (!canceled) setMissingDays(new Set()); });
+    return () => { canceled = true; };
+  }, [staffName, selectedMonth]);
 
   // 戻り報告（別日に戻ってきた分）を取得する。月が変わったら取り直す
   const [modoriEntries, setModoriEntries] = useState<ModoriEntry[]>([]);
@@ -161,6 +166,10 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
   );
 
   const hasModori = modoriTotalPt > 0 || modoriTotalSelfClose > 0;
+
+  // 出勤日数 = 日報を出した日数 ＋ 日報が未提出の日数（シフトに入っていたのに出していない日）
+  const reportDays = staff?.reportDays ?? 0;
+  const attendanceDays = reportDays + missingDays.size;
 
   const yearMonth = useMemo(() => {
     const parts = selectedMonth.split('-');
@@ -254,6 +263,14 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
             {hasModori && <span className="stat-figure-note">┗戻り {modoriTotalSelfClose}pt</span>}
           </div>
         </div>
+      </div>
+      <div className="attendance-days-card">
+        <span className="attendance-days-label">出勤</span>
+        <span className="attendance-days-value">{attendanceDays}</span>
+        <span className="attendance-days-label">日</span>
+        {missingDays.size > 0 && (
+          <span className="attendance-days-note">（日報未提出 {missingDays.size}日を含む）</span>
+        )}
       </div>
       {(userRole === 'アルバイト' || staffOrderEntry?.role === 'アルバイト') && (
         <IncentiveBar total={totalPt} selfClose={totalSelfClose} />

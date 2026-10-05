@@ -31,6 +31,7 @@ export interface Staff {
   tablet: number;
   other: number;
   selfClose: number;
+  reportDays: number; // その月に日報を出した日数（同じ日に複数行あっても1日と数える）
   sites: Record<string, number>;
   ages: Record<string, number>;
   types: Record<string, number>;

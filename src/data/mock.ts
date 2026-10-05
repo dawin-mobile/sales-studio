@@ -70,6 +70,7 @@ function generateStaff(name: string, skill: number): Staff {
   return {
     name,
     total,
+    reportDays: 0,
     mnp,
     new: newVal,
     change,

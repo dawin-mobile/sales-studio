@@ -571,6 +571,21 @@ input[type="password"]:focus {
 .cal-modori-mark { color: #f59e0b; font-weight: 700; margin-left: 1px; }
 .cal-modori-note { padding: 8px 12px; font-size: 11px; color: var(--text-sub); }
 
+/* 出勤日数（スタッフ選択カードと獲得表カードの間） */
+.attendance-days-card {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 12px 16px;
+  margin-bottom: 20px;
+}
+.attendance-days-label { font-size: 13px; color: var(--text-sub); }
+.attendance-days-value { font-size: 22px; font-weight: 600; color: var(--text-main); line-height: 1; }
+.attendance-days-note { font-size: 11px; color: var(--text-sub); margin-left: 6px; }
+
 @media (max-width: 480px) {
   .attendance-stats-row { gap: 10px; padding: 14px; }
   .stat-figures { gap: 12px; margin-left: 0; }
