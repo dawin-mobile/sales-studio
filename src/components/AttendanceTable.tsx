@@ -150,6 +150,8 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
     [modoriByDay]
   );
 
+  const hasModori = modoriTotalPt > 0 || modoriTotalSelfClose > 0;
+
   const yearMonth = useMemo(() => {
     const parts = selectedMonth.split('-');
     return { year: parseInt(parts[0]), month: parseInt(parts[1]) - 1 };
@@ -233,13 +235,13 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
           <div className="stat-figure">
             <span className="stat-figure-label">獲得</span>
             <span className={`stat-figure-value ${figureSizeClass(totalPt)}`}>{totalPt}<span className="stat-figure-unit">pt</span></span>
-            {modoriTotalPt > 0 && (
-              <span className="stat-figure-note">うち戻り {modoriTotalPt}pt</span>
-            )}
+            {/* 戻りがあるときは獲得・自己クロの両方に内数を出す（片方が0でも並びをそろえる） */}
+            {hasModori && <span className="stat-figure-note">┗戻り {modoriTotalPt}pt</span>}
           </div>
           <div className="stat-figure">
             <span className="stat-figure-label">自己クロ</span>
             <span className={`stat-figure-value ${figureSizeClass(totalSelfClose)}`}>{totalSelfClose}<span className="stat-figure-unit">pt</span></span>
+            {hasModori && <span className="stat-figure-note">┗戻り {modoriTotalSelfClose}pt</span>}
           </div>
         </div>
       </div>
@@ -320,7 +322,7 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
             </tbody>
           </table>
         </div>
-        {modoriTotalPt > 0 && (
+        {hasModori && (
           <div className="cal-modori-note">
             <span className="cal-modori-mark">*</span> の日は戻り分（別日に戻ってきた獲得）を含みます
           </div>
