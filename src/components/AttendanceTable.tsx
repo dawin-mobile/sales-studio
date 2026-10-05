@@ -13,6 +13,17 @@ interface AttendanceTableProps {
   onStaffChange?: (name: string) => void; // 育成アプリのリンク先を選択中スタッフに合わせるため親へ通知
 }
 
+// 獲得・自己クロの数字は、桁が増えたぶんだけ字を小さくする。
+// 整数部の桁数（3桁になったら縮める）と、小数を含めた全体の文字数の
+// 両方を見る。「123.4」は5文字でも3桁なので縮める。
+function figureSizeClass(value: number): string {
+  const text = String(value);
+  const intDigits = text.split('.')[0].replace('-', '').length;
+  if (intDigits >= 4 || text.length >= 8) return 'stat-figure-value--xs';
+  if (intDigits >= 3 || text.length >= 6) return 'stat-figure-value--sm';
+  return '';
+}
+
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
 
 type CalendarKey = 'pt' | 'selfClose' | 'mnp' | 'new' | 'uq' | 'nw' | 'elec' | 'credit';
@@ -150,11 +161,11 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
         <div className="stat-figures">
           <div className="stat-figure">
             <span className="stat-figure-label">獲得</span>
-            <span className="stat-figure-value">{totalPt}<span className="stat-figure-unit">pt</span></span>
+            <span className={`stat-figure-value ${figureSizeClass(totalPt)}`}>{totalPt}<span className="stat-figure-unit">pt</span></span>
           </div>
           <div className="stat-figure">
             <span className="stat-figure-label">自己クロ</span>
-            <span className="stat-figure-value">{totalSelfClose}<span className="stat-figure-unit">pt</span></span>
+            <span className={`stat-figure-value ${figureSizeClass(totalSelfClose)}`}>{totalSelfClose}<span className="stat-figure-unit">pt</span></span>
           </div>
         </div>
       </div>

@@ -547,15 +547,22 @@ input[type="password"]:focus {
   flex-shrink: 0;   /* 数字は縮めず、足りない分はスタッフ選択を縮める */
 }
 .stat-figure { display: flex; flex-direction: column; align-items: center; line-height: 1.3; }
-.stat-figure-label { font-size: 10px; color: var(--text-sub); }
+.stat-figure-label { font-size: 11px; color: var(--text-sub); }
 .stat-figure-value {
-  font-size: clamp(22px, 6.5vw, 35px);
+  font-size: clamp(26px, 7vw, 40px);
   font-weight: 600;
   color: var(--text-main);
   line-height: 1;
   white-space: nowrap;
 }
-.stat-figure-unit { font-size: clamp(11px, 2.8vw, 15px); margin-left: 2px; }
+.stat-figure-unit { font-size: clamp(11px, 2.6vw, 15px); margin-left: 2px; }
+
+/* 桁が増えたぶんだけ字を小さくする（クラスは figureSizeClass が付ける）
+   通常「50.05」→ --sm「100.05」→ --xs「1000.05」 */
+.stat-figure-value--sm { font-size: clamp(23px, 6.1vw, 35px); }
+.stat-figure-value--sm .stat-figure-unit { font-size: clamp(10px, 2.3vw, 14px); }
+.stat-figure-value--xs { font-size: clamp(20px, 5.3vw, 30px); }
+.stat-figure-value--xs .stat-figure-unit { font-size: clamp(9px, 2vw, 12px); }
 
 @media (max-width: 480px) {
   .attendance-stats-row { gap: 10px; padding: 14px; }
