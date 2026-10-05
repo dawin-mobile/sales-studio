@@ -80,12 +80,17 @@ export default function IncentiveBar({ total, selfClose, attendanceDays, missing
       {/* ヘッダー（出勤日数が渡されていれば現在クラスの左に並べる） */}
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, flexWrap: 'wrap', marginBottom: 16 }}>
         {attendanceDays !== undefined && (
-          <span style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-            <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>出勤</span>
-            <span style={{ fontSize: 18, fontWeight: 'bold', color: 'var(--text-main)' }}>{attendanceDays}</span>
-            <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>日</span>
+          <span style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+              <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>出勤</span>
+              <span style={{ fontSize: 18, fontWeight: 'bold', color: 'var(--text-main)' }}>{attendanceDays}</span>
+              <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>日</span>
+            </span>
+            {/* 未提出は添え書きなので、出勤日数の下に小さく置く */}
             {missingCount > 0 && (
-              <span style={{ fontSize: 10, color: 'var(--text-sub)' }}>（未提出 {missingCount}日）</span>
+              <span style={{ fontSize: 9, color: 'var(--text-sub)', lineHeight: 1.2, marginTop: 2 }}>
+                未提出 {missingCount}日
+              </span>
             )}
           </span>
         )}
