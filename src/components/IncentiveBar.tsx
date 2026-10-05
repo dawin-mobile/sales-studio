@@ -27,6 +27,10 @@ const TIERS: Tier[] = [
 ];
 
 
+// クラス名でいちばん長いもの（「トップクローザー」）。
+// ヘッダーの「現在クラス」の開始位置を、どのクラスでも同じ場所にそろえるために使う。
+const LONGEST_TIER_NAME = TIERS.reduce((a, b) => (b.name.length > a.length ? b.name : a), '');
+
 function tierColor(tierIndex: number): string {
   const pt = TIERS[tierIndex].pt;
   if (pt < 15) return '#00ff88';
@@ -94,10 +98,22 @@ export default function IncentiveBar({ total, selfClose, attendanceDays, missing
             )}
           </span>
         )}
-        {/* 現在クラスはカードの右端に寄せる */}
-        <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'baseline', gap: 5 }}>
-          <span style={{ fontSize: 10, color: 'var(--text-sub)' }}>現在クラス</span>
-          <span style={{ fontSize: 16, fontWeight: 'bold', color: tierColor(currentIdx) }}>{current.name}</span>
+        {/* 現在クラスはカードの右端に寄せる。
+            ただしクラス名の長さで開始位置が動かないよう、いちばん長い名前
+            （トップクローザー）のぶんの幅を見えない文字で確保しておく。
+            固定pxだと端末やフォントでずれるため、実際に組んで測らせている。 */}
+        <span style={{ marginLeft: 'auto', display: 'inline-grid', justifyItems: 'start', maxWidth: '100%' }}>
+          <span aria-hidden style={{
+            gridArea: '1 / 1', visibility: 'hidden', height: 0, overflow: 'hidden',
+            display: 'flex', alignItems: 'baseline', gap: 5, whiteSpace: 'nowrap',
+          }}>
+            <span style={{ fontSize: 10 }}>現在クラス</span>
+            <span style={{ fontSize: 16, fontWeight: 'bold' }}>{LONGEST_TIER_NAME}</span>
+          </span>
+          <span style={{ gridArea: '1 / 1', display: 'flex', alignItems: 'baseline', gap: 5, whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: 10, color: 'var(--text-sub)' }}>現在クラス</span>
+            <span style={{ fontSize: 16, fontWeight: 'bold', color: tierColor(currentIdx) }}>{current.name}</span>
+          </span>
         </span>
       </div>
 
