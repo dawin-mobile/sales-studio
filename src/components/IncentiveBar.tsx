@@ -51,7 +51,12 @@ function zoneProgress(total: number, min: number, max: number): number {
   return ((total - min) / (max - min)) * 100;
 }
 
-export default function IncentiveBar({ total, selfClose }: { total: number; selfClose: number }) {
+export default function IncentiveBar({ total, selfClose, attendanceDays, missingCount = 0 }: {
+  total: number;
+  selfClose: number;
+  attendanceDays?: number;      // 出勤日数。渡されたときだけ「現在クラス」の左に出す
+  missingCount?: number;        // うち日報未提出の日数
+}) {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -72,10 +77,22 @@ export default function IncentiveBar({ total, selfClose }: { total: number; self
 
   return (
     <div className="chart-card" style={{ marginBottom: 12, minHeight: 'auto' }}>
-      {/* ヘッダー */}
-      <div style={{ marginBottom: 16 }}>
-        <span style={{ fontSize: 11, color: 'var(--text-sub)', marginRight: 6 }}>現在クラス</span>
-        <span style={{ fontSize: 18, fontWeight: 'bold', color: tierColor(currentIdx) }}>{current.name}</span>
+      {/* ヘッダー（出勤日数が渡されていれば現在クラスの左に並べる） */}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, flexWrap: 'wrap', marginBottom: 16 }}>
+        {attendanceDays !== undefined && (
+          <span style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+            <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>出勤</span>
+            <span style={{ fontSize: 18, fontWeight: 'bold', color: 'var(--text-main)' }}>{attendanceDays}</span>
+            <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>日</span>
+            {missingCount > 0 && (
+              <span style={{ fontSize: 10, color: 'var(--text-sub)' }}>（未提出 {missingCount}日）</span>
+            )}
+          </span>
+        )}
+        <span>
+          <span style={{ fontSize: 11, color: 'var(--text-sub)', marginRight: 6 }}>現在クラス</span>
+          <span style={{ fontSize: 18, fontWeight: 'bold', color: tierColor(currentIdx) }}>{current.name}</span>
+        </span>
       </div>
 
       {/* 3本ゾーンバー（次ランク条件をそのバーの直下に表示） */}

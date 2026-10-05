@@ -177,6 +177,8 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
   }, [selectedMonth]);
 
   const staffOrderEntry = data.staffOrder?.find((s) => s.name === staffName);
+  // アルバイトにはクラス（インセン）カードを出す。出勤日数はその中に入れる
+  const showIncentive = userRole === 'アルバイト' || staffOrderEntry?.role === 'アルバイト';
   const position = staff?.position ?? staffOrderEntry?.position;
   const positionColor = position === 'ディレクター'
     ? { bg: 'rgba(239,68,68,0.2)', text: '#f87171', border: 'rgba(239,68,68,0.4)' }
@@ -264,16 +266,23 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
           </div>
         </div>
       </div>
-      <div className="attendance-days-card">
-        <span className="attendance-days-label">出勤</span>
-        <span className="attendance-days-value">{attendanceDays}</span>
-        <span className="attendance-days-label">日</span>
-        {missingDays.size > 0 && (
-          <span className="attendance-days-note">（日報未提出 {missingDays.size}日を含む）</span>
-        )}
-      </div>
-      {(userRole === 'アルバイト' || staffOrderEntry?.role === 'アルバイト') && (
-        <IncentiveBar total={totalPt} selfClose={totalSelfClose} />
+      {/* アルバイトはクラスカードの中（現在クラスの左）に出勤日数を出すので、単独のカードは出さない */}
+      {showIncentive ? (
+        <IncentiveBar
+          total={totalPt}
+          selfClose={totalSelfClose}
+          attendanceDays={attendanceDays}
+          missingCount={missingDays.size}
+        />
+      ) : (
+        <div className="attendance-days-card">
+          <span className="attendance-days-label">出勤</span>
+          <span className="attendance-days-value">{attendanceDays}</span>
+          <span className="attendance-days-label">日</span>
+          {missingDays.size > 0 && (
+            <span className="attendance-days-note">（日報未提出 {missingDays.size}日を含む）</span>
+          )}
+        </div>
       )}
       <div className="chart-card" style={{ padding: 0, overflow: 'hidden' }}>
         <div className="calendar-wrapper">
