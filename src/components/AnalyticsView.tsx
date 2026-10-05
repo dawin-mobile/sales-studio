@@ -21,6 +21,15 @@ export default function AnalyticsView({ data, selectedMonth, loginName, userRole
   const [innerTab, setInnerTab] = useState<InnerTab>('attendance');
   // 「個人実績」のスタッフ選択で選ばれている人。育成アプリのリンク先に使う
   const [selectedStaff, setSelectedStaff] = useState(loginName ?? '');
+  // 人が自分で選んだ相手。タブを切り替えると各タブは作り直されるため、
+  // ここで覚えておいて初期値として渡さないと、ログインユーザーに戻ってしまう
+  const [pickedStaff, setPickedStaff] = useState('');
+
+  // どのタブで選んでも、覚えておく相手と育成アプリのリンク先をそろえる
+  const handleStaffPick = (name: string) => {
+    setPickedStaff(name);
+    setSelectedStaff(name);
+  };
 
   // 育成アプリの査定シートに載っていない人にはボタンを出さない（押しても合言葉画面になるため）。
   // 社員以上は staffNames（登録済みの氏名一覧）が返るので、選択中の相手で判定する
@@ -95,6 +104,8 @@ export default function AnalyticsView({ data, selectedMonth, loginName, userRole
           userRole={userRole}
           onNoData={onNoData}
           onStaffChange={setSelectedStaff}
+          initialStaff={pickedStaff}
+          onStaffPick={handleStaffPick}
         />
       )}
       {innerTab === 'yearly' && (
@@ -103,10 +114,12 @@ export default function AnalyticsView({ data, selectedMonth, loginName, userRole
           loginName={loginName}
           userRole={userRole}
           selectedMonth={selectedMonth}
+          initialStaff={pickedStaff}
+          onStaffPick={handleStaffPick}
         />
       )}
       {innerTab === 'analysis' && (
-        <AnalysisView data={data} />
+        <AnalysisView data={data} initialStaff={pickedStaff} onStaffPick={handleStaffPick} />
       )}
     </div>
   );

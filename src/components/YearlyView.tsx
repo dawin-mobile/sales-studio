@@ -9,6 +9,8 @@ interface YearlyViewProps {
   loginName?: string;
   userRole?: string;
   selectedMonth?: string;
+  initialStaff?: string;                // タブを切り替えても選択が外れないよう、親が覚えている選択を受け取る
+  onStaffPick?: (name: string) => void; // 人が自分でプルダウンを操作したときだけ親へ通知
 }
 
 // ハイライトは selectedMonth または今月
@@ -66,10 +68,12 @@ function BarChart({ months, accentColor, label, currentMonth }: { months: MonthD
   );
 }
 
-export default function YearlyView({ data, loginName, userRole, selectedMonth }: YearlyViewProps) {
+export default function YearlyView({ data, loginName, userRole, selectedMonth, initialStaff, onStaffPick }: YearlyViewProps) {
   const allStaff = data.staffOrder?.length ? data.staffOrder : data.ranking;
-  const initialName = (loginName && allStaff.find(s => s.name === loginName))
-    ? loginName : allStaff[0]?.name ?? '';
+  // 親が覚えている選択（＝人が自分で選んだ相手）があればそれを優先する
+  const picked = initialStaff && allStaff.find(s => s.name === initialStaff) ? initialStaff : '';
+  const initialName = picked
+    || ((loginName && allStaff.find(s => s.name === loginName)) ? loginName : allStaff[0]?.name ?? '');
 
   const [staffName, setStaffName] = useState(initialName);
   const [months, setMonths] = useState<MonthData[]>([]);
@@ -95,7 +99,7 @@ export default function YearlyView({ data, loginName, userRole, selectedMonth }:
         <div className="analysis-controls" style={{ flexWrap: 'nowrap', alignItems: 'center', marginBottom: 0 }}>
           <div className="control-group">
             <span className="control-label">スタッフ選択</span>
-            <select className="control-select" value={staffName} onChange={e => setStaffName(e.target.value)}>
+            <select className="control-select" value={staffName} onChange={e => { setStaffName(e.target.value); onStaffPick?.(e.target.value); }}>
               {allStaff.map(s => (
                 <option key={s.name} value={s.name}>{s.name}</option>
               ))}

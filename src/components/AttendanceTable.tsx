@@ -35,6 +35,8 @@ interface AttendanceTableProps {
   userRole?: string;
   onNoData?: () => void;
   onStaffChange?: (name: string) => void; // 育成アプリのリンク先を選択中スタッフに合わせるため親へ通知
+  initialStaff?: string;                  // タブを切り替えても選択が外れないよう、親が覚えている選択を受け取る
+  onStaffPick?: (name: string) => void;   // 人が自分でプルダウンを操作したときだけ親へ通知
 }
 
 // 獲得・自己クロの数字は、桁が増えたぶんだけ字を小さくする。
@@ -63,17 +65,25 @@ const rows: { label: string; key: CalendarKey; isTotal?: boolean }[] = [
   { label: 'クレカ', key: 'credit' },
 ];
 
-export default function AttendanceTable({ data, selectedMonth, loginName, userRole, onNoData, onStaffChange }: AttendanceTableProps) {
+export default function AttendanceTable({ data, selectedMonth, loginName, userRole, onNoData, onStaffChange, initialStaff, onStaffPick }: AttendanceTableProps) {
   const allStaff = data.staffOrder?.length ? data.staffOrder : data.ranking;
-  const initialName = (loginName && allStaff.find((s) => s.name === loginName))
-    ? loginName
-    : allStaff[0]?.name || '';
+  // 親が覚えている選択（＝人が自分で選んだ相手）があればそれを優先する
+  const picked = initialStaff && allStaff.find((s) => s.name === initialStaff) ? initialStaff : '';
+  const initialName = picked
+    || ((loginName && allStaff.find((s) => s.name === loginName)) ? loginName : allStaff[0]?.name || '');
   const [staffName, setStaffName] = useState(initialName);
-  const [manuallySelected, setManuallySelected] = useState(false);
+  const [manuallySelected, setManuallySelected] = useState(!!picked);
+
+  const handlePick = (name: string) => {
+    setStaffName(name);
+    setManuallySelected(true);
+    onStaffPick?.(name);
+  };
 
   // loginName が後から届いた場合（セッション取得遅延）やデータ更新時に追従
   useEffect(() => {
-    if (loginName && allStaff.find((s) => s.name === loginName)) {
+    // 人が自分で選んでいるときは、あとからログイン名が届いても上書きしない
+    if (!manuallySelected && loginName && allStaff.find((s) => s.name === loginName)) {
       setStaffName(loginName);
     } else if (allStaff.length > 0 && !allStaff.find((s) => s.name === staffName)) {
       setStaffName(allStaff[0].name);
@@ -188,7 +198,7 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
               {userRole === 'アルバイト' || userRole === '業務委託' ? (
                 <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>{staffName}</span>
               ) : (
-                <select className="control-select" value={staffName} onChange={(e) => { setStaffName(e.target.value); setManuallySelected(true); }}>
+                <select className="control-select" value={staffName} onChange={(e) => handlePick(e.target.value)}>
                   {allStaff.map((s) => (
                     <option key={s.name} value={s.name}>{s.name}</option>
                   ))}
@@ -222,7 +232,7 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
             {userRole === 'アルバイト' || userRole === '業務委託' ? (
               <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>{staffName}</span>
             ) : (
-              <select className="control-select" value={staffName} onChange={(e) => { setStaffName(e.target.value); setManuallySelected(true); }}>
+              <select className="control-select" value={staffName} onChange={(e) => handlePick(e.target.value)}>
                 {allStaff.map((s) => (
                   <option key={s.name} value={s.name}>{s.name}</option>
                 ))}

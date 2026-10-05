@@ -8,6 +8,8 @@ import DoughnutChart from './DoughnutChart';
 
 interface AnalysisViewProps {
   data: DashboardData;
+  initialStaff?: string;                // タブを切り替えても選択が外れないよう、親が覚えている選択を受け取る
+  onStaffPick?: (name: string) => void; // 人が自分でプルダウンを操作したときだけ親へ通知
 }
 
 function SiteBarChart({ sites, nameWidth = 100 }: { sites: Record<string, number>; nameWidth?: number }) {
@@ -52,9 +54,12 @@ function SingleColumn({ title, stats, isCompact = false }: { title: string; stat
   );
 }
 
-export default function AnalysisView({ data }: AnalysisViewProps) {
+export default function AnalysisView({ data, initialStaff, onStaffPick }: AnalysisViewProps) {
   const [mode, setMode] = useState<AnalysisMode>('overall');
-  const [staff1, setStaff1] = useState(data.ranking[0]?.name || '');
+  // 個人比較の1人目は、他のタブで選ばれている相手に合わせる
+  const [staff1, setStaff1] = useState(
+    (initialStaff && data.ranking.find((s) => s.name === initialStaff)) ? initialStaff : (data.ranking[0]?.name || '')
+  );
   const [staff2, setStaff2] = useState(data.ranking[1]?.name || '');
   const [siteFilter, setSiteFilter] = useState('all');
   const [selectedSite, setSelectedSite] = useState(Object.keys(data.siteDetails)[0] || '');
@@ -77,7 +82,7 @@ export default function AnalysisView({ data }: AnalysisViewProps) {
         {(mode === 'individual' || mode === 'compare') && (
           <div className="control-group">
             <span className="control-label">スタッフ 1</span>
-            <select className="control-select" value={staff1} onChange={(e) => setStaff1(e.target.value)}>
+            <select className="control-select" value={staff1} onChange={(e) => { setStaff1(e.target.value); onStaffPick?.(e.target.value); }}>
               {data.ranking.map((s) => <option key={s.name} value={s.name}>{s.name}</option>)}
             </select>
           </div>
