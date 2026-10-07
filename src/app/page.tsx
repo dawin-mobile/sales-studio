@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 
 async function fetchWithRetry(url: string, timeoutMs = 15000): Promise<Response> {
   for (let attempt = 0; attempt <= 1; attempt++) {
@@ -22,6 +22,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { RefreshCw, ChevronLeft } from 'lucide-react';
 import Image from 'next/image';
 import { TabName, DashboardData, ShiftRow } from '@/types';
+import { addModoriToRanking, ModoriEntry } from '@/lib/modori';
 import AuthGuard from '@/components/AuthGuard';
 import Sidebar from '@/components/Sidebar';
 import BottomNav from '@/components/BottomNav';
@@ -194,6 +195,22 @@ export default function Home() {
   useEffect(() => {
     fetchData(selectedMonth);
   }, [selectedMonth, fetchData, defaultMonth]);
+
+  // ランキングは戻り報告（別日に戻ってきた分）も含めて出す。個人実績の合計と数字をそろえるため
+  const [modoriEntries, setModoriEntries] = useState<ModoriEntry[]>([]);
+  useEffect(() => {
+    let canceled = false;
+    setModoriEntries([]);
+    fetch(`/api/modori?month=${selectedMonth}`)
+      .then((r) => r.json())
+      .then((json) => { if (!canceled && Array.isArray(json.entries)) setModoriEntries(json.entries); })
+      .catch(() => { if (!canceled) setModoriEntries([]); });
+    return () => { canceled = true; };
+  }, [selectedMonth]);
+  const rankingWithModori = useMemo(
+    () => (data ? addModoriToRanking(data.ranking, modoriEntries) : []),
+    [data, modoriEntries]
+  );
 
   // シフトタブ表示中 or 切り替え時に（未取得 or 月が変わっていたら）取得
   useEffect(() => {
@@ -464,7 +481,7 @@ export default function Home() {
                 {rankingView === 'mnp' && (
                   <div className="ranking-charts-pc">
                     <div className="chart-card" style={{ width: '100%' }}>
-                      <StackedBarChart ranking={data.ranking} />
+                      <StackedBarChart ranking={rankingWithModori} />
                     </div>
                   </div>
                 )}
@@ -472,7 +489,7 @@ export default function Home() {
                 {/* 詳細テーブル (PC) */}
                 {rankingView === 'table' && (
                   <div className="ranking-charts-pc" style={{ width: '100%' }}>
-                    <RankingTable ranking={data.ranking} />
+                    <RankingTable ranking={rankingWithModori} />
                   </div>
                 )}
 
@@ -481,12 +498,12 @@ export default function Home() {
                   <div className="ranking-charts-pc" style={{ gap: 16 }}>
                     <div className="chart-card" style={{ flex: 1 }}>
                       <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 8 }}>獲得</div>
-                      <BarChart ranking={[...data.ranking].sort((a, b) => b.total - a.total)} />
+                      <BarChart ranking={[...rankingWithModori].sort((a, b) => b.total - a.total)} />
                     </div>
                     <div className="chart-card" style={{ flex: 1 }}>
                       <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 8 }}>自己クロ</div>
                       <BarChart
-                        ranking={[...data.ranking].sort((a, b) => b.selfClose - a.selfClose)}
+                        ranking={[...rankingWithModori].sort((a, b) => b.selfClose - a.selfClose)}
                         getValue={(s) => s.selfClose}
                         color="#f97316"
                       />
@@ -532,21 +549,21 @@ export default function Home() {
                   </div>
                   {/* コンテンツ */}
                   {rankingView === 'mnp' && (
-                    <div className="chart-card"><StackedBarChart ranking={data.ranking} /></div>
+                    <div className="chart-card"><StackedBarChart ranking={rankingWithModori} /></div>
                   )}
                   {rankingView === 'table' && (
-                    <RankingTable ranking={data.ranking} />
+                    <RankingTable ranking={rankingWithModori} />
                   )}
                   {rankingView !== 'mnp' && rankingView !== 'table' && (
                     <div className="chart-card">
                       {rankingView === 'selfclose' ? (
                         <BarChart
-                          ranking={[...data.ranking].sort((a, b) => b.selfClose - a.selfClose)}
+                          ranking={[...rankingWithModori].sort((a, b) => b.selfClose - a.selfClose)}
                           getValue={(s) => s.selfClose}
                           color="#f97316"
                         />
                       ) : (
-                        <BarChart ranking={[...data.ranking].sort((a, b) => b.total - a.total)} />
+                        <BarChart ranking={[...rankingWithModori].sort((a, b) => b.total - a.total)} />
                       )}
                     </div>
                   )}

@@ -133,3 +133,54 @@ export function modoriToCalendarRow(items: ModoriItems) {
     credit: items.kureJigin,
   };
 }
+
+/** /api/modori が返す1件分（別日に戻ってきた分の獲得） */
+export interface ModoriEntry {
+  date: string;
+  day: number;
+  staff: string;
+  site: string;
+  pt: number;
+  selfClose: number;
+  items: ModoriItems;
+}
+
+// 戻り報告の送信者名（「中村 翔」）とアプリ上のスタッフ名（「中村翔」）を照合する。
+// 表記ゆれ（姓だけ／フルネーム）があるため、空白を除いて前方一致で見る。
+// /api/jisseki の matchStaff と同じ考え方。
+export function sameStaff(sender: string, staffName: string): boolean {
+  const a = sender.replace(/\s/g, '');
+  const b = staffName.replace(/\s/g, '');
+  if (!a || !b) return false;
+  return a === b || a.startsWith(b) || b.startsWith(a);
+}
+
+/**
+ * ランキング（日報の集計）に戻り分を足したものを返す。元の配列は書き換えない。
+ * 項目の振り分けは日報の集計（aggregator.ts）と同じ。
+ * その月に日報が1件もないスタッフはランキングに居ないため、戻りだけでは足さない。
+ */
+export function addModoriToRanking<T extends {
+  name: string; total: number; selfClose: number;
+  mnp: number; new: number; change: number; hikari: number; tablet: number; other: number;
+}>(ranking: T[], entries: ModoriEntry[]): T[] {
+  if (entries.length === 0) return ranking;
+  const result = ranking.map((s) => ({ ...s }));
+  for (const e of entries) {
+    // 空白を除いた完全一致を優先し、なければ前方一致
+    const key = e.staff.replace(/\s/g, '');
+    const s = result.find((r) => r.name.replace(/\s/g, '') === key)
+      ?? result.find((r) => sameStaff(e.staff, r.name));
+    if (!s) continue;
+    const it = e.items;
+    s.mnp       = round2(s.mnp + it.mnpTanmatsu + it.mnpSim);
+    s.new       = round2(s.new + it.junShinki);
+    s.change    = round2(s.change + it.kishuhen + it.cellup);
+    s.hikari    = round2(s.hikari + it.hikariShinki + it.hikariTenyo + it.hikariCable);
+    s.tablet    = round2(s.tablet + it.tab);
+    s.other     = round2(s.other + it.denGas + it.kureJigin);
+    s.total     = round2(s.total + e.pt);
+    s.selfClose = round2(s.selfClose + e.selfClose);
+  }
+  return result.sort((a, b) => b.total - a.total);
+}

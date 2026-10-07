@@ -3,28 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { DashboardData, Staff } from '@/types';
 import IncentiveBar from './IncentiveBar';
-import { modoriToCalendarRow, ModoriItems } from '@/lib/modori';
-
-// /api/modori が返す1件分（別日に戻ってきた分の獲得）
-interface ModoriEntry {
-  date: string;
-  day: number;
-  staff: string;
-  site: string;
-  pt: number;
-  selfClose: number;
-  items: ModoriItems;
-}
-
-// 戻り報告の送信者名（「中村 翔」）とアプリ上のスタッフ名（「中村翔」）を照合する。
-// 表記ゆれ（姓だけ／フルネーム）があるため、空白を除いて前方一致で見る。
-// /api/jisseki の matchStaff と同じ考え方。
-function sameStaff(sender: string, staffName: string): boolean {
-  const a = sender.replace(/\s/g, '');
-  const b = staffName.replace(/\s/g, '');
-  if (!a || !b) return false;
-  return a === b || a.startsWith(b) || b.startsWith(a);
-}
+import { modoriToCalendarRow, sameStaff, ModoriEntry } from '@/lib/modori';
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
