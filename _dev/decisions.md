@@ -92,6 +92,12 @@
 - push手順:
   - sync-nippo変更時 → `cd gas/sync-nippo && clasp push`
   - sync-shift変更時 → `cd gas/sync-shift && clasp push`
+- 追記（2026-10-14）: push 前に必ず `clasp pull` する
+  - `clasp push` はフォルダ内の全ファイルで GAS プロジェクトを丸ごと置き換える。上司のファイルもローカルの内容で上書きされ、GAS エディタでの直接編集は消える（Apps Script に変更履歴はない）
+  - `.claspignore` で上司のファイルを外すのは NG。送らなかったファイルは GAS から削除される（bugs.md の sync-nippo の件と同じ）
+  - 手順: `clasp pull` → `git diff` で上司のファイルに変更がないか確認（変更があればそれをコミットして残す）→ 自分の変更を入れて `clasp push`
+  - 2026-10-14 の carrier 追加ではこれをせずに push したため、sync-shift の `コード.js`・`ColorManager.js` を 7/1 時点のローカル版で上書きした（上司に影響有無を確認中）
+- 注意: `syncAll` は sync-nippo（`sync-db.gs`、日報の合算データ）と sync-shift（`sync-shift.gs`、シフト）の両方にある。シフトを手動同期したいときは日報催促GAS（sync-shift）側で実行する。ログに「シフト同期開始」が出れば正しい方
 
 ---
 
