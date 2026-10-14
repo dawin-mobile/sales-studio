@@ -76,6 +76,7 @@ export interface DashboardData {
 export interface ShiftRow {
   date: string;
   dayOfWeek: string;
+  carrier: string; // シフト表C列（au / SB / 増強）
   location: string;
   startTime: string;
   order1: string;

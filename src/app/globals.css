@@ -1170,6 +1170,25 @@ thead .loc-th-dow { z-index: 30; } /* 最前面 */
   background: color-mix(in srgb, var(--card-bg) 90%, white 10%);
 }
 
+/* 種別（シフト表C列：au / SB / 増強）セル */
+.loc-th-carrier { min-width: 30px; text-align: center; padding: 4px 2px; }
+.loc-carrier-cell { text-align: center; vertical-align: middle; padding: 2px 2px; }
+.loc-carrier-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.4;
+  padding: 1px 4px;
+  border-radius: 4px;
+  white-space: nowrap;
+  background: rgba(251, 146, 60, 0.20);
+  color: #fb923c;
+}
+.loc-carrier-badge.sb {
+  background: rgba(56, 189, 248, 0.20);
+  color: #38bdf8;
+}
+
 /* 店舗名セル */
 .loc-place-cell {
   font-size: 11px;

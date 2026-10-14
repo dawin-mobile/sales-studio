@@ -138,6 +138,7 @@ function parseShiftRows_(sheet, region) {
     shiftRows.push({
       date: date,
       dayOfWeek: row[1] || '',
+      carrier: (row[2] || '').trim(),
       location: row[3] || '',
       startTime: row[4] || '',
       order1: row[5] || '',

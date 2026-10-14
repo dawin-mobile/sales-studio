@@ -52,6 +52,12 @@ function startsWithX(name: string): boolean {
   return /^[×✖✗✘]/.test(name);
 }
 
+// シフト表C列（キャリア）のバッジ色。全角「ＳＢ」もあるため半角化して判定し、SB以外（au・増強）はオレンジ
+function carrierBadgeClass(carrier: string): string {
+  const half = carrier.replace(/[Ａ-Ｚａ-ｚ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+  return /SB/i.test(half) ? 'loc-carrier-badge sb' : 'loc-carrier-badge';
+}
+
 // 現場名の「親現場名（Base Site Name）」を返す
 function getBaseSiteName(location: string): string {
   const spaceIdx = location.search(/[ 　]/);
@@ -585,6 +591,7 @@ export default function ShiftView({
                 <tr>
                   <th className="shift-sticky-col loc-th loc-th-date">日付</th>
                   <th className="loc-th loc-th-dow">曜日</th>
+                  <th className="loc-th loc-th-carrier">種別</th>
                   <th className="loc-th loc-th-place">店舗名</th>
                   <th className="loc-th loc-th-time">時間</th>
                   <th className="loc-th loc-th-staff">スタッフ</th>
@@ -598,7 +605,7 @@ export default function ShiftView({
               <tbody>
                 {filteredLocationRows.length === 0 ? (
                   <tr>
-                    <td colSpan={9} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-sub)', fontSize: 13 }}>
+                    <td colSpan={10} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-sub)', fontSize: 13 }}>
                       {selectedAgency
                         ? `「${selectedAgency}」の現場データがありません`
                         : '表示できる現場データがありません'}
@@ -638,6 +645,10 @@ export default function ShiftView({
 
                         <td className={['loc-dow-cell', isSat ? 'sat' : isSun ? 'sun' : ''].filter(Boolean).join(' ')}>
                           {row.dayOfWeek}
+                        </td>
+
+                        <td className="loc-carrier-cell">
+                          {row.carrier && <span className={carrierBadgeClass(row.carrier)}>{row.carrier}</span>}
                         </td>
 
                         <td className="loc-place-cell">{row.location}</td>

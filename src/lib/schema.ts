@@ -61,6 +61,7 @@ export const shiftRows = pgTable('shift_rows', {
   month: text('month').notNull(),         // 'YYYY-MM'
   date: text('date').notNull(),
   dayOfWeek: text('day_of_week').default(''),
+  carrier: text('carrier').default(''),   // シフト表C列（au / SB / 増強）
   location: text('location').default(''),
   startTime: text('start_time').default(''),
   order1: text('order1').default(''),

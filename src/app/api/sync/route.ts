@@ -71,6 +71,7 @@ interface TypePayload {
 interface ShiftRowData {
   date: string;
   dayOfWeek: string;
+  carrier?: string; // 旧GASからの送信には含まれない
   location: string;
   startTime: string;
   order1: string;
@@ -254,6 +255,7 @@ async function syncShift(payload: ShiftPayload) {
       month,
       date: r.date,
       dayOfWeek: r.dayOfWeek,
+      carrier: r.carrier ?? '',
       location: r.location,
       startTime: r.startTime,
       order1: r.order1,
