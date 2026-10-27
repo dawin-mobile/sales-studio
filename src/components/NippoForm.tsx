@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { ChevronLeft, PenLine } from 'lucide-react';
-import { sectionsFor, validateNippo, type NippoField, type NippoMode } from '@/lib/nippoForm';
+import { NIPPO_SECTIONS, sectionsFor, validateNippo, type NippoField, type NippoMode } from '@/lib/nippoForm';
 
 // 前回の交通費を勤務地ごとに覚えておく（この端末だけの便利機能。読めなくても動く）
 const FARE_STORAGE_KEY = 'nippo-fare-by-location';
@@ -24,6 +24,11 @@ function saveFare(location: string, fare: string) {
 
 function todayJst(): string {
   return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+// 小数の足し引きで 0.15000000000000002 のような誤差が出ないよう小数第2位で丸める（aggregator.ts の safeAdd と同じ考え方）
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
 }
 
 function shortDate(date: string): string {
@@ -103,6 +108,23 @@ const inputStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 };
 
+// 実績の換算値の欄（自己クロ・着座数を除く）。着座数の自動入力と「実績と同じ」の合計に使う
+const RESULT_KEYS = NIPPO_SECTIONS[0].fields.map((f) => f.key).filter((k) => k !== 'selfClose' && k !== 'seated');
+
+const stepButton: React.CSSProperties = {
+  height: 36,
+  padding: '0 12px',
+  borderRadius: 18,
+  border: '1px solid var(--border-color)',
+  background: 'var(--bg-secondary)',
+  color: 'var(--text-main)',
+  fontSize: 14,
+  fontWeight: 700,
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+};
+
 const sectionStyle: React.CSSProperties = {
   background: 'var(--card-bg)',
   border: '1px solid var(--border-color)',
@@ -120,6 +142,8 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
   const [shiftLocations, setShiftLocations] = useState<string[]>([]);
   const [mode, setMode] = useState<NippoMode>('normal');
   const [values, setValues] = useState<Record<string, string>>({ taxi: '0' });
+  // ＋ボタンで足した数の履歴。−ボタンで直前の1回分ずつ取り消す
+  const [stepHistory, setStepHistory] = useState<Record<string, number[]>>({});
   const [step, setStep] = useState<Step>('edit');
   const [errors, setErrors] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
@@ -144,8 +168,37 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
     if (fare) setValues((v) => (v.fare ? v : { ...v, fare }));
   }, [location]);
 
-  const setValue = (key: string, value: string) => setValues((v) => ({ ...v, [key]: value }));
-  const submission = { date, location, mode, values };
+  // 着座数を自分で触っていない間は、実績か自己クロのどれかが0でなければ自動で1にする
+  const effectiveValues = useMemo(() => {
+    if (values.seated !== undefined) return values;
+    const hasResult = [...RESULT_KEYS, 'selfClose'].some((k) => parseFloat(values[k] ?? '') > 0);
+    return { ...values, seated: hasResult ? '1' : '' };
+  }, [values]);
+
+  const setValue = (key: string, value: string) => {
+    setValues((v) => ({ ...v, [key]: value }));
+    setStepHistory((h) => ({ ...h, [key]: [] }));
+  };
+  const addStep = (key: string, step: number) => {
+    const cur = parseFloat(effectiveValues[key] ?? '') || 0;
+    setValues((v) => ({ ...v, [key]: String(round2(cur + step)) }));
+    setStepHistory((h) => ({ ...h, [key]: [...(h[key] ?? []), step] }));
+  };
+  // 自己クロの「実績と同じ」: 実績の合計を入れる
+  const copyTotal = (key: string) => {
+    const total = RESULT_KEYS.reduce((sum, k) => round2(sum + (parseFloat(effectiveValues[k] ?? '') || 0)), 0);
+    setValue(key, total === 0 ? '' : String(total));
+  };
+  const undoStep = (key: string) => {
+    const history = stepHistory[key] ?? [];
+    const last = history[history.length - 1];
+    if (last === undefined) return;
+    const next = Math.max(0, round2((parseFloat(effectiveValues[key] ?? '') || 0) - last));
+    setValues((v) => ({ ...v, [key]: next === 0 ? '' : String(next) }));
+    setStepHistory((h) => ({ ...h, [key]: history.slice(0, -1) }));
+  };
+
+  const submission = { date, location, mode, values: effectiveValues };
   const sections = sectionsFor(mode);
   const toggleMode = (m: NippoMode) => setMode((cur) => (cur === m ? 'normal' : m));
 
@@ -179,7 +232,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
   };
 
   const renderField = (f: NippoField) => {
-    const v = values[f.key] ?? '';
+    const v = effectiveValues[f.key] ?? '';
     const label = (
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 600 }}>
@@ -190,17 +243,44 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
     );
 
     if (f.kind === 'number') {
+      const canUndo = (stepHistory[f.key]?.length ?? 0) > 0;
       return (
-        <div key={f.key} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0' }}>
-          {label}
-          <input
-            type="text"
-            inputMode="decimal"
-            value={v}
-            onChange={(e) => setValue(f.key, e.target.value)}
-            placeholder="0"
-            style={{ ...inputStyle, width: 84, textAlign: 'right', flexShrink: 0 }}
-          />
+        <div key={f.key} style={{ padding: '10px 0', borderBottom: '1px solid var(--border-color)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {label}
+            <input
+              type="text"
+              inputMode="decimal"
+              value={v}
+              onChange={(e) => setValue(f.key, e.target.value)}
+              placeholder="0"
+              style={{ ...inputStyle, width: 84, textAlign: 'right', flexShrink: 0 }}
+            />
+          </div>
+          {f.copyTotal && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+              <button type="button" onClick={() => copyTotal(f.key)} style={stepButton}>実績と同じ</button>
+            </div>
+          )}
+          {f.steps && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => undoStep(f.key)}
+                disabled={!canUndo}
+                aria-label={`${f.label}を1回分減らす`}
+                style={{ ...stepButton, width: 44, opacity: canUndo ? 1 : 0.35 }}
+              >
+                −
+              </button>
+              {f.steps.map((st) => (
+                <button key={st.value} type="button" onClick={() => addStep(f.key, st.value)} style={stepButton}>
+                  +{st.value}
+                  {st.label && <span style={{ fontSize: 11, fontWeight: 500, color: '#aaa', marginLeft: 4 }}>{st.label}</span>}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       );
     }
@@ -260,7 +340,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
                   ['名前', session?.user?.name ?? ''],
                   ['店舗形式', mode === 'training' ? '研修' : mode === 'zero' ? '業務委託（0だった日）' : '業務委託'],
                   ['勤務地', location],
-                  ...sections.flatMap((s) => s.fields.filter((f) => values[f.key]?.trim()).map((f) => [f.label, values[f.key].trim()])),
+                  ...sections.flatMap((s) => s.fields.filter((f) => effectiveValues[f.key]?.trim()).map((f) => [f.label, effectiveValues[f.key].trim()])),
                 ].map(([k, v]) => (
                   <div key={k} style={{ display: 'flex', gap: 12, padding: '6px 0', borderBottom: '1px solid var(--border-color)', fontSize: 14 }}>
                     <div style={{ width: 140, flexShrink: 0, color: '#aaa' }}>{k}</div>
@@ -298,14 +378,15 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
                     ))}
                   </div>
                 )}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                  <label style={{ fontSize: 12, color: '#aaa' }}>
+                {/* 横並びにすると iPhone では日付欄が幅を超えて勤務地と重なるため縦に並べる */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
+                  <label style={{ fontSize: 12, color: '#aaa', minWidth: 0 }}>
                     勤務日
                     <input type="date" value={date} max={todayJst()} onChange={(e) => e.target.value && setDate(e.target.value)} style={{ ...inputStyle, marginTop: 4 }} />
                   </label>
-                  <label style={{ fontSize: 12, color: '#aaa' }}>
+                  <label style={{ fontSize: 12, color: '#aaa', minWidth: 0 }}>
                     勤務地
-                    <input type="text" list="nippo-locations" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="例）イオンモール川口前川" style={{ ...inputStyle, marginTop: 4 }} />
+                    <input type="text" list="nippo-locations" value={location} onChange={(e) => setLocation(e.target.value)} style={{ ...inputStyle, marginTop: 4 }} />
                     <datalist id="nippo-locations">
                       {shiftLocations.map((l) => <option key={l} value={l} />)}
                     </datalist>
@@ -324,7 +405,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
 
               {sections.map((s) => (
                 <div key={s.title} style={sectionStyle}>
-                  <div style={{ fontSize: 15, fontWeight: 700 }}>{s.title}</div>
+                  <div style={{ fontSize: 19, fontWeight: 800 }}>{s.title}</div>
                   {s.hint && <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>{s.hint}</div>}
                   <div style={{ marginTop: 4 }}>{s.fields.map(renderField)}</div>
                 </div>

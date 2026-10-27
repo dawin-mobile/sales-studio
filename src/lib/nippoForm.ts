@@ -35,6 +35,9 @@ export type NippoField = {
   hint?: string;
   kind: 'number' | 'textarea';
   required?: boolean;
+  // ＋ボタン1回で増える数。換算値の半分（ダブクロの折半）を1回分にする。換算の違うものが混ざる欄はボタンを分ける
+  steps?: { value: number; label?: string }[];
+  copyTotal?: boolean; // 「実績と同じ」ボタン（実績の合計を入れる）を出す
 };
 
 export type NippoSection = {
@@ -47,21 +50,20 @@ export type NippoSection = {
 export const NIPPO_SECTIONS: NippoSection[] = [
   {
     title: '実績',
-    hint: '換算後のカウントを入力（フォームと同じ）',
     fields: [
-      { key: 'mnpDevice', entry: '584999881', label: 'MNP（端末つき）', hint: '1件→1.2', kind: 'number' },
-      { key: 'mnpSim', entry: '1712098526', label: 'MNP（sim単）', hint: '1件→1', kind: 'number' },
-      { key: 'shin', entry: '1230700764', label: '純新規', hint: 'U18・O60 1件→0.8 / それ以外 1件→0.1（キッズケータイは対象外）', kind: 'number' },
-      { key: 'kihen', entry: '1774034835', label: '機種変更', hint: '1件→0.1（au→UQのセルダウン含む）', kind: 'number' },
-      { key: 'cellUp', entry: '1091675989', label: '機種変更（セルアップ）', hint: '1件→0.6', kind: 'number' },
-      { key: 'hikariNew', entry: '1421244134', label: 'ひかり（新規）', hint: '光新規 1件→1 / 固定代替え 1件→0.5', kind: 'number' },
-      { key: 'hikariTenyo', entry: '1835990490', label: 'ひかり（転用・事業者変更）', hint: '1件→0.8', kind: 'number' },
-      { key: 'hikariCable', entry: '793928834', label: 'ひかり（ケーブル）', hint: 'ケーブルトス 1件→0.2 / ジェイコム同席で工事日がその場で決まった 1件→0.5', kind: 'number' },
-      { key: 'tablet', entry: '897029006', label: 'タブレット', hint: '1件→0.2', kind: 'number' },
-      { key: 'denki', entry: '1501165980', label: 'でんき・ガス', hint: '1件→0.1', kind: 'number' },
-      { key: 'credit', entry: '1014539532', label: 'クレカ・自銀', hint: 'ゴールド 0.3 / シルバー 0.1 / 自銀 0.1', kind: 'number' },
-      { key: 'selfClose', entry: '973447314', label: '合計自己クロ', kind: 'number' },
-      { key: 'seated', entry: '2131159871', label: '着座数', hint: '1組1件（3人家族を着座させたら1）', kind: 'number' },
+      { key: 'mnpDevice', entry: '584999881', label: 'MNP（端末つき）', hint: '1件→1.2', kind: 'number', steps: [{ value: 0.6 }] },
+      { key: 'mnpSim', entry: '1712098526', label: 'MNP（sim単）', hint: '1件→1', kind: 'number', steps: [{ value: 0.5 }] },
+      { key: 'shin', entry: '1230700764', label: '純新規', hint: 'U18・O60 1件→0.8 / それ以外 1件→0.1（キッズケータイは対象外）', kind: 'number', steps: [{ value: 0.4, label: 'U18・O60' }, { value: 0.05, label: 'その他' }] },
+      { key: 'kihen', entry: '1774034835', label: '機種変更', hint: '1件→0.1（au→UQのセルダウン含む）', kind: 'number', steps: [{ value: 0.05 }] },
+      { key: 'cellUp', entry: '1091675989', label: '機種変更（セルアップ）', hint: '1件→0.6', kind: 'number', steps: [{ value: 0.3 }] },
+      { key: 'hikariNew', entry: '1421244134', label: 'ひかり（新規）', hint: '光新規 1件→1 / 固定代替え 1件→0.5', kind: 'number', steps: [{ value: 0.5, label: '光新規' }, { value: 0.25, label: '固定代替え' }] },
+      { key: 'hikariTenyo', entry: '1835990490', label: 'ひかり（転用・事業者変更）', hint: '1件→0.8', kind: 'number', steps: [{ value: 0.4 }] },
+      { key: 'hikariCable', entry: '793928834', label: 'ひかり（ケーブル）', hint: 'ケーブルトス 1件→0.2 / ジェイコム同席で工事日がその場で決まった 1件→0.5', kind: 'number', steps: [{ value: 0.1, label: 'トス' }, { value: 0.25, label: '工事日確定' }] },
+      { key: 'tablet', entry: '897029006', label: 'タブレット', hint: '1件→0.2', kind: 'number', steps: [{ value: 0.1 }] },
+      { key: 'denki', entry: '1501165980', label: 'でんき・ガス', hint: '1件→0.1', kind: 'number', steps: [{ value: 0.05 }] },
+      { key: 'credit', entry: '1014539532', label: 'クレカ・自銀', hint: 'ゴールド 0.3 / シルバー 0.1 / 自銀 0.1', kind: 'number', steps: [{ value: 0.15, label: 'ゴールド' }, { value: 0.05, label: 'シルバー・自銀' }] },
+      { key: 'selfClose', entry: '973447314', label: '合計自己クロ', kind: 'number', copyTotal: true },
+      { key: 'seated', entry: '2131159871', label: '着座数', hint: '1組1件（3人家族を着座させたら1）。実績か自己クロがあれば自動で1', kind: 'number', steps: [{ value: 1 }] },
     ],
   },
   {
