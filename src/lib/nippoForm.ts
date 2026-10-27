@@ -9,7 +9,7 @@
 export const NIPPO_FORM_ID = '1FAIpQLSes2Ux9bbQ0DffeEcbCuMUo6IXemj5r1gExdm8s9G48FIv-bw';
 
 // 試験運用中はこの人だけに表示・送信を許可する（フォームの名前プルダウンと同じ表記）
-export const NIPPO_FORM_USERS = ['中村翔'];
+export const NIPPO_FORM_USERS = ['中村翔', '市川絢菜'];
 
 export const ENTRY = {
   date: '1433109843',
