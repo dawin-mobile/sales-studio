@@ -36,6 +36,7 @@ export type NippoField = {
   kind: 'number' | 'textarea';
   required?: boolean;
   // ＋ボタン1回で増える数。換算値の半分（ダブクロの折半）を1回分にする。換算の違うものが混ざる欄はボタンを分ける
+  // label はどの種類のボタンかのコード上の目印（画面には出さない）
   steps?: { value: number; label?: string }[];
   copyTotal?: boolean; // 「実績と同じ」ボタン（実績の合計を入れる）を出す
 };

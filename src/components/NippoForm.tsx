@@ -97,9 +97,10 @@ export function NippoButton({ missingCount, onClick }: { missingCount: number; o
   );
 }
 
+// 黒基調のまま重なりが見えるよう、背景(#0f0f0f) → カード(#1c1c1c) → 入力欄・ボタン の順に少しずつ明るくする
 const inputStyle: React.CSSProperties = {
-  background: 'var(--bg-secondary)',
-  border: '1px solid var(--border-color)',
+  background: '#2a2a2a',
+  border: '1px solid #3a3a3a',
   borderRadius: 8,
   color: 'var(--text-main)',
   fontSize: 16, // 16px未満だとiOSで入力時に画面が拡大される
@@ -115,8 +116,8 @@ const stepButton: React.CSSProperties = {
   height: 36,
   padding: '0 12px',
   borderRadius: 18,
-  border: '1px solid var(--border-color)',
-  background: 'var(--bg-secondary)',
+  border: '1px solid rgba(255, 255, 255, 0.16)',
+  background: 'rgba(255, 255, 255, 0.09)',
   color: 'var(--text-main)',
   fontSize: 14,
   fontWeight: 700,
@@ -127,7 +128,7 @@ const stepButton: React.CSSProperties = {
 
 const sectionStyle: React.CSSProperties = {
   background: 'var(--card-bg)',
-  border: '1px solid var(--border-color)',
+  border: '1px solid #2a2a2a',
   borderRadius: 12,
   padding: 16,
   marginBottom: 16,
@@ -244,8 +245,9 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
 
     if (f.kind === 'number') {
       const canUndo = (stepHistory[f.key]?.length ?? 0) > 0;
+      const filled = parseFloat(v) > 0;
       return (
-        <div key={f.key} style={{ padding: '10px 0', borderBottom: '1px solid var(--border-color)' }}>
+        <div key={f.key} style={{ padding: '12px 0', borderBottom: '1px solid #2a2a2a' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {label}
             <input
@@ -254,7 +256,15 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
               value={v}
               onChange={(e) => setValue(f.key, e.target.value)}
               placeholder="0"
-              style={{ ...inputStyle, width: 84, textAlign: 'right', flexShrink: 0 }}
+              style={{
+                ...inputStyle,
+                width: 84,
+                textAlign: 'right',
+                flexShrink: 0,
+                fontWeight: filled ? 700 : 400,
+                // 数字が入った欄はアクセントの赤でうっすら色づけして、どこに入力したか分かるようにする
+                ...(filled && { background: 'rgba(229, 62, 62, 0.12)', borderColor: 'rgba(229, 62, 62, 0.55)' }),
+              }}
             />
           </div>
           {f.copyTotal && (
@@ -276,7 +286,6 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
               {f.steps.map((st) => (
                 <button key={st.value} type="button" onClick={() => addStep(f.key, st.value)} style={stepButton}>
                   +{st.value}
-                  {st.label && <span style={{ fontSize: 11, fontWeight: 500, color: '#aaa', marginLeft: 4 }}>{st.label}</span>}
                 </button>
               ))}
             </div>
@@ -378,15 +387,15 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
                     ))}
                   </div>
                 )}
-                {/* 横並びにすると iPhone では日付欄が幅を超えて勤務地と重なるため縦に並べる */}
+                {/* 勤務日と勤務地は同じ横幅・同じ高さで縦に並べる（iPhone の日付欄のはみ出しは globals.css で抑えている） */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
                   <label style={{ fontSize: 12, color: '#aaa', minWidth: 0 }}>
                     勤務日
-                    <input type="date" value={date} max={todayJst()} onChange={(e) => e.target.value && setDate(e.target.value)} style={{ ...inputStyle, marginTop: 4 }} />
+                    <input type="date" value={date} max={todayJst()} onChange={(e) => e.target.value && setDate(e.target.value)} style={{ ...inputStyle, marginTop: 4, height: 44 }} />
                   </label>
                   <label style={{ fontSize: 12, color: '#aaa', minWidth: 0 }}>
                     勤務地
-                    <input type="text" list="nippo-locations" value={location} onChange={(e) => setLocation(e.target.value)} style={{ ...inputStyle, marginTop: 4 }} />
+                    <input type="text" list="nippo-locations" value={location} onChange={(e) => setLocation(e.target.value)} style={{ ...inputStyle, marginTop: 4, height: 44 }} />
                     <datalist id="nippo-locations">
                       {shiftLocations.map((l) => <option key={l} value={l} />)}
                     </datalist>
@@ -397,7 +406,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
                 )}
                 {([['zero', '0だった日（交通費だけ入力）'], ['training', '研修の日（交通費だけ入力）']] as const).map(([m, text]) => (
                   <label key={m} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, fontSize: 14, cursor: 'pointer' }}>
-                    <input type="checkbox" checked={mode === m} onChange={() => toggleMode(m)} style={{ width: 18, height: 18 }} />
+                    <input type="checkbox" checked={mode === m} onChange={() => toggleMode(m)} style={{ width: 20, height: 20, accentColor: 'var(--accent-color)' }} />
                     {text}
                   </label>
                 ))}

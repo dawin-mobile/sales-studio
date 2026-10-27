@@ -271,8 +271,9 @@ body {
 .nippo-panel {
   position: fixed;
   inset: 0;
-  z-index: 300;
+  z-index: 600; /* スマホの下部ナビ（z-index: 500）より前に出す */
   background: var(--bg-color);
+  color-scheme: dark; /* 日付ピッカー・チェックボックスを暗い背景に合った見た目にする */
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -286,6 +287,17 @@ body {
   padding-top: calc(10px + env(safe-area-inset-top));
   border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
+}
+
+/* iPhone の日付欄は標準の見た目だと幅指定を無視してはみ出し、文字も中央寄せになるため、標準の見た目を外す */
+.nippo-panel input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  min-width: 0;
+}
+.nippo-panel input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
 }
 
 @media (min-width: 768px) {
