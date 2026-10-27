@@ -78,7 +78,7 @@ export const NIPPO_SECTIONS: NippoSection[] = [
     title: '交通費',
     always: true,
     fields: [
-      { key: 'fare', entry: '1677579059', label: '往復交通費（公共交通機関）', hint: '前回この現場に行ったときの金額を自動で入れています', kind: 'number', required: true },
+      { key: 'fare', entry: '1677579059', label: '往復交通費（公共交通機関）', hint: 'この現場の直近5回（0円の日を除く）で一番多い金額を自動で入れています', kind: 'number', required: true },
       { key: 'taxi', entry: '23584606', label: 'タクシー代、有料特急', hint: '事前承諾が必要。領収書は社員に渡してね', kind: 'number', required: true },
     ],
   },

@@ -5,26 +5,34 @@ import { useSession } from 'next-auth/react';
 import { ChevronLeft, PenLine } from 'lucide-react';
 import { NIPPO_SECTIONS, sectionsFor, validateNippo, type NippoField, type NippoMode } from '@/lib/nippoForm';
 
-type PastFare = { location: string; fare: string; date: string };
+type PastFare = { location: string; fare: string; date: string; order: number };
 
 // 勤務地の表記ゆれ（全角半角・空白）をそろえる
 function normalizeLocation(s: string): string {
   return s.normalize('NFKC').replace(/\s/g, '').toLowerCase();
 }
 
-// 過去の日報から、この勤務地に前回行ったときの交通費を探す。
+// 過去の日報から、この勤務地の交通費を決める。直近5回（提出した順、0円の日は除く）のうち一番多い金額を使う
+// （前回だけたまたま別ルートで金額が違うことがあるため）。同じ回数なら新しいほうを使う。
 // 日報の勤務地は自由記述でシフト表と表記が揃わない（シフト「長坂」↔ 日報「au長坂」など）ため、
-// どちらかがもう一方を含めば同じ現場とみなし、その中で一番新しい日の金額を使う
+// どちらかがもう一方を含めば同じ現場とみなす
 function findPastFare(pastFares: PastFare[], location: string): string | undefined {
   const target = normalizeLocation(location);
   if (!target) return undefined;
-  let best: PastFare | undefined;
-  for (const p of pastFares) {
-    const loc = normalizeLocation(p.location);
-    if (!loc.includes(target) && !target.includes(loc)) continue;
-    if (!best || p.date > best.date) best = p;
-  }
-  return best?.fare;
+  const recent = pastFares
+    .filter((p) => {
+      const loc = normalizeLocation(p.location);
+      return loc.includes(target) || target.includes(loc);
+    })
+    .sort((a, b) => b.order - a.order)
+    .slice(0, 5);
+
+  // 全部数えてから、一番多い回数の金額のうち recent で先に出てくる（＝新しい）ものを選ぶ。
+  // 数えながら選ぶと「先に回数が増えたほう」が残り、同数のとき新しいほうにならない
+  const counts = new Map<string, number>();
+  for (const p of recent) counts.set(p.fare, (counts.get(p.fare) ?? 0) + 1);
+  const max = Math.max(0, ...counts.values());
+  return recent.find((p) => counts.get(p.fare) === max)?.fare;
 }
 
 function todayJst(): string {
