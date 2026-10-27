@@ -64,13 +64,22 @@ export async function GET(request: NextRequest) {
   try {
     // 当月のシフトデータを全取得
     const shifts = await db
-      .select({ date: shiftRows.date, staff: shiftRows.staff })
+      .select({
+        date: shiftRows.date,
+        staff: shiftRows.staff,
+        carrier: shiftRows.carrier,
+        startTime: shiftRows.startTime,
+        agency: shiftRows.agency,
+      })
       .from(shiftRows)
       .where(eq(shiftRows.month, month));
 
     // 自分が入っているシフト日付を抽出（今日以前のみ）
     const shiftDates = new Set<string>();
     for (const row of shifts) {
+      // キャリア（C列）・時間（E列）・代理店名（T列）がすべて空の行は稼働ではない（健康診断など）ので出勤として数えない
+      if (!row.carrier?.trim() && !row.startTime?.trim() && !row.agency?.trim()) continue;
+
       const staffArray = (row.staff as string[]) ?? [];
       if (!staffArray.some((s) => {
         const sn = s?.trim();
