@@ -16,9 +16,10 @@ function normalizeLocation(s: string): string {
 // （前回だけたまたま別ルートで金額が違うことがあるため）。同じ回数なら新しいほうを使う。
 // 日報の勤務地は自由記述でシフト表と表記が揃わない（シフト「長坂」↔ 日報「au長坂」など）ため、
 // どちらかがもう一方を含めば同じ現場とみなす
-function findPastFare(pastFares: PastFare[], location: string): string | undefined {
+// 直近5回の金額を、金額ごとに回数をまとめて新しい順に返す（交通費欄の候補表示にも使う）
+function fareCandidates(pastFares: PastFare[], location: string): { fare: string; count: number }[] {
   const target = normalizeLocation(location);
-  if (!target) return undefined;
+  if (!target) return [];
   const recent = pastFares
     .filter((p) => {
       const loc = normalizeLocation(p.location);
@@ -27,12 +28,18 @@ function findPastFare(pastFares: PastFare[], location: string): string | undefin
     .sort((a, b) => b.order - a.order)
     .slice(0, 5);
 
-  // 全部数えてから、一番多い回数の金額のうち recent で先に出てくる（＝新しい）ものを選ぶ。
-  // 数えながら選ぶと「先に回数が増えたほう」が残り、同数のとき新しいほうにならない
+  // Map は最初に入れた順を保つので、金額は「最後にその金額を使った日」が新しい順に並ぶ
   const counts = new Map<string, number>();
   for (const p of recent) counts.set(p.fare, (counts.get(p.fare) ?? 0) + 1);
-  const max = Math.max(0, ...counts.values());
-  return recent.find((p) => counts.get(p.fare) === max)?.fare;
+  return [...counts].map(([fare, count]) => ({ fare, count }));
+}
+
+function findPastFare(pastFares: PastFare[], location: string): string | undefined {
+  // 全部数えてから、一番多い回数の金額のうち先に出てくる（＝新しい）ものを選ぶ。
+  // 数えながら選ぶと「先に回数が増えたほう」が残り、同数のとき新しいほうにならない
+  const candidates = fareCandidates(pastFares, location);
+  const max = Math.max(0, ...candidates.map((c) => c.count));
+  return candidates.find((c) => c.count === max)?.fare;
 }
 
 function todayJst(): string {
@@ -161,6 +168,8 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
   const [pastFares, setPastFares] = useState<PastFare[]>([]);
   // 交通費を自分で触るまでは、勤務地に合わせて前回の金額を入れ直す
   const [fareAuto, setFareAuto] = useState(true);
+  // 交通費の欄をタップしている間だけ、直近5回の金額を候補として出す
+  const [fareFocused, setFareFocused] = useState(false);
 
   useEffect(() => {
     fetch('/api/nippo-form/fares')
@@ -223,6 +232,8 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
     setStepHistory((h) => ({ ...h, [key]: history.slice(0, -1) }));
   };
 
+  const fareOptions = useMemo(() => fareCandidates(pastFares, location), [pastFares, location]);
+
   const submission = { date, location, mode, values: effectiveValues };
   const sections = sectionsFor(mode);
   const toggleMode = (m: NippoMode) => setMode((cur) => (cur === m ? 'normal' : m));
@@ -278,6 +289,9 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
               inputMode="decimal"
               value={v}
               onChange={(e) => setValue(f.key, e.target.value)}
+              onFocus={f.key === 'fare' ? () => setFareFocused(true) : undefined}
+              // 候補のタップより先にフォーカスが外れても押せるよう、少し待ってから消す（下の onPointerDown が効かない端末向け）
+              onBlur={f.key === 'fare' ? () => setTimeout(() => setFareFocused(false), 200) : undefined}
               placeholder="0"
               style={{
                 ...inputStyle,
@@ -290,6 +304,25 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
               }}
             />
           </div>
+          {/* 候補が1種類だけなら入っている金額と同じなので出さない */}
+          {f.key === 'fare' && fareFocused && fareOptions.length > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 11, color: '#999' }}>直近5回</span>
+              {fareOptions.map((o) => (
+                <button
+                  key={o.fare}
+                  type="button"
+                  // 押した瞬間に入力欄からフォーカスが外れると候補が消えて押せないため、フォーカスを移さない
+                  onPointerDown={(e) => e.preventDefault()}
+                  onClick={() => setValue(f.key, o.fare)}
+                  style={{ ...stepButton, ...(o.fare === v && { borderColor: 'rgba(16, 185, 129, 0.6)', background: 'rgba(16, 185, 129, 0.12)' }) }}
+                >
+                  {o.fare}円
+                  <span style={{ fontSize: 11, fontWeight: 500, color: '#aaa', marginLeft: 4 }}>×{o.count}</span>
+                </button>
+              ))}
+            </div>
+          )}
           {f.copyTotal && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
               <button type="button" onClick={() => copyTotal(f.key)} style={stepButton}>実績と同じ</button>
