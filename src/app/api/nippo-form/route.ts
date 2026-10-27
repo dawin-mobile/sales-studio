@@ -3,7 +3,7 @@ import { and, eq } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { shiftRows } from '@/lib/schema';
-import { getSheetData } from '@/lib/sheets';
+import { getSheetDataCached } from '@/lib/sheets';
 import {
   NIPPO_FORM_ID,
   NIPPO_FORM_USERS,
@@ -19,8 +19,9 @@ export const dynamic = 'force-dynamic';
 const MODES: NippoMode[] = ['normal', 'zero', 'training'];
 
 // 勤務エリアはスタッフ情報 B列「拠点」（関東在籍は関東、九州在籍は九州）。T列=名前
+// 送信が21時前後に集中するため5分キャッシュを使う（拠点はめったに変わらない）
 async function getArea(name: string): Promise<string> {
-  const rows = await getSheetData('スタッフ情報');
+  const rows = await getSheetDataCached('スタッフ情報');
   return areaFromBase(rows.find((r) => r[19] === name)?.[1]);
 }
 

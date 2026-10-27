@@ -67,6 +67,35 @@ export async function getSheetData(sheetName: string): Promise<string[][]> {
   return (res.data.values || []) as string[][];
 }
 
+// getSheetData の5分キャッシュ版。多くの人が同じ時間帯に開く画面（日報入力など）で使う。
+//
+// Sheets API の読み取り上限は60回/分で、アプリ全体（同じサービスアカウント）で分け合っている。
+// 全員が同じ範囲を読むなら、5分に1回だけ取得して使い回す。取得中は同じPromiseを共有する（getShiftMonthData と同じ方式）。
+// 5分以内のシートの変更は反映されないので、最新の値が必要な画面では使わないこと。
+const SHEET_CACHE_TTL = 5 * 60 * 1000; // 5分
+const sheetCache = new Map<string, { data: string[][]; expires: number }>();
+const sheetInflight = new Map<string, Promise<string[][]>>();
+
+export async function getSheetDataCached(range: string): Promise<string[][]> {
+  const cached = sheetCache.get(range);
+  if (cached && cached.expires > Date.now()) return cached.data;
+
+  const inflight = sheetInflight.get(range);
+  if (inflight) return inflight;
+
+  const promise = getSheetData(range)
+    .then((data) => {
+      sheetCache.set(range, { data, expires: Date.now() + SHEET_CACHE_TTL });
+      return data;
+    })
+    .finally(() => {
+      sheetInflight.delete(range);
+    });
+
+  sheetInflight.set(range, promise);
+  return promise;
+}
+
 export async function getShiftSheetData(sheetName: string): Promise<string[][]> {
   const sheets = await getSheetsClient();
   const spreadsheetId = process.env.SHIFT_SPREADSHEET_ID;
