@@ -36,6 +36,7 @@ import AttendanceTable from '@/components/AttendanceTable';
 import ShiftView from '@/components/ShiftView';
 import ProfileView from '@/components/ProfileView';
 import NippoAlert from '@/components/NippoAlert';
+import NippoForm, { NippoButton, useNippoForm } from '@/components/NippoForm';
 import TalknoteCard from '@/components/TalknoteCard';
 import GrowthView from '@/components/GrowthView';
 import TardinessView from '@/components/TardinessView';
@@ -68,6 +69,8 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<TabName>('dashboard');
   const [rankingView, setRankingView] = useState<'default' | 'total' | 'selfclose' | 'mnp' | 'table'>('default');
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [nippoOpen, setNippoOpen] = useState(false);
+  const nippo = useNippoForm();
   const [contactsOpen, setContactsOpen] = useState(false);
   const [contacts, setContacts] = useState<{ name: string; contact: string; mentees: string[] }[]>([]);
   const [loginInfoOpen, setLoginInfoOpen] = useState(false);
@@ -298,17 +301,20 @@ export default function Home() {
                 Sales Studio
               </span>
             </div>
-            {/* 右側: アバター＋最終更新（スマホのみ） */}
+            {/* 右側: 日報ボタン＋アバター＋最終更新（スマホのみ） */}
             <div className="header-brand-right">
-              {session?.user?.name && (
-                <button
-                  onClick={() => setDrawerOpen(true)}
-                  className="header-avatar-btn"
-                  title={session.user.name}
-                >
-                  {session.user.name.slice(0, 2)}
-                </button>
-              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {nippo.available && <NippoButton missingCount={nippo.missingDates.length} onClick={() => setNippoOpen(true)} />}
+                {session?.user?.name && (
+                  <button
+                    onClick={() => setDrawerOpen(true)}
+                    className="header-avatar-btn"
+                    title={session.user.name}
+                  >
+                    {session.user.name.slice(0, 2)}
+                  </button>
+                )}
+              </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: 11, color: '#aaa' }}>{lastUpdate}</span>
                 <button
@@ -358,15 +364,18 @@ export default function Home() {
             </div>
             {/* PC時のみ表示 */}
             <div className="header-pc-right">
-              {session?.user?.name && (
-                <button
-                  onClick={() => setDrawerOpen(true)}
-                  className="header-avatar-btn"
-                  title={session.user.name}
-                >
-                  {session.user.name.slice(0, 2)}
-                </button>
-              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {nippo.available && <NippoButton missingCount={nippo.missingDates.length} onClick={() => setNippoOpen(true)} />}
+                {session?.user?.name && (
+                  <button
+                    onClick={() => setDrawerOpen(true)}
+                    className="header-avatar-btn"
+                    title={session.user.name}
+                  >
+                    {session.user.name.slice(0, 2)}
+                  </button>
+                )}
+              </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: 11, color: '#aaa' }}>{lastUpdate}</span>
                 <button
@@ -617,6 +626,8 @@ export default function Home() {
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} userRole={effectiveRole} secretMode={secretMode} />
 
       {/* プロフィール フルスクリーン / PC ドロップダウン */}
+      {nippoOpen && <NippoForm onClose={() => setNippoOpen(false)} missingDates={nippo.missingDates} />}
+
       {drawerOpen && (
         <div onClick={() => setDrawerOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 199 }} />
       )}

@@ -266,6 +266,40 @@ body {
   }
 }
 
+/* ─── Nippo Panel（日報入力） ─────────────────────── */
+
+.nippo-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: var(--bg-color);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.nippo-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 8px;
+  padding-top: calc(10px + env(safe-area-inset-top));
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .nippo-panel {
+    inset: auto;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 50%;
+    border-left: 1px solid var(--border-color);
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.5);
+  }
+}
+
 /* ─── Main Content ─────────────────────────────── */
 
 .main-content {
