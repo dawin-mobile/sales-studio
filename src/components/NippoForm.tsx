@@ -3,9 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { ChevronLeft, PenLine } from 'lucide-react';
-import { AREAS, GOAL_CHOICES, NIPPO_SECTIONS, validateNippo, type NippoField } from '@/lib/nippoForm';
-
-type ShiftLocation = { location: string; area: string };
+import { sectionsFor, validateNippo, type NippoField, type NippoMode } from '@/lib/nippoForm';
 
 // 前回の交通費を勤務地ごとに覚えておく（この端末だけの便利機能。読めなくても動く）
 const FARE_STORAGE_KEY = 'nippo-fare-by-location';
@@ -118,16 +116,15 @@ type Step = 'edit' | 'confirm' | 'done';
 export default function NippoForm({ onClose, missingDates }: { onClose: () => void; missingDates: string[] }) {
   const { data: session } = useSession();
   const [date, setDate] = useState(todayJst());
-  const [area, setArea] = useState('関東');
   const [location, setLocation] = useState('');
-  const [shiftLocations, setShiftLocations] = useState<ShiftLocation[]>([]);
-  const [training, setTraining] = useState(false);
+  const [shiftLocations, setShiftLocations] = useState<string[]>([]);
+  const [mode, setMode] = useState<NippoMode>('normal');
   const [values, setValues] = useState<Record<string, string>>({ taxi: '0' });
   const [step, setStep] = useState<Step>('edit');
   const [errors, setErrors] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
 
-  // 日付を変えたら、その日のシフトから勤務地・エリアを入れ直す
+  // 日付を変えたら、その日のシフトから勤務地を入れ直す
   useEffect(() => {
     let cancelled = false;
     fetch(`/api/nippo-form?date=${date}`)
@@ -135,10 +132,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
       .then((data) => {
         if (cancelled || !Array.isArray(data.locations)) return;
         setShiftLocations(data.locations);
-        const first: ShiftLocation | undefined = data.locations[0];
-        if (!first) return;
-        setLocation(first.location);
-        setArea(first.area);
+        if (data.locations[0]) setLocation(data.locations[0]);
       })
       .catch(() => {});
     return () => { cancelled = true; };
@@ -151,8 +145,9 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
   }, [location]);
 
   const setValue = (key: string, value: string) => setValues((v) => ({ ...v, [key]: value }));
-  const submission = { date, area, location, training, values };
-  const sections = NIPPO_SECTIONS.filter((s) => !training || s.training);
+  const submission = { date, location, mode, values };
+  const sections = sectionsFor(mode);
+  const toggleMode = (m: NippoMode) => setMode((cur) => (cur === m ? 'normal' : m));
 
   const goConfirm = () => {
     const errs = validateNippo(submission);
@@ -209,40 +204,10 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
         </div>
       );
     }
-    if (f.kind === 'goal') {
-      return (
-        <div key={f.key} style={{ padding: '8px 0' }}>
-          {label}
-          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-            {GOAL_CHOICES.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setValue(f.key, c)}
-                style={{
-                  ...inputStyle,
-                  width: 'auto',
-                  fontSize: 14,
-                  cursor: 'pointer',
-                  background: v === c ? 'var(--accent-color)' : 'var(--bg-secondary)',
-                  borderColor: v === c ? 'var(--accent-color)' : 'var(--border-color)',
-                }}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-        </div>
-      );
-    }
     return (
       <div key={f.key} style={{ padding: '8px 0' }}>
         {label}
-        {f.kind === 'textarea' ? (
-          <textarea value={v} onChange={(e) => setValue(f.key, e.target.value)} rows={3} style={{ ...inputStyle, marginTop: 6, resize: 'vertical' }} />
-        ) : (
-          <input type="text" value={v} onChange={(e) => setValue(f.key, e.target.value)} style={{ ...inputStyle, marginTop: 6 }} />
-        )}
+        <textarea value={v} onChange={(e) => setValue(f.key, e.target.value)} rows={3} style={{ ...inputStyle, marginTop: 6, resize: 'vertical' }} />
       </div>
     );
   };
@@ -293,8 +258,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
                 {[
                   ['勤務日', shortDate(date)],
                   ['名前', session?.user?.name ?? ''],
-                  ['店舗形式', training ? '研修' : '業務委託'],
-                  ['勤務エリア', area],
+                  ['店舗形式', mode === 'training' ? '研修' : mode === 'zero' ? '業務委託（0だった日）' : '業務委託'],
                   ['勤務地', location],
                   ...sections.flatMap((s) => s.fields.filter((f) => values[f.key]?.trim()).map((f) => [f.label, values[f.key].trim()])),
                 ].map(([k, v]) => (
@@ -317,6 +281,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
 
           {step === 'edit' && (
             <>
+              <div style={{ fontSize: 12, color: '#999', marginBottom: 8 }}>{session?.user?.name} さんの日報</div>
               <div style={sectionStyle}>
                 {missingDates.length > 0 && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 12, fontSize: 12, color: '#ff6666' }}>
@@ -339,30 +304,22 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
                     <input type="date" value={date} max={todayJst()} onChange={(e) => e.target.value && setDate(e.target.value)} style={{ ...inputStyle, marginTop: 4 }} />
                   </label>
                   <label style={{ fontSize: 12, color: '#aaa' }}>
-                    名前
-                    <div style={{ ...inputStyle, marginTop: 4, color: '#aaa' }}>{session?.user?.name}</div>
-                  </label>
-                  <label style={{ fontSize: 12, color: '#aaa' }}>
-                    勤務エリア
-                    <select value={area} onChange={(e) => setArea(e.target.value)} style={{ ...inputStyle, marginTop: 4 }}>
-                      {AREAS.map((a) => <option key={a} value={a}>{a}</option>)}
-                    </select>
-                  </label>
-                  <label style={{ fontSize: 12, color: '#aaa' }}>
                     勤務地
                     <input type="text" list="nippo-locations" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="例）イオンモール川口前川" style={{ ...inputStyle, marginTop: 4 }} />
                     <datalist id="nippo-locations">
-                      {shiftLocations.map((l) => <option key={l.location} value={l.location} />)}
+                      {shiftLocations.map((l) => <option key={l} value={l} />)}
                     </datalist>
                   </label>
                 </div>
                 {shiftLocations.length === 0 && (
                   <div style={{ fontSize: 11, color: '#999', marginTop: 8 }}>この日のシフトが見つからないため、勤務地を入力してください</div>
                 )}
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, fontSize: 14, cursor: 'pointer' }}>
-                  <input type="checkbox" checked={training} onChange={(e) => setTraining(e.target.checked)} style={{ width: 18, height: 18 }} />
-                  研修の日（交通費だけ入力）
-                </label>
+                {([['zero', '0だった日（交通費だけ入力）'], ['training', '研修の日（交通費だけ入力）']] as const).map(([m, text]) => (
+                  <label key={m} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, fontSize: 14, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={mode === m} onChange={() => toggleMode(m)} style={{ width: 18, height: 18 }} />
+                    {text}
+                  </label>
+                ))}
               </div>
 
               {sections.map((s) => (

@@ -23,23 +23,24 @@ export const ENTRY = {
 export const STORE_TYPE_WORK = '業務委託（ブース稼働・店内稼働）';
 export const STORE_TYPE_TRAINING = '研修';
 
-export const AREAS = ['関東', '九州', '北海道・東北・北陸・中部'];
-
-export const GOAL_CHOICES = ['◎', '×', '書き忘れ！次回忘れずに！'];
+// スタッフ情報 B列「拠点」→ フォームの勤務エリア。拠点が空・想定外なら関東
+export function areaFromBase(base: string | undefined): string {
+  return base?.trim() === '九州' ? '九州' : '関東';
+}
 
 export type NippoField = {
   key: string;
   entry: string;
   label: string;
   hint?: string;
-  kind: 'number' | 'text' | 'textarea' | 'goal';
+  kind: 'number' | 'textarea';
   required?: boolean;
 };
 
 export type NippoSection = {
   title: string;
   hint?: string;
-  training?: boolean; // 研修の日も入力するセクション
+  always?: boolean; // 0だった日・研修の日も入力するセクション
   fields: NippoField[];
 };
 
@@ -61,20 +62,6 @@ export const NIPPO_SECTIONS: NippoSection[] = [
       { key: 'credit', entry: '1014539532', label: 'クレカ・自銀', hint: 'ゴールド 0.3 / シルバー 0.1 / 自銀 0.1', kind: 'number' },
       { key: 'selfClose', entry: '973447314', label: '合計自己クロ', kind: 'number' },
       { key: 'seated', entry: '2131159871', label: '着座数', hint: '1組1件（3人家族を着座させたら1）', kind: 'number' },
-      { key: 'eventMnp', entry: '1267263058', label: 'イベント販売台数（MNP）', kind: 'number' },
-    ],
-  },
-  {
-    title: '分析',
-    hint: '獲得組数で記載（ダブクロの場合は折半）',
-    fields: [
-      { key: 'groups', entry: '1996799932', label: '総獲得組数', hint: 'MNPの獲得組数', kind: 'number' },
-      { key: 'age2030', entry: '1841191394', label: '年齢 20代〜30代', kind: 'number' },
-      { key: 'age4060', entry: '1507869127', label: '年齢 40代〜60代', kind: 'number' },
-      { key: 'age60', entry: '1447520377', label: '年齢 60代〜', kind: 'number' },
-      { key: 'single', entry: '1642062889', label: '構成 シングル', kind: 'number' },
-      { key: 'pair', entry: '1307559664', label: '構成 2名', hint: '夫婦・親子など、子どもがいても回線数が2ならこちら', kind: 'number' },
-      { key: 'family', entry: '1166243301', label: '構成 家族（3名以上）', kind: 'number' },
     ],
   },
   {
@@ -82,14 +69,11 @@ export const NIPPO_SECTIONS: NippoSection[] = [
     fields: [
       { key: 'winExample', entry: '2049868143', label: '獲得例', hint: '年齢や元キャリア、プランなど', kind: 'textarea' },
       { key: 'lossExample', entry: '1668466374', label: '失注例', hint: '切り返せなかった内容など。なければ知りたいことでもOK', kind: 'textarea' },
-      { key: 'killerTalk', entry: '1190453645', label: '必殺トーク', hint: '即決・クロージング・着座のときに効いた一言', kind: 'textarea' },
-      { key: 'goalReview', entry: '352046655', label: '目標振り返り', hint: 'WPで記入した目標（例：着座5件、MNP3件）', kind: 'text', required: true },
-      { key: 'goalResult', entry: '1225387012', label: '目標達成', kind: 'goal', required: true },
     ],
   },
   {
     title: '交通費',
-    training: true,
+    always: true,
     fields: [
       { key: 'fare', entry: '1677579059', label: '往復交通費（公共交通機関）', kind: 'number', required: true },
       { key: 'taxi', entry: '23584606', label: 'タクシー代、有料特急', hint: '事前承諾が必要。領収書は社員に渡してね', kind: 'number', required: true },
@@ -97,55 +81,62 @@ export const NIPPO_SECTIONS: NippoSection[] = [
   },
 ];
 
-// フォームのページ番号（0始まり）。業務委託は全ページ、研修は1ページ目から交通費へ直行する
-const PAGES_WORK = '0,1,2,3,4,5,6,7';
+// normal = 通常 / zero = 0だった日（業務委託で交通費だけ） / training = 研修の日（交通費だけ）
+export type NippoMode = 'normal' | 'zero' | 'training';
+
+// フォームのページ番号（0始まり）。フォームのページ移動の設定と同じ順に通る。
+// 業務委託（通常・0だった日）: 1ページ目 → 実績 → 所感 → 交通費
+//   イベント販売台数・分析・必殺トーク／目標振り返り／目標達成のページはフォーム側で飛ばす設定になっている
+//   0だった日は実績・所感を空のまま同じ順で通る（必須項目はない）
+// 研修: 1ページ目 → 交通費（フォームでも研修を選ぶと交通費へ直行する）
+const PAGES_WORK = '0,1,5,7';
 const PAGES_TRAINING = '0,7';
 
 export type NippoSubmission = {
   date: string; // YYYY-MM-DD
-  area: string;
   location: string;
-  training: boolean;
+  mode: NippoMode;
   values: Record<string, string>;
 };
+
+/** そのモードで入力するセクション */
+export function sectionsFor(mode: NippoMode): NippoSection[] {
+  return mode === 'normal' ? NIPPO_SECTIONS : NIPPO_SECTIONS.filter((s) => s.always);
+}
 
 /** 入力内容の不備を返す（問題なければ空配列） */
 export function validateNippo(s: NippoSubmission): string[] {
   const errors: string[] = [];
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s.date)) errors.push('勤務日を入力してください');
-  if (!AREAS.includes(s.area)) errors.push('勤務エリアを選んでください');
   if (!s.location.trim()) errors.push('勤務地を入力してください');
-  for (const section of NIPPO_SECTIONS) {
-    if (s.training && !section.training) continue;
+  for (const section of sectionsFor(s.mode)) {
     for (const f of section.fields) {
       const v = (s.values[f.key] ?? '').trim();
       if (f.required && !v) errors.push(`${f.label}を入力してください`);
       if (f.kind === 'number' && v && !/^\d+(\.\d+)?$/.test(v)) errors.push(`${f.label}は数字で入力してください`);
-      if (f.kind === 'goal' && v && !GOAL_CHOICES.includes(v)) errors.push(`${f.label}を選んでください`);
     }
   }
   return errors;
 }
 
-/** Google フォームの formResponse に送る本文を組み立てる */
-export function buildFormBody(s: NippoSubmission, name: string): URLSearchParams {
+/** Google フォームの formResponse に送る本文を組み立てる。名前とエリアはサーバー側で決めたものを渡す */
+export function buildFormBody(s: NippoSubmission, name: string, area: string): URLSearchParams {
   const [y, m, d] = s.date.split('-');
   const body = new URLSearchParams();
   body.append(`entry.${ENTRY.date}_year`, y);
   body.append(`entry.${ENTRY.date}_month`, String(parseInt(m)));
   body.append(`entry.${ENTRY.date}_day`, String(parseInt(d)));
   body.append(`entry.${ENTRY.name}`, name);
-  body.append(`entry.${ENTRY.storeType}`, s.training ? STORE_TYPE_TRAINING : STORE_TYPE_WORK);
-  body.append(`entry.${ENTRY.area}`, s.area);
+  body.append(`entry.${ENTRY.storeType}`, s.mode === 'training' ? STORE_TYPE_TRAINING : STORE_TYPE_WORK);
+  body.append(`entry.${ENTRY.area}`, area);
   body.append(`entry.${ENTRY.location}`, s.location.trim());
-  for (const section of NIPPO_SECTIONS) {
-    if (s.training && !section.training) continue;
+  for (const section of sectionsFor(s.mode)) {
     for (const f of section.fields) {
       const v = (s.values[f.key] ?? '').trim();
       if (v) body.append(`entry.${f.entry}`, v);
     }
   }
-  body.append('pageHistory', s.training ? PAGES_TRAINING : PAGES_WORK);
+  body.append('pageHistory', s.mode === 'training' ? PAGES_TRAINING : PAGES_WORK);
   body.append('fvv', '1');
   return body;
 }
