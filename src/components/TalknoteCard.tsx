@@ -260,6 +260,38 @@ function detectCarrier(msg: string, family: CarrierFamily): 'au' | 'uq' | null {
 const SIM_RE = /sim[x×]?[ \t　]*(\d+)?/gi;
 const TANMATSU_RE = /端末[x×]?[ \t　]*(\d+)?/gi;
 
+// 同じキャリアの組の中での移動（UQ→au など）はMNPではないので、行ごとの振り分けには使わない
+const FAMILY_SOURCE_RE: Record<CarrierFamily, RegExp> = {
+  'au-uq': /\bau\b|\bUQ\b/i,
+  'sb-y': /SB|ソフトバンク|\bYM\b|Y[!！]?(?:モバ(?:イル)?|mobile)|ワイモバ(?:イル)?/i,
+};
+
+type MnpLine = { carrier: 'au' | 'uq'; count: number; sim: boolean; tanmatsu: boolean };
+
+// 「SB → au 端末×2」「YM → UQ sim×2」のように、1投稿に行き先キャリアの違うMNPが並ぶ書き方を行ごとに分ける。
+// 行き先が2種類以上あり、行ごとの件数の合計が投稿のMNP数と一致するときだけ返す（それ以外は null＝投稿単位で判定）
+function splitMnpLines(msg: string, family: CarrierFamily, mnpCount: number): MnpLine[] | null {
+  const lines: MnpLine[] = [];
+  for (const line of msg.split('\n')) {
+    const arrowIdx = line.indexOf('→');
+    if (arrowIdx === -1) continue;
+    const right = line.slice(arrowIdx + 1);
+    const carrier = detectCarrier('→' + right, family);
+    if (!carrier) continue; // 「店舗→中村」のようなキャリア以外の矢印
+    if (FAMILY_SOURCE_RE[family].test(line.slice(0, arrowIdx))) return null;
+    const countMatch = right.match(/x[ \t　]*(\d+)/);
+    lines.push({
+      carrier,
+      count: countMatch ? parseInt(countMatch[1]) : 1,
+      sim: /sim/i.test(right),
+      tanmatsu: right.includes('端末'),
+    });
+  }
+  if (new Set(lines.map((l) => l.carrier)).size < 2) return null;
+  if (lines.reduce((sum, l) => sum + l.count, 0) !== mnpCount) return null;
+  return lines;
+}
+
 // 実績報告テンプレート生成用: au/UQ×新規・MNP・端末・SIM単・即決・O19を雑投稿から解析
 // 投稿の書き方は人によってバラつくため完全一致は保証されない（個人実績欄に生テキストも残すので目視確認前提）
 function parseJissekiBreakdown(postsByStaff: SiteMap[string], family: CarrierFamily): JissekiBreakdown {
@@ -290,15 +322,26 @@ function parseJissekiBreakdown(postsByStaff: SiteMap[string], family: CarrierFam
       }
       // 全体合計はキャリア判定できたかどうかに関わらず反映する（内訳のau/UQ振り分けだけキャリア判定に依存）
       result.mnpTotal += mnpCount;
-      if (bucket) bucket.mnp += mnpCount;
 
       const shinCount = countShin(msg);
       result.shinTotal += shinCount;
-      if (bucket) bucket.shin += shinCount;
+
+      // 行き先キャリアの違うMNPが1投稿に並んでいるときは、行ごとにau/UQ（SB/YM）へ振り分ける
+      const mnpLines = shinCount === 0 ? splitMnpLines(msg, family, mnpCount) : null;
+      if (mnpLines) {
+        for (const l of mnpLines) {
+          result[l.carrier].mnp += l.count;
+          if (l.sim) result[l.carrier].sim += l.count;
+          else if (l.tanmatsu) result[l.carrier].tanmatsu += l.count;
+        }
+      } else {
+        if (bucket) bucket.mnp += mnpCount;
+        if (bucket) bucket.shin += shinCount;
+      }
 
       // sim・端末は同じ投稿内に両方出てくることがある（例: sim×1.端末×1）ので個別にカウントするが、
       // 片方しか書かれていない場合は「MNP2\nsim」のように件数を書き漏らすことがあるため全体件数を採用する
-      if (bucket && (mnpCount > 0 || shinCount > 0)) {
+      if (!mnpLines && bucket && (mnpCount > 0 || shinCount > 0)) {
         const simRaw = countLdItem(msg, SIM_RE);
         const tanmatsuRaw = countLdItem(msg, TANMATSU_RE);
         const total = mnpCount + shinCount;
