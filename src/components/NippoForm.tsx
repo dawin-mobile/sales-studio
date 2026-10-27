@@ -5,21 +5,26 @@ import { useSession } from 'next-auth/react';
 import { ChevronLeft, PenLine } from 'lucide-react';
 import { NIPPO_SECTIONS, sectionsFor, validateNippo, type NippoField, type NippoMode } from '@/lib/nippoForm';
 
-// 前回の交通費を勤務地ごとに覚えておく（この端末だけの便利機能。読めなくても動く）
-const FARE_STORAGE_KEY = 'nippo-fare-by-location';
+type PastFare = { location: string; fare: string; date: string };
 
-function loadFares(): Record<string, string> {
-  try {
-    return JSON.parse(localStorage.getItem(FARE_STORAGE_KEY) ?? '{}');
-  } catch {
-    return {};
-  }
+// 勤務地の表記ゆれ（全角半角・空白）をそろえる
+function normalizeLocation(s: string): string {
+  return s.normalize('NFKC').replace(/\s/g, '').toLowerCase();
 }
 
-function saveFare(location: string, fare: string) {
-  try {
-    localStorage.setItem(FARE_STORAGE_KEY, JSON.stringify({ ...loadFares(), [location]: fare }));
-  } catch {}
+// 過去の日報から、この勤務地に前回行ったときの交通費を探す。
+// 日報の勤務地は自由記述でシフト表と表記が揃わない（シフト「長坂」↔ 日報「au長坂」など）ため、
+// どちらかがもう一方を含めば同じ現場とみなし、その中で一番新しい日の金額を使う
+function findPastFare(pastFares: PastFare[], location: string): string | undefined {
+  const target = normalizeLocation(location);
+  if (!target) return undefined;
+  let best: PastFare | undefined;
+  for (const p of pastFares) {
+    const loc = normalizeLocation(p.location);
+    if (!loc.includes(target) && !target.includes(loc)) continue;
+    if (!best || p.date > best.date) best = p;
+  }
+  return best?.fare;
 }
 
 function todayJst(): string {
@@ -71,9 +76,9 @@ export function NippoButton({ missingCount, onClick }: { missingCount: number; o
         gap: 5,
         height: 34,
         padding: '0 14px',
-        borderRadius: 17,
-        border: alert ? 'none' : '1px solid var(--border-color)',
-        background: alert ? 'var(--accent-color)' : 'var(--card-bg)',
+        borderRadius: 8, // 稼働カードの「実績報告生成」ボタンと同じ角の丸い四角
+        border: '1px solid rgba(196, 181, 253, 0.35)',
+        background: '#7c3aed',
         color: '#fff',
         fontSize: 13,
         fontWeight: 700,
@@ -87,7 +92,7 @@ export function NippoButton({ missingCount, onClick }: { missingCount: number; o
       {alert && (
         <span style={{
           position: 'absolute', top: -5, right: -5, minWidth: 18, height: 18, padding: '0 5px',
-          borderRadius: 9, background: '#fff', color: 'var(--accent-color)', fontSize: 11, fontWeight: 800,
+          borderRadius: 9, background: 'var(--accent-color)', color: '#fff', fontSize: 11, fontWeight: 800,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           {missingCount}
@@ -145,6 +150,16 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
   const [values, setValues] = useState<Record<string, string>>({ taxi: '0' });
   // ＋ボタンで足した数の履歴。−ボタンで直前の1回分ずつ取り消す
   const [stepHistory, setStepHistory] = useState<Record<string, number[]>>({});
+  const [pastFares, setPastFares] = useState<PastFare[]>([]);
+  // 交通費を自分で触るまでは、勤務地に合わせて前回の金額を入れ直す
+  const [fareAuto, setFareAuto] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/nippo-form/fares')
+      .then((r) => r.json())
+      .then((data) => { if (Array.isArray(data.fares)) setPastFares(data.fares); })
+      .catch(() => {});
+  }, []);
   const [step, setStep] = useState<Step>('edit');
   const [errors, setErrors] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
@@ -163,11 +178,11 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
     return () => { cancelled = true; };
   }, [date]);
 
-  // 勤務地が決まったら、前回その勤務地で入れた交通費を入れておく（未入力のときだけ）
+  // 勤務地が決まったら、過去の日報でその勤務地に行ったときの交通費を入れておく
   useEffect(() => {
-    const fare = loadFares()[location];
-    if (fare) setValues((v) => (v.fare ? v : { ...v, fare }));
-  }, [location]);
+    if (!fareAuto) return;
+    setValues((v) => ({ ...v, fare: findPastFare(pastFares, location) ?? '' }));
+  }, [location, pastFares, fareAuto]);
 
   // 着座数を自分で触っていない間は、実績か自己クロのどれかが0でなければ自動で1にする
   const effectiveValues = useMemo(() => {
@@ -177,6 +192,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
   }, [values]);
 
   const setValue = (key: string, value: string) => {
+    if (key === 'fare') setFareAuto(false);
     setValues((v) => ({ ...v, [key]: value }));
     setStepHistory((h) => ({ ...h, [key]: [] }));
   };
@@ -223,7 +239,6 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
         setErrors([data.error ?? '送信に失敗しました']);
         return;
       }
-      if (values.fare) saveFare(location, values.fare);
       setStep('done');
     } catch {
       setErrors(['通信に失敗しました。電波のよいところで再度送信してください']);
@@ -262,8 +277,8 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
                 textAlign: 'right',
                 flexShrink: 0,
                 fontWeight: filled ? 700 : 400,
-                // 数字が入った欄はアクセントの赤でうっすら色づけして、どこに入力したか分かるようにする
-                ...(filled && { background: 'rgba(229, 62, 62, 0.12)', borderColor: 'rgba(229, 62, 62, 0.55)' }),
+                // 数字が入った欄は緑でうっすら色づけして、どこに入力したか分かるようにする（赤はエラーに見えるため）
+                ...(filled && { background: 'rgba(16, 185, 129, 0.12)', borderColor: 'rgba(16, 185, 129, 0.6)' }),
               }}
             />
           </div>

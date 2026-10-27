@@ -54,7 +54,7 @@ export const NIPPO_SECTIONS: NippoSection[] = [
     fields: [
       { key: 'mnpDevice', entry: '584999881', label: 'MNP（端末つき）', hint: '1件→1.2', kind: 'number', steps: [{ value: 0.6 }] },
       { key: 'mnpSim', entry: '1712098526', label: 'MNP（sim単）', hint: '1件→1', kind: 'number', steps: [{ value: 0.5 }] },
-      { key: 'shin', entry: '1230700764', label: '純新規', hint: 'U18・O60 1件→0.8 / それ以外 1件→0.1（キッズケータイは対象外）', kind: 'number', steps: [{ value: 0.4, label: 'U18・O60' }, { value: 0.05, label: 'その他' }] },
+      { key: 'shin', entry: '1230700764', label: '純新規', hint: 'U18・O60 1件→0.8 / それ以外 1件→0.1（キッズケータイは対象外）', kind: 'number', steps: [{ value: 0.4, label: 'U18・O60' }] },
       { key: 'kihen', entry: '1774034835', label: '機種変更', hint: '1件→0.1（au→UQのセルダウン含む）', kind: 'number', steps: [{ value: 0.05 }] },
       { key: 'cellUp', entry: '1091675989', label: '機種変更（セルアップ）', hint: '1件→0.6', kind: 'number', steps: [{ value: 0.3 }] },
       { key: 'hikariNew', entry: '1421244134', label: 'ひかり（新規）', hint: '光新規 1件→1 / 固定代替え 1件→0.5', kind: 'number', steps: [{ value: 0.5, label: '光新規' }, { value: 0.25, label: '固定代替え' }] },
@@ -78,7 +78,7 @@ export const NIPPO_SECTIONS: NippoSection[] = [
     title: '交通費',
     always: true,
     fields: [
-      { key: 'fare', entry: '1677579059', label: '往復交通費（公共交通機関）', kind: 'number', required: true },
+      { key: 'fare', entry: '1677579059', label: '往復交通費（公共交通機関）', hint: '前回この現場に行ったときの金額を自動で入れています', kind: 'number', required: true },
       { key: 'taxi', entry: '23584606', label: 'タクシー代、有料特急', hint: '事前承諾が必要。領収書は社員に渡してね', kind: 'number', required: true },
     ],
   },
