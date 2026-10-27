@@ -26,6 +26,7 @@
  *   ④ 日報催促            毎日21時  → mainToday_ReportReminder
  *   ⑤ 動物占いの補完      毎日6時  → fillAnimalColumns
  *   ⑥ シート編集時の即時同期 編集のたびに → onEditTrigger
+ *   ⑦ 日報合算            毎日0時・10時 → mergeSheets_Complete（21時は④の中で合算）
  */
 function setupTriggers_Bot() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -37,6 +38,8 @@ function setupTriggers_Bot() {
   ScriptApp.newTrigger('mainTomorrow_ShiftNotify').timeBased().atHour(18).everyDays(1).create(); // ③ 18時
   ScriptApp.newTrigger('mainToday_ReportReminder').timeBased().atHour(21).everyDays(1).create(); // ④ 21時
   ScriptApp.newTrigger('fillAnimalColumns').timeBased().atHour(6).everyDays(1).create();         // ⑤ 6時
+  ScriptApp.newTrigger('mergeSheets_Complete').timeBased().atHour(0).everyDays(1).create();      // ⑦ 0時
+  ScriptApp.newTrigger('mergeSheets_Complete').timeBased().atHour(10).everyDays(1).create();     // ⑦ 10時
 
   Logger.log('Bot用トリガーを設定しました ✅（dawinmobilebot@gmail.com）');
 }
@@ -46,12 +49,12 @@ function setupTriggers_Bot() {
  * setupTriggers_Calendar()
  * ▶ shohei.hashimoto@m.dawin.co.jp でログインした状態で実行してください
  *
- *   ⑦ カレンダー同期 毎日4時 → syncWeeklyStaffCalendar
+ *   ⑧ カレンダー同期 毎日4時 → syncWeeklyStaffCalendar
  */
 function setupTriggers_Calendar() {
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
 
-  ScriptApp.newTrigger('syncWeeklyStaffCalendar').timeBased().atHour(4).everyDays(1).create();   // ⑦ 4時
+  ScriptApp.newTrigger('syncWeeklyStaffCalendar').timeBased().atHour(4).everyDays(1).create();   // ⑧ 4時
 
   Logger.log('カレンダー用トリガーを設定しました ✅（shohei.hashimoto@m.dawin.co.jp）');
 }
