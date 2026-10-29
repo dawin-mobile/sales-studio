@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { ChevronLeft, PenLine } from 'lucide-react';
 import { NIPPO_SECTIONS, sectionsFor, validateNippo, type NippoField, type NippoMode } from '@/lib/nippoForm';
@@ -41,9 +41,19 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+function yesterdayJst(): string {
+  return new Date(Date.now() + 9 * 60 * 60 * 1000 - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
 function shortDate(date: string): string {
   const [, m, d] = date.split('-');
   return `${parseInt(m)}/${parseInt(d)}`;
+}
+
+// 「10/29(木)」の形にする
+function dateWithWeekday(date: string): string {
+  const [y, m, d] = date.split('-').map(Number);
+  return `${shortDate(date)}(${'日月火水木金土'[new Date(y, m - 1, d).getDay()]})`;
 }
 
 /** 日報を書けるユーザーかと、未提出日を返す */
@@ -149,18 +159,83 @@ const sectionStyle: React.CSSProperties = {
 
 type Step = 'edit' | 'confirm' | 'done';
 
+// 書きかけの日報。送信するまで端末（localStorage）に保存しておき、閉じても続きから書けるようにする
+type Draft = {
+  date: string;
+  location: string;
+  mode: NippoMode;
+  values: Record<string, string>;
+  stepHistory: Record<string, number[]>;
+  fareAuto: boolean;
+};
+
+const INITIAL_VALUES: Record<string, string> = { taxi: '0' };
+
+function draftKey(name: string | null | undefined): string | null {
+  return name ? `nippo-draft:${name}` : null;
+}
+
+// 開いただけ（勤務日・勤務地・交通費が自動で入っただけ）の状態は書きかけとみなさない。
+// そうしないと前の日に開いた日付が次の日も残ってしまう
+function hasContent(d: Draft): boolean {
+  return d.mode !== 'normal'
+    || !d.fareAuto
+    || Object.entries(d.values).some(([k, v]) => k !== 'fare' && v.trim() !== '' && !(k === 'taxi' && v === '0'));
+}
+
+function loadDraft(name: string | null | undefined): Draft | null {
+  const key = draftKey(name);
+  if (!key) return null;
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const d = JSON.parse(raw) as Draft;
+    return hasContent(d) ? d : null;
+  } catch {
+    return null;
+  }
+}
+
+const MODE_OPTIONS: { mode: NippoMode; label: string }[] = [
+  { mode: 'normal', label: '獲得した' },
+  { mode: 'zero', label: '0だった' },
+  { mode: 'training', label: '研修' },
+];
+
+// 勤務日ボタン・勤務の種類の切り替えで、選んでいるものを白く塗る
+const chipStyle = (selected: boolean): React.CSSProperties => ({
+  height: 36,
+  padding: '0 12px',
+  borderRadius: 18,
+  border: selected ? '1px solid #fff' : '1px solid rgba(255, 255, 255, 0.16)',
+  background: selected ? '#fff' : 'rgba(255, 255, 255, 0.09)',
+  color: selected ? '#111' : 'var(--text-main)',
+  fontSize: 14,
+  fontWeight: 700,
+  cursor: 'pointer',
+  whiteSpace: 'nowrap',
+});
+
 export default function NippoForm({ onClose, missingDates }: { onClose: () => void; missingDates: string[] }) {
   const { data: session } = useSession();
-  const [date, setDate] = useState(todayJst());
-  const [location, setLocation] = useState('');
+  const userName = session?.user?.name;
+  // パネルはボタンを押してから出るので、この時点でログイン情報は読み込み済み
+  const [draft] = useState(() => loadDraft(userName));
+  const [restored, setRestored] = useState(draft !== null);
+  const [date, setDate] = useState(draft?.date ?? todayJst());
+  const [location, setLocation] = useState(draft?.location ?? '');
   const [shiftLocations, setShiftLocations] = useState<string[]>([]);
-  const [mode, setMode] = useState<NippoMode>('normal');
-  const [values, setValues] = useState<Record<string, string>>({ taxi: '0' });
+  const [mode, setMode] = useState<NippoMode>(draft?.mode ?? 'normal');
+  const [values, setValues] = useState<Record<string, string>>(draft?.values ?? INITIAL_VALUES);
   // ＋ボタンで足した数の履歴。−ボタンで直前の1回分ずつ取り消す
-  const [stepHistory, setStepHistory] = useState<Record<string, number[]>>({});
+  const [stepHistory, setStepHistory] = useState<Record<string, number[]>>(draft?.stepHistory ?? {});
   const [pastFares, setPastFares] = useState<PastFare[]>([]);
   // 交通費を自分で触るまでは、勤務地に合わせて過去の金額を入れ直す
-  const [fareAuto, setFareAuto] = useState(true);
+  const [fareAuto, setFareAuto] = useState(draft?.fareAuto ?? true);
+  // 書きかけを戻したときは、最初のシフト読み込みで勤務地を上書きしない
+  const keepLocationRef = useRef(draft !== null);
+  // 「消して最初から」で、日付が同じままでもシフトを読み直すためのカウンター
+  const [reloadCount, setReloadCount] = useState(0);
 
   useEffect(() => {
     fetch('/api/nippo-form/fares')
@@ -180,11 +255,43 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
       .then((data) => {
         if (cancelled || !Array.isArray(data.locations)) return;
         setShiftLocations(data.locations);
-        if (data.locations[0]) setLocation(data.locations[0]);
+        if (data.locations[0] && !keepLocationRef.current) setLocation(data.locations[0]);
+        keepLocationRef.current = false;
       })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [date]);
+  }, [date, reloadCount]);
+
+  // 送信するまでは、変わるたびに書きかけを保存する
+  useEffect(() => {
+    const key = draftKey(userName);
+    if (!key || step === 'done') return;
+    try {
+      localStorage.setItem(key, JSON.stringify({ date, location, mode, values, stepHistory, fareAuto } satisfies Draft));
+    } catch {
+      // 保存できない端末（プライベートモードなど）では保存しないだけ
+    }
+  }, [userName, step, date, location, mode, values, stepHistory, fareAuto]);
+
+  const clearDraft = () => {
+    const key = draftKey(userName);
+    if (key) {
+      try { localStorage.removeItem(key); } catch { /* 消せなくても次の保存で上書きされる */ }
+    }
+  };
+
+  const startOver = () => {
+    clearDraft();
+    setRestored(false);
+    setDate(todayJst());
+    setLocation('');
+    setMode('normal');
+    setValues(INITIAL_VALUES);
+    setStepHistory({});
+    setFareAuto(true);
+    setErrors([]);
+    setReloadCount((n) => n + 1);
+  };
 
   const pastFare = useMemo(() => findPastFare(pastFares, location), [pastFares, location]);
 
@@ -231,7 +338,12 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
 
   const submission = { date, location, mode, values: effectiveValues };
   const sections = sectionsFor(mode);
-  const toggleMode = (m: NippoMode) => setMode((cur) => (cur === m ? 'normal' : m));
+
+  // 勤務日ボタン: 今日・昨日・未提出の日（新しい順）
+  const today = todayJst();
+  const yesterday = yesterdayJst();
+  const dateChips = [...new Set([today, yesterday, ...[...missingDates].sort().reverse()])];
+  const isOtherDate = !dateChips.includes(date);
 
   const goConfirm = () => {
     const errs = validateNippo(submission);
@@ -253,6 +365,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
         setErrors([data.error ?? '送信に失敗しました']);
         return;
       }
+      clearDraft();
       setStep('done');
     } catch {
       setErrors(['通信に失敗しました。電波のよいところで再度送信してください']);
@@ -264,7 +377,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
   const renderField = (f: NippoField) => {
     const v = effectiveValues[f.key] ?? '';
     const label = (
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ flex: '1 1 120px', minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 600 }}>
           {f.label}{f.required && <span style={{ color: 'var(--accent-color)', marginLeft: 4 }}>*</span>}
         </div>
@@ -275,25 +388,50 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
     if (f.kind === 'number') {
       const canUndo = (stepHistory[f.key]?.length ?? 0) > 0;
       const filled = parseFloat(v) > 0;
+      const stepperButton: React.CSSProperties = { ...stepButton, height: 40, minWidth: 44, justifyContent: 'center', padding: '0 10px' };
+      const input = (
+        <input
+          type="text"
+          inputMode="decimal"
+          value={v}
+          onChange={(e) => setValue(f.key, e.target.value)}
+          // 必須の欄（交通費など）は空欄が「0円」に見えないよう見本を出さない
+          placeholder={f.required ? undefined : '0'}
+          style={{
+            ...inputStyle,
+            width: f.steps ? 64 : 84,
+            height: 40,
+            textAlign: f.steps ? 'center' : 'right',
+            flexShrink: 0,
+            fontWeight: filled ? 700 : 400,
+            ...(filled && GREEN_STYLE),
+          }}
+        />
+      );
       return (
         <div key={f.key} id={`nippo-field-${f.key}`} style={{ padding: '12px 0', borderBottom: '1px solid #2a2a2a' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', rowGap: 8 }}>
             {label}
-            <input
-              type="text"
-              inputMode="decimal"
-              value={v}
-              onChange={(e) => setValue(f.key, e.target.value)}
-              placeholder="0"
-              style={{
-                ...inputStyle,
-                width: 84,
-                textAlign: 'right',
-                flexShrink: 0,
-                fontWeight: filled ? 700 : 400,
-                ...(filled && GREEN_STYLE),
-              }}
-            />
+            {f.steps ? (
+              // 数字をはさんで − と ＋ を置く。換算の違うものが混ざる欄は ＋ を2つ並べる
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
+                <button
+                  type="button"
+                  onClick={() => undoStep(f.key)}
+                  disabled={!canUndo}
+                  aria-label={`${f.label}を1回分減らす`}
+                  style={{ ...stepperButton, opacity: canUndo ? 1 : 0.35 }}
+                >
+                  −
+                </button>
+                {input}
+                {f.steps.map((st) => (
+                  <button key={st.value} type="button" onClick={() => addStep(f.key, st.value)} style={stepperButton}>
+                    +{st.value}
+                  </button>
+                ))}
+              </div>
+            ) : input}
           </div>
           {f.key === 'fare' && fareOverNote && (
             <div style={{ textAlign: 'right', fontSize: 12, color: '#f59e0b', marginTop: 6 }}>{fareOverNote}</div>
@@ -301,24 +439,6 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
           {f.copyTotal && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
               <button type="button" onClick={() => copyTotal(f.key)} style={stepButton}>実績と同じ</button>
-            </div>
-          )}
-          {f.steps && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                onClick={() => undoStep(f.key)}
-                disabled={!canUndo}
-                aria-label={`${f.label}を1回分減らす`}
-                style={{ ...stepButton, width: 44, opacity: canUndo ? 1 : 0.35 }}
-              >
-                −
-              </button>
-              {f.steps.map((st) => (
-                <button key={st.value} type="button" onClick={() => addStep(f.key, st.value)} style={stepButton}>
-                  +{st.value}
-                </button>
-              ))}
             </div>
           )}
         </div>
@@ -376,7 +496,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
             <>
               <div style={sectionStyle}>
                 {[
-                  ['勤務日', shortDate(date)],
+                  ['勤務日', dateWithWeekday(date)],
                   ['名前', session?.user?.name ?? ''],
                   ['店舗形式', mode === 'training' ? '研修' : mode === 'zero' ? '業務委託（0だった日）' : '業務委託'],
                   ['勤務地', location],
@@ -406,46 +526,76 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
 
           {step === 'edit' && (
             <>
-              <div style={{ fontSize: 12, color: '#999', marginBottom: 8 }}>{session?.user?.name} さんの日報</div>
+              <div style={{ fontSize: 12, color: '#999', marginBottom: 8 }}>{userName} さんの日報</div>
+              {restored && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: 'rgba(124, 58, 237, 0.15)', border: '1px solid rgba(196, 181, 253, 0.35)', borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: 13 }}>
+                  書きかけの日報を戻しました
+                  <button type="button" onClick={startOver} style={{ background: 'none', border: 'none', color: '#c4b5fd', fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: 0, whiteSpace: 'nowrap' }}>
+                    消して最初から
+                  </button>
+                </div>
+              )}
               <div style={sectionStyle}>
-                {missingDates.length > 0 && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 12, fontSize: 12, color: '#ff6666' }}>
-                    未提出:
-                    {missingDates.map((d) => (
+                <div style={{ fontSize: 12, color: '#aaa', marginBottom: 6 }}>勤務日</div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {dateChips.map((d) => {
+                    const missing = missingDates.includes(d);
+                    const selected = d === date;
+                    const text = d === today ? `今日 ${dateWithWeekday(d)}` : d === yesterday ? `昨日 ${dateWithWeekday(d)}` : dateWithWeekday(d);
+                    return (
                       <button
                         key={d}
                         type="button"
                         onClick={() => setDate(d)}
-                        style={{ border: '1px solid #cc3333', background: d === date ? '#cc3333' : 'transparent', color: d === date ? '#fff' : '#ff6666', borderRadius: 12, padding: '2px 10px', fontSize: 12, cursor: 'pointer' }}
+                        style={{ ...chipStyle(selected), ...(missing && !selected && { borderColor: '#cc3333', color: '#ff6666' }) }}
                       >
-                        {shortDate(d)}
+                        {text}{missing && <span style={{ fontSize: 11, marginLeft: 4 }}>未提出</span>}
                       </button>
-                    ))}
-                  </div>
-                )}
-                {/* 勤務日と勤務地は同じ横幅・同じ高さで縦に並べる（iPhone の日付欄のはみ出しは globals.css で抑えている） */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
-                  <label style={{ fontSize: 12, color: '#aaa', minWidth: 0 }}>
-                    勤務日
-                    <input type="date" value={date} max={todayJst()} onChange={(e) => e.target.value && setDate(e.target.value)} style={{ ...inputStyle, marginTop: 4, height: 44 }} />
-                  </label>
-                  <label style={{ fontSize: 12, color: '#aaa', minWidth: 0 }}>
-                    勤務地
-                    <input type="text" list="nippo-locations" value={location} onChange={(e) => setLocation(e.target.value)} style={{ ...inputStyle, marginTop: 4, height: 44 }} />
-                    <datalist id="nippo-locations">
-                      {shiftLocations.map((l) => <option key={l} value={l} />)}
-                    </datalist>
+                    );
+                  })}
+                  {/* 透明な日付欄をボタンに重ね、押したらその場で日付を選ぶ画面を開く（行を増やさない） */}
+                  <label style={{ ...chipStyle(isOtherDate), position: 'relative', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+                    {isOtherDate ? dateWithWeekday(date) : '他の日'}
+                    <input
+                      type="date"
+                      value={date}
+                      max={today}
+                      onChange={(e) => e.target.value && setDate(e.target.value)}
+                      // PC のブラウザは欄を押しただけでは選ぶ画面が開かないため、明示的に開く
+                      onClick={(e) => e.currentTarget.showPicker?.()}
+                      aria-label="他の日を選ぶ"
+                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
+                    />
                   </label>
                 </div>
+
+                <label style={{ display: 'block', fontSize: 12, color: '#aaa', marginTop: 16 }}>
+                  勤務地
+                  <input type="text" list="nippo-locations" value={location} onChange={(e) => setLocation(e.target.value)} style={{ ...inputStyle, marginTop: 6, height: 44 }} />
+                  <datalist id="nippo-locations">
+                    {shiftLocations.map((l) => <option key={l} value={l} />)}
+                  </datalist>
+                </label>
                 {shiftLocations.length === 0 && (
                   <div style={{ fontSize: 11, color: '#999', marginTop: 8 }}>この日のシフトが見つからないため、勤務地を入力してください</div>
                 )}
-                {([['zero', '0だった日（交通費だけ入力）'], ['training', '研修の日（交通費だけ入力）']] as const).map(([m, text]) => (
-                  <label key={m} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, fontSize: 14, cursor: 'pointer' }}>
-                    <input type="checkbox" checked={mode === m} onChange={() => toggleMode(m)} style={{ width: 20, height: 20, accentColor: 'var(--accent-color)' }} />
-                    {text}
-                  </label>
-                ))}
+                {/* 勤務の種類。0だった日は所感と交通費、研修は交通費だけ入力する */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, marginTop: 16, padding: 4, background: '#141414', borderRadius: 10 }}>
+                  {MODE_OPTIONS.map((o) => (
+                    <button
+                      key={o.mode}
+                      type="button"
+                      onClick={() => setMode(o.mode)}
+                      aria-pressed={mode === o.mode}
+                      style={{ ...chipStyle(mode === o.mode), height: 36, borderRadius: 8, border: 'none', padding: 0, ...(mode !== o.mode && { background: 'transparent', color: '#aaa' }) }}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+                {mode !== 'normal' && (
+                  <div style={{ fontSize: 11, color: '#999', marginTop: 6 }}>{mode === 'zero' ? '所感と交通費を入力します' : '交通費だけ入力します'}</div>
+                )}
               </div>
 
               {sections.map((s) => (

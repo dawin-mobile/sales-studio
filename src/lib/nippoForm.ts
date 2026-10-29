@@ -45,6 +45,7 @@ export type NippoSection = {
   title: string;
   hint?: string;
   always?: boolean; // 0だった日・研修の日も入力するセクション
+  zero?: boolean; // 0だった日も入力するセクション（研修の日は出さない）
   fields: NippoField[];
 };
 
@@ -69,6 +70,7 @@ export const NIPPO_SECTIONS: NippoSection[] = [
   },
   {
     title: '所感',
+    zero: true,
     fields: [
       { key: 'winExample', entry: '2049868143', label: '獲得例', hint: '年齢や元キャリア、プランなど', kind: 'textarea' },
       { key: 'lossExample', entry: '1668466374', label: '失注例', hint: '切り返せなかった内容など。なければ知りたいことでもOK', kind: 'textarea' },
@@ -84,7 +86,7 @@ export const NIPPO_SECTIONS: NippoSection[] = [
   },
 ];
 
-// normal = 通常 / zero = 0だった日（業務委託で交通費だけ） / training = 研修の日（交通費だけ）
+// normal = 通常 / zero = 0だった日（業務委託で所感と交通費） / training = 研修の日（交通費だけ）
 export type NippoMode = 'normal' | 'zero' | 'training';
 
 // フォームのページ番号（0始まり）。フォームのページ移動の設定と同じ順に通る。
@@ -104,7 +106,8 @@ export type NippoSubmission = {
 
 /** そのモードで入力するセクション */
 export function sectionsFor(mode: NippoMode): NippoSection[] {
-  return mode === 'normal' ? NIPPO_SECTIONS : NIPPO_SECTIONS.filter((s) => s.always);
+  if (mode === 'normal') return NIPPO_SECTIONS;
+  return NIPPO_SECTIONS.filter((s) => s.always || (mode === 'zero' && s.zero));
 }
 
 /** 入力内容の不備を返す（問題なければ空配列） */
