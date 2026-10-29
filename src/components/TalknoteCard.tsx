@@ -1006,8 +1006,10 @@ export default function TalknoteCard() {
 
   // 関東→東京、九州→福岡 に変換してフィルター
   const regionKey = region === '関東' ? '東京' : '福岡';
+  // シフト表で人が入っていない枠は「なし」と書かれる。スタッフが「なし」だけの現場は稼働していないので出さない
+  // （「なし」＋「綿あめイベント」のように他の記載があれば出す）
   const orderedSites = activeData
-    ? activeData.siteOrder.filter((s) => s.staff.length > 0 && (s.region === regionKey || s.region === ''))
+    ? activeData.siteOrder.filter((s) => s.staff.some((n) => n.trim() !== 'なし') && (s.region === regionKey || s.region === ''))
     : [];
 
   // その日に出勤している全スタッフの名前（地域を問わず）。
