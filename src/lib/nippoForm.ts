@@ -15,6 +15,9 @@ export const NIPPO_FORM_ROLES: string[] = ['管理者', '幹部', '社員'];
 // 中村翔・市川絢菜は試験運用からの継続、大野雅也・小嶌駿幸は業務委託のうちこの2人だけに出す（翔の指定）
 export const NIPPO_FORM_USERS = ['中村翔', '市川絢菜', '大野雅也', '小嶌駿幸'];
 
+// ロールに関係なく使える役職（スタッフ情報の AC列）。判定はサーバー側の canUseNippo（src/lib/nippoAccess.ts）
+export const NIPPO_FORM_POSITIONS: string[] = ['準ディレクター'];
+
 // その日のシフト表の全現場を、勤務地の自動入力と同じ名前でプルダウンから選べる人（ほかのスタッフの現場の入り方を確かめる用）
 export const NIPPO_SITE_PICKER_USERS = ['中村翔'];
 

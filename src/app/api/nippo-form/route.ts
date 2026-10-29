@@ -5,10 +5,10 @@ import { db } from '@/lib/db';
 import { shiftRows } from '@/lib/schema';
 import { getSheetDataCached } from '@/lib/sheets';
 import { isOnFormNameList } from '@/lib/nippoFormNames';
+import { canUseNippo } from '@/lib/nippoAccess';
 import { normalizeSiteName, pickCommonSiteName } from '@/lib/site';
 import {
   NIPPO_FORM_ID,
-  canUseNippoForm,
   NIPPO_SITE_PICKER_USERS,
   areaFromBase,
   buildFormBody,
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
   const session = await auth();
   const name = session?.user?.name;
   if (!name) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!canUseNippoForm(name, session.user.role)) return NextResponse.json({ available: false });
+  if (!(await canUseNippo(name, session.user.role))) return NextResponse.json({ available: false });
   // フォームの名前プルダウンにない人は送信できないので、ボタンを出さない
   if (!(await isOnFormNameList(name))) return NextResponse.json({ available: false });
 
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   const name = session?.user?.name;
   if (!name) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!canUseNippoForm(name, session.user.role)) {
+  if (!(await canUseNippo(name, session.user.role))) {
     return NextResponse.json({ error: '権限がありません' }, { status: 403 });
   }
 
