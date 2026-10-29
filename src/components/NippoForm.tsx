@@ -230,6 +230,8 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
   const [date, setDate] = useState(draft?.date ?? todayJst());
   const [location, setLocation] = useState(draft?.location ?? '');
   const [shiftLocations, setShiftLocations] = useState<string[]>([]);
+  // その日のシフト表の全現場（確認用。中村翔のみサーバーが返す）
+  const [allLocations, setAllLocations] = useState<string[]>([]);
   const [mode, setMode] = useState<NippoMode>(draft?.mode ?? 'normal');
   const [values, setValues] = useState<Record<string, string>>(draft?.values ?? INITIAL_VALUES);
   // ＋ボタンで足した数の履歴。−ボタンで直前の1回分ずつ取り消す
@@ -271,6 +273,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
       .then((data) => {
         if (cancelled || !Array.isArray(data.locations)) return;
         setShiftLocations(data.locations);
+        setAllLocations(Array.isArray(data.allLocations) ? data.allLocations : []);
         if (data.locations[0] && !keepLocationRef.current) setLocation(data.locations[0]);
         keepLocationRef.current = false;
       })
@@ -627,6 +630,17 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
                 </label>
                 {shiftLocations.length === 0 && (
                   <div style={{ fontSize: 11, color: 'var(--n-hint)', marginTop: 8 }}>この日のシフトが見つからないため、勤務地を入力してください</div>
+                )}
+                {allLocations.length > 0 && (
+                  <select
+                    value={allLocations.includes(location) ? location : ''}
+                    onChange={(e) => e.target.value && setLocation(e.target.value)}
+                    aria-label="この日の全現場から選ぶ"
+                    style={{ ...inputStyle, marginTop: 8, height: 44 }}
+                  >
+                    <option value="">この日の全現場から選ぶ（{allLocations.length}件）</option>
+                    {allLocations.map((l) => <option key={l} value={l}>{l}</option>)}
+                  </select>
                 )}
                 {/* 勤務の種類。0だった日は所感と交通費、研修は交通費だけ入力する */}
                 {/* 稼働カードの「関東／九州」と同じデザイン: 選択中だけ明るいグレー、それ以外は背景なしで文字を薄く */}

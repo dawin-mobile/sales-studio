@@ -5,10 +5,11 @@ import { db } from '@/lib/db';
 import { shiftRows } from '@/lib/schema';
 import { getSheetDataCached } from '@/lib/sheets';
 import { isOnFormNameList } from '@/lib/nippoFormNames';
-import { normalizeSiteName } from '@/lib/site';
+import { normalizeSiteName, pickCommonSiteName } from '@/lib/site';
 import {
   NIPPO_FORM_ID,
   canUseNippoForm,
+  NIPPO_SITE_PICKER_USERS,
   areaFromBase,
   buildFormBody,
   validateNippo,
@@ -29,6 +30,27 @@ async function getArea(name: string): Promise<string> {
 
 function todayJst(): string {
   return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+// 直近半年の日報（合算データ B列=勤務日・F列=勤務地）の、勤務地の書き方ごとの件数。
+// 交通費の自動入力（/api/nippo-form/fares）と同じ範囲を読むので、5分の使い回しが共有される
+async function recentSiteCounts(): Promise<Map<string, number>> {
+  const counts = new Map<string, number>();
+  try {
+    const since = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    since.setUTCMonth(since.getUTCMonth() - 6);
+    const sinceStr = since.toISOString().slice(0, 10).replace(/-/g, '/'); // 勤務日は「2026/10/02」のゼロ埋め
+    const rows = await getSheetDataCached('合算データ!B:F');
+    for (const r of rows) {
+      const date = r[0] ?? '';
+      const site = (r[4] ?? '').trim();
+      if (!site || !/^\d{4}\/\d{2}\/\d{2}/.test(date) || date < sinceStr) continue;
+      counts.set(site, (counts.get(site) ?? 0) + 1);
+    }
+  } catch {
+    // 読めなければシフト表の名前をそのまま使う
+  }
+  return counts;
 }
 
 /**
@@ -65,7 +87,9 @@ export async function GET(request: NextRequest) {
       .from(shiftRows)
       .where(and(eq(shiftRows.month, `${y}-${String(m).padStart(2, '0')}`), eq(shiftRows.date, `${m}/${d}`)));
 
+    const siteCounts = await recentSiteCounts();
     const locations: string[] = [];
+    const allLocations: string[] = [];
     for (const row of rows) {
       // 稼働ではない行（健康診断など）は除く。/api/nippo-check と同じ判定
       if (!row.carrier?.trim() && !row.startTime?.trim() && !row.agency?.trim()) continue;
@@ -74,13 +98,21 @@ export async function GET(request: NextRequest) {
         const sn = s?.trim();
         return !!sn && (name.startsWith(sn) || sn.startsWith(name));
       });
-      // シフト表の現場欄のメモは落として現場名だけにする（勤務地の書き方を全員でそろえるため）
-      const location = normalizeSiteName(row.location ?? '');
+      // シフト表の現場欄のメモは落として現場名だけにし、日報でいちばん多い書き方に直す（勤務地の書き方を全員でそろえるため）
+      const location = pickCommonSiteName(normalizeSiteName(row.location ?? ''), row.carrier ?? '', siteCounts);
+      if (location && !allLocations.includes(location)) allLocations.push(location);
       if (!isMine || !location || locations.includes(location)) continue;
       locations.push(location);
     }
 
-    return NextResponse.json({ available: true, name, date, locations });
+    return NextResponse.json({
+      available: true,
+      name,
+      date,
+      locations,
+      // 確認用に全現場を選べる人にだけ返す
+      ...(NIPPO_SITE_PICKER_USERS.includes(name) && { allLocations }),
+    });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'エラーが発生しました' },
