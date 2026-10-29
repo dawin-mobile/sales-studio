@@ -346,6 +346,17 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
   const dateChips = [...new Set([today, yesterday, ...[...missingDates].sort().reverse()])];
   const isOtherDate = !dateChips.includes(date);
 
+  // 確認画面は見落としやすい要点だけにする（項目ごとの数字は入力画面で見えている）
+  const sumOf = (keys: string[]) => keys.reduce((sum, k) => round2(sum + (parseFloat(effectiveValues[k] ?? '') || 0)), 0);
+  const confirmRows: [string, string][] = [
+    ['名前', userName ?? ''],
+    ['勤務日', dateWithWeekday(date)],
+    ['勤務地', location],
+    ...(mode === 'normal' ? [['獲得合計', String(sumOf(RESULT_KEYS))], ['自己クロ合計', String(sumOf(['selfClose']))]] as [string, string][] : []),
+    ['往復交通費（公共交通機関）', (effectiveValues.fare ?? '').trim()],
+    ['タクシー代、有料特急', (effectiveValues.taxi ?? '').trim()],
+  ];
+
   const goConfirm = () => {
     const errs = validateNippo(submission);
     setErrors(errs);
@@ -490,11 +501,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
         <div style={{ maxWidth: 560, margin: '0 auto' }}>
           {step === 'done' && (
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
-              <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>{shortDate(date)} の日報を送信しました</div>
-              <div style={{ fontSize: 13, color: '#aaa', lineHeight: 1.7, marginBottom: 32 }}>
-                アプリの数字には、次の日報合算（21時・0時・10時）のあとに反映されます。
-              </div>
+              <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 32 }}>{shortDate(date)} の日報を送信しました</div>
               <button onClick={onClose} style={primaryButton}>閉じる</button>
             </div>
           )}
@@ -502,13 +509,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
           {step === 'confirm' && (
             <>
               <div style={sectionStyle}>
-                {[
-                  ['勤務日', dateWithWeekday(date)],
-                  ['名前', session?.user?.name ?? ''],
-                  ['店舗形式', mode === 'training' ? '研修' : mode === 'zero' ? '業務委託（0だった日）' : '業務委託'],
-                  ['勤務地', location],
-                  ...sections.flatMap((s) => s.fields.filter((f) => effectiveValues[f.key]?.trim()).map((f) => [f.label, effectiveValues[f.key].trim()])),
-                ].map(([k, v]) => (
+                {confirmRows.map(([k, v]) => (
                   <div key={k} style={{ display: 'flex', gap: 12, padding: '6px 0', borderBottom: '1px solid var(--border-color)', fontSize: 14 }}>
                     <div style={{ width: 140, flexShrink: 0, color: '#aaa' }}>{k}</div>
                     <div style={{ flex: 1, minWidth: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{v}</div>
@@ -516,13 +517,10 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
                 ))}
               </div>
               {fareOverNote && (
-                <div style={{ fontSize: 13, color: '#f59e0b', marginBottom: 8, lineHeight: 1.6 }}>
+                <div style={{ fontSize: 13, color: '#f59e0b', marginBottom: 16, lineHeight: 1.6 }}>
                   往復交通費が{fareOverNote}。実際に支払った金額か確認してください。
                 </div>
               )}
-              <div style={{ fontSize: 12, color: '#aaa', marginBottom: 16, lineHeight: 1.6 }}>
-                送信後はアプリから修正できません。間違えたときは社員に連絡してください。
-              </div>
               {errorBox}
               <button onClick={send} disabled={sending} style={{ ...primaryButton, opacity: sending ? 0.6 : 1, marginBottom: 12 }}>
                 {sending ? '送信中…' : 'この内容で送信'}
