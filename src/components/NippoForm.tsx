@@ -348,10 +348,8 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
 
   // 確認画面は見落としやすい要点だけにする（項目ごとの数字は入力画面で見えている）
   const sumOf = (keys: string[]) => keys.reduce((sum, k) => round2(sum + (parseFloat(effectiveValues[k] ?? '') || 0)), 0);
-  const confirmRows: [string, string][] = [
-    ['名前', userName ?? ''],
-    ['勤務日', dateWithWeekday(date)],
-    ['勤務地', location],
+  // 数字は大きなタイルで見せる。0だった日・研修の日は獲得・自己クロを出さない
+  const confirmTiles: [string, string][] = [
     ...(mode === 'normal' ? [['獲得合計', String(sumOf(RESULT_KEYS))], ['自己クロ合計', String(sumOf(['selfClose']))]] as [string, string][] : []),
     ['往復交通費（公共交通機関）', (effectiveValues.fare ?? '').trim()],
     ['タクシー代、有料特急', (effectiveValues.taxi ?? '').trim()],
@@ -509,10 +507,15 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
           {step === 'confirm' && (
             <>
               <div style={sectionStyle}>
-                {confirmRows.map(([k, v]) => (
-                  <div key={k} style={{ display: 'flex', gap: 12, padding: '6px 0', borderBottom: '1px solid var(--border-color)', fontSize: 14 }}>
-                    <div style={{ width: 140, flexShrink: 0, color: '#aaa' }}>{k}</div>
-                    <div style={{ flex: 1, minWidth: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{v}</div>
+                <div style={{ fontSize: 13, color: '#aaa' }}>{userName}</div>
+                <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4 }}>{dateWithWeekday(date)}</div>
+                <div style={{ fontSize: 15, marginTop: 6, lineHeight: 1.5, wordBreak: 'break-word' }}>{location}</div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                {confirmTiles.map(([k, v]) => (
+                  <div key={k} style={{ ...sectionStyle, marginBottom: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 8, minHeight: 112 }}>
+                    <div style={{ fontSize: 12, color: '#aaa', lineHeight: 1.4 }}>{k}</div>
+                    <div style={{ fontSize: 34, fontWeight: 800, textAlign: 'right', lineHeight: 1 }}>{v}</div>
                   </div>
                 ))}
               </div>
@@ -522,10 +525,6 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
                 </div>
               )}
               {errorBox}
-              <button onClick={send} disabled={sending} style={{ ...primaryButton, opacity: sending ? 0.6 : 1, marginBottom: 12 }}>
-                {sending ? '送信中…' : 'この内容で送信'}
-              </button>
-              <button onClick={() => setStep('edit')} disabled={sending} style={secondaryButton}>戻って直す</button>
             </>
           )}
 
@@ -629,6 +628,18 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
           )}
         </div>
       </div>
+
+      {/* 確認画面の送信ボタンは、親指で押しやすいよう画面の下に固定する */}
+      {step === 'confirm' && (
+        <div style={{ flexShrink: 0, borderTop: '1px solid var(--border-color)', padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}>
+          <div style={{ maxWidth: 560, margin: '0 auto' }}>
+            <button onClick={send} disabled={sending} style={{ ...primaryButton, opacity: sending ? 0.6 : 1, marginBottom: 10 }}>
+              {sending ? '送信中…' : 'この内容で送信'}
+            </button>
+            <button onClick={() => setStep('edit')} disabled={sending} style={secondaryButton}>戻って直す</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
