@@ -39,7 +39,6 @@ export type NippoField = {
   // label はどの種類のボタンかのコード上の目印（画面には出さない）
   steps?: { value: number; label?: string }[];
   copyTotal?: boolean; // 「実績と同じ」ボタン（実績の合計を入れる）を出す
-  confirm?: boolean; // 自動で値が入る欄。本人が✓で確認するか自分で入力しないと送れない
 };
 
 export type NippoSection = {
@@ -79,8 +78,8 @@ export const NIPPO_SECTIONS: NippoSection[] = [
     title: '交通費',
     always: true,
     fields: [
-      { key: 'fare', entry: '1677579059', label: '往復交通費（公共交通機関）', kind: 'number', required: true, confirm: true },
-      { key: 'taxi', entry: '23584606', label: 'タクシー代、有料特急', hint: '事前承諾が必要。領収書は社員に渡してね', kind: 'number', required: true, confirm: true },
+      { key: 'fare', entry: '1677579059', label: '往復交通費（公共交通機関）', kind: 'number', required: true },
+      { key: 'taxi', entry: '23584606', label: 'タクシー代、有料特急', hint: '事前承諾が必要。領収書は社員に渡してね', kind: 'number', required: true },
     ],
   },
 ];

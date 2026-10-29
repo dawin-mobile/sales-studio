@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { Check, ChevronLeft, PenLine } from 'lucide-react';
+import { ChevronLeft, PenLine } from 'lucide-react';
 import { NIPPO_SECTIONS, sectionsFor, validateNippo, type NippoField, type NippoMode } from '@/lib/nippoForm';
 
 type PastFare = { location: string; fare: string; date: string; order: number };
@@ -12,34 +12,24 @@ function normalizeLocation(s: string): string {
   return s.normalize('NFKC').replace(/\s/g, '').toLowerCase();
 }
 
-// 過去の日報から、この勤務地の交通費を決める。直近5回（提出した順、0円の日は除く）のうち一番多い金額を使う
-// （前回だけたまたま別ルートで金額が違うことがあるため）。同じ回数なら新しいほうを使う。
+// 過去の日報から、この勤務地の交通費を決める。直近5回（提出した順、0円の日は除く）のうち一番安い金額を使う。
+// 高い金額を入れておくと見直されずにそのまま申請されやすい。安い金額なら、実際はもっと高かった人は自分で直すので
+// 間違いが自然に正される（経理の要望）。
 // 日報の勤務地は自由記述でシフト表と表記が揃わない（シフト「長坂」↔ 日報「au長坂」など）ため、
 // どちらかがもう一方を含めば同じ現場とみなす
-// 直近5回の金額を、金額ごとに回数をまとめて新しい順に返す（交通費欄の候補表示にも使う）
-function fareCandidates(pastFares: PastFare[], location: string): { fare: string; count: number }[] {
+function findPastFare(pastFares: PastFare[], location: string): number | undefined {
   const target = normalizeLocation(location);
-  if (!target) return [];
+  if (!target) return undefined;
   const recent = pastFares
     .filter((p) => {
       const loc = normalizeLocation(p.location);
       return loc.includes(target) || target.includes(loc);
     })
     .sort((a, b) => b.order - a.order)
-    .slice(0, 5);
-
-  // Map は最初に入れた順を保つので、金額は「最後にその金額を使った日」が新しい順に並ぶ
-  const counts = new Map<string, number>();
-  for (const p of recent) counts.set(p.fare, (counts.get(p.fare) ?? 0) + 1);
-  return [...counts].map(([fare, count]) => ({ fare, count }));
-}
-
-function findPastFare(pastFares: PastFare[], location: string): string | undefined {
-  // 全部数えてから、一番多い回数の金額のうち先に出てくる（＝新しい）ものを選ぶ。
-  // 数えながら選ぶと「先に回数が増えたほう」が残り、同数のとき新しいほうにならない
-  const candidates = fareCandidates(pastFares, location);
-  const max = Math.max(0, ...candidates.map((c) => c.count));
-  return candidates.find((c) => c.count === max)?.fare;
+    .slice(0, 5)
+    .map((p) => Number(p.fare))
+    .filter((n) => n > 0);
+  return recent.length > 0 ? Math.min(...recent) : undefined;
 }
 
 function todayJst(): string {
@@ -129,15 +119,11 @@ const inputStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 };
 
-// 数字が入った欄・確認済みの欄は緑（赤はエラーに見えるため）、確認が必要でまだの欄は黄色
+// 数字が入った欄は緑（赤はエラーに見えるため）
 const GREEN_STYLE: React.CSSProperties = { background: 'rgba(16, 185, 129, 0.12)', borderColor: 'rgba(16, 185, 129, 0.6)' };
-const AMBER_STYLE: React.CSSProperties = { background: 'rgba(245, 158, 11, 0.08)', borderColor: 'rgba(245, 158, 11, 0.75)' };
 
 // 実績の換算値の欄（自己クロ・着座数を除く）。着座数の自動入力と「実績と同じ」の合計に使う
 const RESULT_KEYS = NIPPO_SECTIONS[0].fields.map((f) => f.key).filter((k) => k !== 'selfClose' && k !== 'seated');
-
-// 本人の確認が必要な欄（交通費・タクシー代）
-const CONFIRM_KEYS = NIPPO_SECTIONS.flatMap((s) => s.fields).filter((f) => f.confirm).map((f) => f.key);
 
 const stepButton: React.CSSProperties = {
   height: 36,
@@ -173,13 +159,8 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
   // ＋ボタンで足した数の履歴。−ボタンで直前の1回分ずつ取り消す
   const [stepHistory, setStepHistory] = useState<Record<string, number[]>>({});
   const [pastFares, setPastFares] = useState<PastFare[]>([]);
-  // 交通費を自分で触るまでは、勤務地に合わせて前回の金額を入れ直す
+  // 交通費を自分で触るまでは、勤務地に合わせて過去の金額を入れ直す
   const [fareAuto, setFareAuto] = useState(true);
-  // 交通費の欄をタップしている間だけ、直近5回の金額を候補として出す
-  const [fareFocused, setFareFocused] = useState(false);
-  // 交通費・タクシー代は自動で値が入るため、見ないまま送らないよう本人の確認を必須にする。
-  // 確認した時点の値を覚えておき、今の値と同じなら確認済み。勤務地を変えて自動で金額が変われば、自然に未確認に戻る
-  const [confirmedValues, setConfirmedValues] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetch('/api/nippo-form/fares')
@@ -205,11 +186,13 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
     return () => { cancelled = true; };
   }, [date]);
 
+  const pastFare = useMemo(() => findPastFare(pastFares, location), [pastFares, location]);
+
   // 勤務地が決まったら、過去の日報でその勤務地に行ったときの交通費を入れておく
   useEffect(() => {
     if (!fareAuto) return;
-    setValues((v) => ({ ...v, fare: findPastFare(pastFares, location) ?? '' }));
-  }, [location, pastFares, fareAuto]);
+    setValues((v) => ({ ...v, fare: pastFare !== undefined ? String(pastFare) : '' }));
+  }, [pastFare, fareAuto]);
 
   // 着座数を自分で触っていない間は、実績か自己クロのどれかが0でなければ自動で1にする
   const effectiveValues = useMemo(() => {
@@ -218,22 +201,8 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
     return { ...values, seated: hasResult ? '1' : '' };
   }, [values]);
 
-  const isConfirmed = (key: string) => confirmedValues[key] === (effectiveValues[key] ?? '');
-  const toggleConfirm = (key: string) => {
-    const wasConfirmed = isConfirmed(key);
-    const value = effectiveValues[key] ?? '';
-    setConfirmedValues((c) => {
-      const next = { ...c };
-      if (wasConfirmed) delete next[key];
-      else next[key] = value;
-      return next;
-    });
-  };
-
   const setValue = (key: string, value: string) => {
     if (key === 'fare') setFareAuto(false);
-    // 自分で金額を打った・候補を選んだ場合は、それ自体が確認したことになる
-    if (CONFIRM_KEYS.includes(key)) setConfirmedValues((c) => ({ ...c, [key]: value }));
     setValues((v) => ({ ...v, [key]: value }));
     setStepHistory((h) => ({ ...h, [key]: [] }));
   };
@@ -256,7 +225,9 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
     setStepHistory((h) => ({ ...h, [key]: history.slice(0, -1) }));
   };
 
-  const fareOptions = useMemo(() => fareCandidates(pastFares, location), [pastFares, location]);
+  // いつもの金額（直近5回の最安）より高くしたら、差額を見せて本人に自覚してもらう（送信は止めない）
+  const fareOver = pastFare !== undefined ? (parseFloat(effectiveValues.fare ?? '') || 0) - pastFare : 0;
+  const fareOverNote = fareOver > 0 ? `いつもより +${fareOver.toLocaleString()}円 高い金額です` : '';
 
   const submission = { date, location, mode, values: effectiveValues };
   const sections = sectionsFor(mode);
@@ -264,15 +235,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
 
   const goConfirm = () => {
     const errs = validateNippo(submission);
-    // 空欄は「入力してください」が出るので、値が入っていて未確認のものだけを足す
-    const unconfirmed = sections
-      .flatMap((s) => s.fields)
-      .filter((f) => f.confirm && (effectiveValues[f.key] ?? '').trim() && !isConfirmed(f.key));
-    for (const f of unconfirmed) errs.push(`${f.label}の金額を確認して✓を押してください`);
     setErrors(errs);
-    if (unconfirmed[0]) {
-      document.getElementById(`nippo-field-${unconfirmed[0].key}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
     if (errs.length === 0) setStep('confirm');
   };
 
@@ -312,11 +275,6 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
     if (f.kind === 'number') {
       const canUndo = (stepHistory[f.key]?.length ?? 0) > 0;
       const filled = parseFloat(v) > 0;
-      const confirmed = f.confirm && isConfirmed(f.key);
-      // 確認が必要な欄は、未確認なら黄色（注意）、確認済みなら緑。それ以外は数字が入ったら緑
-      const stateStyle: React.CSSProperties = f.confirm
-        ? confirmed ? GREEN_STYLE : AMBER_STYLE
-        : filled ? GREEN_STYLE : {};
       return (
         <div key={f.key} id={`nippo-field-${f.key}`} style={{ padding: '12px 0', borderBottom: '1px solid #2a2a2a' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -326,9 +284,6 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
               inputMode="decimal"
               value={v}
               onChange={(e) => setValue(f.key, e.target.value)}
-              onFocus={f.key === 'fare' ? () => setFareFocused(true) : undefined}
-              // 候補のタップより先にフォーカスが外れても押せるよう、少し待ってから消す（下の onPointerDown が効かない端末向け）
-              onBlur={f.key === 'fare' ? () => setTimeout(() => setFareFocused(false), 200) : undefined}
               placeholder="0"
               style={{
                 ...inputStyle,
@@ -336,50 +291,12 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
                 textAlign: 'right',
                 flexShrink: 0,
                 fontWeight: filled ? 700 : 400,
-                ...stateStyle,
+                ...(filled && GREEN_STYLE),
               }}
             />
-            {f.confirm && (
-              <button
-                type="button"
-                onClick={() => toggleConfirm(f.key)}
-                aria-pressed={confirmed}
-                aria-label={confirmed ? `${f.label}の確認を取り消す` : `${f.label}の金額を確認した`}
-                style={{
-                  width: 44,
-                  height: 44,
-                  flexShrink: 0,
-                  marginLeft: -4,
-                  borderRadius: 10,
-                  border: confirmed ? '1px solid var(--accent-green)' : '1.5px solid rgba(245, 158, 11, 0.75)',
-                  background: confirmed ? 'var(--accent-green)' : 'rgba(245, 158, 11, 0.08)',
-                  color: confirmed ? '#fff' : 'rgba(245, 158, 11, 0.9)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                }}
-              >
-                <Check size={22} strokeWidth={confirmed ? 3 : 2.25} />
-              </button>
-            )}
           </div>
-          {/* 候補が1種類だけなら入っている金額と同じなので出さない */}
-          {f.key === 'fare' && fareFocused && fareOptions.length > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-              {fareOptions.map((o) => (
-                <button
-                  key={o.fare}
-                  type="button"
-                  // 押した瞬間に入力欄からフォーカスが外れると候補が消えて押せないため、フォーカスを移さない
-                  onPointerDown={(e) => e.preventDefault()}
-                  onClick={() => setValue(f.key, o.fare)}
-                  style={{ ...stepButton, ...(o.fare === v && { borderColor: 'rgba(16, 185, 129, 0.6)', background: 'rgba(16, 185, 129, 0.12)' }) }}
-                >
-                  {o.fare}円
-                </button>
-              ))}
-            </div>
+          {f.key === 'fare' && fareOverNote && (
+            <div style={{ textAlign: 'right', fontSize: 12, color: '#f59e0b', marginTop: 6 }}>{fareOverNote}</div>
           )}
           {f.copyTotal && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
@@ -471,6 +388,11 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
                   </div>
                 ))}
               </div>
+              {fareOverNote && (
+                <div style={{ fontSize: 13, color: '#f59e0b', marginBottom: 8, lineHeight: 1.6 }}>
+                  往復交通費が{fareOverNote}。実際に支払った金額か確認してください。
+                </div>
+              )}
               <div style={{ fontSize: 12, color: '#aaa', marginBottom: 16, lineHeight: 1.6 }}>
                 送信後はアプリから修正できません。間違えたときは社員に連絡してください。
               </div>
