@@ -2,12 +2,17 @@
  * シフト表の現場欄から現場名だけを取り出す。
  * 現場欄には「アリオ北砂　平日アクア　土日アあかちゃん前＋ユニクロ」のようにメモが続くことがあるので、
  * 最初のスペース（半角・全角）より前だけを使い、IY はイトーヨーカドーに直す。
+ * 「31～3日　長坂」のように日付のメモが先に来るときは、それを飛ばした次の語を使う。
  * 稼働カードの現場名と、日報の勤務地の自動入力で同じ名前になるよう共通にしている
  */
+// 「31～3日」「30〜2日は」「5/6」のような日付だけのメモ
+const DATE_MEMO = /^[0-9０-９]+([/／][0-9０-９]+)?日?([～〜~\-－][0-9０-９]+([/／][0-9０-９]+)?日?)?(は|まで|から)?$/;
+
 export function normalizeSiteName(location: string): string {
-  const name = location.trim().replace(/^IY/, 'イトーヨーカドー');
-  const spaceIdx = name.search(/[ 　]/);
-  return spaceIdx === -1 ? name : name.slice(0, spaceIdx);
+  // 空白（半角・全角）で区切り、先頭の日付メモ（「31～3日　長坂」の「31～3日」）は飛ばして最初の語を現場名にする
+  const words = location.trim().split(/[ 　]+/).filter(Boolean);
+  const name = words.find((w) => !DATE_MEMO.test(w)) ?? words[0] ?? '';
+  return name.replace(/^IY/, 'イトーヨーカドー');
 }
 
 const CARRIER_PREFIX = /^(auショップ|au|uq|sbショップ|sb|ソフトバンク)/;
