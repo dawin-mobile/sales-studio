@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { readable } from '@/lib/colors';
+import { normalizeSiteName } from '@/lib/site';
 
 interface ShiftSite {
   location: string;
@@ -42,14 +43,6 @@ function agencyColor(name: string) {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xfffffff;
   return PILL_COLORS[h % PILL_COLORS.length];
-}
-
-function normalizeSiteName(location: string): string {
-  // IY → イトーヨーカドー に展開
-  let name = location.replace(/^IY/, 'イトーヨーカドー');
-  // スペース（半角・全角）以降を除去
-  const spaceIdx = name.search(/[ 　]/);
-  return spaceIdx === -1 ? name : name.slice(0, spaceIdx);
 }
 
 const WORK_KEYWORDS = [

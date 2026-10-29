@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { shiftRows } from '@/lib/schema';
 import { getSheetDataCached } from '@/lib/sheets';
 import { isOnFormNameList } from '@/lib/nippoFormNames';
+import { normalizeSiteName } from '@/lib/site';
 import {
   NIPPO_FORM_ID,
   canUseNippoForm,
@@ -73,7 +74,8 @@ export async function GET(request: NextRequest) {
         const sn = s?.trim();
         return !!sn && (name.startsWith(sn) || sn.startsWith(name));
       });
-      const location = row.location?.trim();
+      // シフト表の現場欄のメモは落として現場名だけにする（勤務地の書き方を全員でそろえるため）
+      const location = normalizeSiteName(row.location ?? '');
       if (!isMine || !location || locations.includes(location)) continue;
       locations.push(location);
     }
