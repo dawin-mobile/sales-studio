@@ -6,14 +6,19 @@ import type { UserStat, TabStat } from '@/app/api/access-log/route';
 const BAR_COLOR = 'rgba(var(--ov), 0.75)';
 
 function timeAgo(dateStr: string): string {
-  const d = new Date(dateStr.replace(/\//g, '-').replace(' ', 'T'));
-  if (isNaN(d.getTime())) return dateStr;
-  const diff = Date.now() - d.getTime();
-  const days = Math.floor(diff / 86400000);
-  if (days === 0) return '今日';
+  // 記録の日時は「2026/10/29 9:38:08」のように月・日・時がゼロ埋めなしなので、数字を取り出して日付にする
+  // （「2026-10-29T9:38:08」のように置き換えるだけだと、時が1桁のとき日付として読めない）
+  const m = dateStr.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2}):(\d{2})/);
+  if (!m) return dateStr;
+  const [, y, mo, day, h, mi] = m.map(Number);
+  // 時刻ではなく日付の差で数える（昨日の夜の記録を「今日」と出さないように）
+  const today = new Date();
+  const days = Math.round((new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime() - new Date(y, mo - 1, day).getTime()) / 86400000);
+  if (days === 0) return `今日 ${h}:${String(mi).padStart(2, '0')}`;
   if (days === 1) return '1日前';
   if (days < 7) return `${days}日前`;
-  return dateStr.slice(0, 10);
+  // 「2026/9/9 18:25:59」を先頭10文字で切ると時刻の一部が混ざるので、日付を組み立て直す
+  return `${y}/${mo}/${day}`;
 }
 
 // 今月（日本時間）を「2026-10」の形で
@@ -109,7 +114,8 @@ export default function AccessLogView() {
           ユーザー別アクセス
         </div>
         {userStats.map((u, i) => {
-          const topTabs = Object.entries(u.tabs).sort((a, b) => b[1] - a[1]).slice(0, 4);
+          // その人が使った機能を全部、回数の多い順に出す
+          const topTabs = Object.entries(u.tabs).sort((a, b) => b[1] - a[1]);
           const maxT = topTabs[0]?.[1] ?? 1;
           return (
             <div key={u.name} style={{
