@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { ChevronLeft, PenLine } from 'lucide-react';
+import { ChevronLeft, Moon, PenLine, Sun } from 'lucide-react';
 import { NIPPO_SECTIONS, sectionsFor, validateNippo, type NippoField, type NippoMode } from '@/lib/nippoForm';
 
 type PastFare = { location: string; fare: string; date: string; order: number };
@@ -50,10 +50,14 @@ function shortDate(date: string): string {
   return `${parseInt(m)}/${parseInt(d)}`;
 }
 
+function weekdayOf(date: string): string {
+  const [y, m, d] = date.split('-').map(Number);
+  return '日月火水木金土'[new Date(y, m - 1, d).getDay()];
+}
+
 // 「10/29(木)」の形にする
 function dateWithWeekday(date: string): string {
-  const [y, m, d] = date.split('-').map(Number);
-  return `${shortDate(date)}(${'日月火水木金土'[new Date(y, m - 1, d).getDay()]})`;
+  return `${shortDate(date)}(${weekdayOf(date)})`;
 }
 
 /** 日報を書けるユーザーかと、未提出日を返す */
@@ -234,6 +238,16 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
   const [fareAuto, setFareAuto] = useState(draft?.fareAuto ?? true);
   // 書きかけを戻したときは、最初のシフト読み込みで勤務地を上書きしない
   const keepLocationRef = useRef(draft !== null);
+  // 白基調が標準。ヘッダーの ☀／🌙 で黒基調にも切り替えられ、選んだほうを端末に覚えておく
+  const [light, setLight] = useState(() => {
+    try { return localStorage.getItem('nippo-theme') !== 'dark'; } catch { return true; }
+  });
+  const toggleTheme = () => {
+    setLight((cur) => {
+      try { localStorage.setItem('nippo-theme', cur ? 'dark' : 'light'); } catch { /* 保存できなくても切り替えはできる */ }
+      return !cur;
+    });
+  };
   // 「消して最初から」で、日付が同じままでもシフトを読み直すためのカウンター
   const [reloadCount, setReloadCount] = useState(0);
 
@@ -348,9 +362,11 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
 
   // 確認画面は見落としやすい要点だけにする（項目ごとの数字は入力画面で見えている）
   const sumOf = (keys: string[]) => keys.reduce((sum, k) => round2(sum + (parseFloat(effectiveValues[k] ?? '') || 0)), 0);
-  // 数字は大きなタイルで見せる。0だった日・研修の日は獲得・自己クロを出さない
-  const confirmTiles: [string, string][] = [
-    ...(mode === 'normal' ? [['獲得合計', String(sumOf(RESULT_KEYS))], ['自己クロ合計', String(sumOf(['selfClose']))]] as [string, string][] : []),
+  // 獲得・自己クロは大きく、交通費は1行ずつ。0だった日・研修の日は獲得・自己クロを出さない
+  const confirmTotals: [string, string][] = mode === 'normal'
+    ? [['獲得合計', String(sumOf(RESULT_KEYS))], ['自己クロ合計', String(sumOf(['selfClose']))]]
+    : [];
+  const confirmFares: [string, string][] = [
     ['往復交通費（公共交通機関）', (effectiveValues.fare ?? '').trim()],
     ['タクシー代、有料特急', (effectiveValues.taxi ?? '').trim()],
   ];
@@ -478,13 +494,15 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
     width: '100%', padding: '14px 0', borderRadius: 10, border: 'none',
     background: 'var(--accent-color)', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer',
   };
-  const secondaryButton: React.CSSProperties = {
-    ...primaryButton, background: 'var(--card-bg)', border: '1px solid var(--border-color)',
+  // 「送信」と見分けやすいよう、文字だけのボタンにする
+  const textButton: React.CSSProperties = {
+    width: '100%', padding: '12px 0', border: 'none', background: 'none',
+    color: 'var(--n-sub)', fontSize: 15, fontWeight: 700, cursor: 'pointer',
   };
 
   return (
-    // 入力フォームは白基調のほうが「書く画面」だとわかりやすく、店頭の明るい場所でも読みやすいため、日報画面だけ白基調にする
-    <div className="nippo-panel nippo-light">
+    // 入力フォームは白基調のほうが「書く画面」だとわかりやすく、店頭の明るい場所でも読みやすいため、日報画面は白基調を標準にする
+    <div className={light ? 'nippo-panel nippo-light' : 'nippo-panel'}>
       <div className="nippo-panel-header">
         <button
           onClick={step === 'confirm' ? () => setStep('edit') : onClose}
@@ -494,6 +512,14 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
           <ChevronLeft size={24} strokeWidth={1.75} />
         </button>
         <span style={{ fontSize: 17, fontWeight: 700 }}>{step === 'confirm' ? '内容の確認' : '日報'}</span>
+        <button
+          type="button"
+          onClick={toggleTheme}
+          aria-label={light ? '黒基調にする' : '白基調にする'}
+          style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px 8px' }}
+        >
+          {light ? <Moon size={20} strokeWidth={1.75} /> : <Sun size={20} strokeWidth={1.75} />}
+        </button>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '20px 16px', paddingBottom: 'calc(40px + env(safe-area-inset-bottom))' } as React.CSSProperties}>
@@ -507,18 +533,35 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
 
           {step === 'confirm' && (
             <>
+              {/* 1枚の明細カード: 名前・日付・勤務地 → 獲得・自己クロ（大） → 交通費（1行ずつ） */}
               <div style={sectionStyle}>
-                <div style={{ fontSize: 13, color: 'var(--n-sub)' }}>{userName}</div>
-                <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4 }}>{dateWithWeekday(date)}</div>
-                <div style={{ fontSize: 15, marginTop: 6, lineHeight: 1.5, wordBreak: 'break-word' }}>{location}</div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-                {confirmTiles.map(([k, v]) => (
-                  <div key={k} style={{ ...sectionStyle, marginBottom: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 8, minHeight: 112 }}>
-                    <div style={{ fontSize: 12, color: 'var(--n-sub)', lineHeight: 1.4 }}>{k}</div>
-                    <div style={{ fontSize: 34, fontWeight: 800, textAlign: 'right', lineHeight: 1 }}>{v}</div>
+                {/* 1行目は左に日付・右に名前、2行目に現場名。曜日は小さく薄くして数字を主役に */}
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+                  <div style={{ whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: '0.01em', fontVariantNumeric: 'tabular-nums' }}>{shortDate(date)}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--n-sub)', marginLeft: 6 }}>{weekdayOf(date)}曜日</span>
                   </div>
-                ))}
+                  <div style={{ fontSize: 18, color: 'var(--n-sub)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName}</div>
+                </div>
+                <div style={{ fontSize: 17, fontWeight: 600, marginTop: 12, lineHeight: 1.45, wordBreak: 'break-word' }}>{location}</div>
+                {confirmTotals.length > 0 && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--n-line)' }}>
+                    {confirmTotals.map(([k, v], i) => (
+                      <div key={k} style={{ textAlign: 'center', ...(i > 0 && { borderLeft: '1px solid var(--n-line)' }) }}>
+                        <div style={{ fontSize: 12, color: 'var(--n-sub)' }}>{k}</div>
+                        <div style={{ fontSize: 36, fontWeight: 800, lineHeight: 1.2, marginTop: 4 }}>{v}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={{ marginTop: 16, paddingTop: 8, borderTop: '1px solid var(--n-line)' }}>
+                  {confirmFares.map(([k, v]) => (
+                    <div key={k} style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, padding: '8px 0' }}>
+                      <div style={{ fontSize: 13, color: 'var(--n-sub)' }}>{k}</div>
+                      <div style={{ fontSize: 18, fontWeight: 700 }}>{v}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
               {fareOverNote && (
                 <div style={{ fontSize: 13, color: 'var(--n-warn)', marginBottom: 16, lineHeight: 1.6 }}>
@@ -634,10 +677,10 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
       {step === 'confirm' && (
         <div style={{ flexShrink: 0, borderTop: '1px solid var(--border-color)', padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}>
           <div style={{ maxWidth: 560, margin: '0 auto' }}>
-            <button onClick={send} disabled={sending} style={{ ...primaryButton, opacity: sending ? 0.6 : 1, marginBottom: 10 }}>
+            <button onClick={send} disabled={sending} style={{ ...primaryButton, opacity: sending ? 0.6 : 1, marginBottom: 4 }}>
               {sending ? '送信中…' : 'この内容で送信'}
             </button>
-            <button onClick={() => setStep('edit')} disabled={sending} style={secondaryButton}>戻って直す</button>
+            <button onClick={() => setStep('edit')} disabled={sending} style={textButton}>戻って直す</button>
           </div>
         </div>
       )}
