@@ -15,7 +15,7 @@ export default function RankingList({ ranking, limit = 5 }: RankingListProps) {
           <div className="rank-num">{i + 1}</div>
           <div className="staff-info">
             <span className="staff-name">{staff.name}</span>
-            <span style={{ fontSize: '11px', color: '#aaa' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-soft)' }}>
               MNP: {staff.mnp} / 新規: {staff.new}
             </span>
           </div>

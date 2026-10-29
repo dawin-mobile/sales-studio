@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { DashboardData } from '@/types';
 import type { MonthData } from '@/app/api/yearly/route';
+import { readable } from '@/lib/colors';
 
 interface YearlyViewProps {
   data: DashboardData;
@@ -31,7 +32,7 @@ function BarChart({ months, accentColor, label, currentMonth }: { months: MonthD
             return (
               <div key={m.month} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
                 {m.total > 0 && (
-                  <span style={{ fontSize: 7, color: isCurrent ? accentColor : 'var(--text-sub)', marginBottom: 2, lineHeight: 1 }}>
+                  <span style={{ fontSize: 7, color: isCurrent ? readable(accentColor) : 'var(--text-sub)', marginBottom: 2, lineHeight: 1 }}>
                     {m.total % 1 === 0 ? m.total : m.total.toFixed(1)}
                   </span>
                 )}
@@ -40,7 +41,7 @@ function BarChart({ months, accentColor, label, currentMonth }: { months: MonthD
                   height: `${barH}%`,
                   background: isCurrent
                     ? `linear-gradient(180deg, ${accentColor}, ${accentColor}88)`
-                    : 'linear-gradient(180deg, rgba(255,255,255,0.4), rgba(255,255,255,0.12))',
+                    : 'linear-gradient(180deg, rgba(var(--ov), 0.4), rgba(var(--ov), 0.12))',
                   borderRadius: '3px 3px 0 0',
                   boxShadow: isCurrent ? `0 0 6px ${accentColor}55` : 'none',
                 }} />
@@ -53,10 +54,10 @@ function BarChart({ months, accentColor, label, currentMonth }: { months: MonthD
             const isCurrent = m.month === currentMonth;
             return (
               <div key={m.month} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                <span style={{ fontSize: 8, color: isCurrent ? accentColor : 'var(--text-sub)', fontWeight: isCurrent ? 700 : 400, lineHeight: 1 }}>
+                <span style={{ fontSize: 8, color: isCurrent ? readable(accentColor) : 'var(--text-sub)', fontWeight: isCurrent ? 700 : 400, lineHeight: 1 }}>
                   {m.label}
                 </span>
-                <span style={{ fontSize: 7, color: 'rgba(255,255,255,0.28)', lineHeight: 1 }}>
+                <span style={{ fontSize: 7, color: 'rgba(var(--ov), 0.28)', lineHeight: 1 }}>
                   {m.workDays > 0 ? `${m.workDays}日` : '-'}
                 </span>
               </div>

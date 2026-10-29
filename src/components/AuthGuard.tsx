@@ -21,8 +21,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         alignItems: 'center',
         justifyContent: 'center',
         height: '100vh',
-        color: '#aaa',
-        background: '#0f0f0f',
+        color: 'var(--text-soft)',
+        background: 'var(--bg-color)',
       }}>
         読み込み中...
       </div>

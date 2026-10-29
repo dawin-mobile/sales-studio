@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { readable } from '@/lib/colors';
 
 interface ShiftSite {
   location: string;
@@ -762,7 +763,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
         onClick={() => setCollapsed((v) => !v)}
         style={{
           padding: '9px 12px',
-          background: 'rgba(255,255,255,0.025)',
+          background: 'rgba(var(--ov), 0.025)',
           borderBottom: hasReport && !collapsed ? '1px solid var(--border-color)' : 'none',
           display: 'flex',
           flexDirection: 'column',
@@ -778,7 +779,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
           </span>
           <svg
             width="12" height="12" viewBox="0 0 24 24" fill="none"
-            stroke="rgba(255,255,255,0.35)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+            stroke="rgba(var(--ov), 0.35)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
             style={{ flexShrink: 0, transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
           >
             <polyline points="6 9 12 15 18 9" />
@@ -787,7 +788,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
           {agency && (() => { const c = agencyColor(agency); return (
             <span style={{
               fontSize: 10,
-              color: c.text,
+              color: readable(c.text),
               background: c.bg,
               border: `1px solid ${c.text}44`,
               borderRadius: 4,
@@ -803,7 +804,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
           {mnp > 0 && (
             <span style={{
               fontSize: 11, fontWeight: 700,
-              color: '#60a5fa',
+              color: readable('#60a5fa'),
               background: 'rgba(96,165,250,0.12)',
               border: '1px solid rgba(96,165,250,0.25)',
               borderRadius: 20, padding: '2px 9px',
@@ -814,7 +815,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
           {shin > 0 && (
             <span style={{
               fontSize: 11, fontWeight: 700,
-              color: '#4ade80',
+              color: readable('#4ade80'),
               background: 'rgba(74,222,128,0.12)',
               border: '1px solid rgba(74,222,128,0.25)',
               borderRadius: 20, padding: '2px 9px',
@@ -831,9 +832,9 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
           {staffList.map((name) => (
             <span key={name} style={{
               fontSize: 10,
-              color: '#aaa',
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              color: 'var(--text-soft)',
+              background: 'rgba(var(--ov), 0.04)',
+              border: '1px solid rgba(var(--ov), 0.08)',
               borderRadius: 4,
               padding: '1px 6px',
               whiteSpace: 'nowrap',
@@ -844,14 +845,14 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
           {(hasReport || canGenerate) && (
             <div style={{ marginLeft: 'auto', flexShrink: 0, display: 'flex', gap: 6 }}>
               {canGenerate && (() => {
-                const stateColor = generating ? '#f87171' : generated ? '#60a5fa' : '#bbb';
+                const stateColor = generating ? readable('#f87171') : generated ? readable('#60a5fa') : 'var(--text-menu)';
                 return (
                   <button
                     onClick={(e) => { e.stopPropagation(); handleGenerate(); }}
                     disabled={generating}
                     style={{
-                      background: generating ? 'rgba(248,113,113,0.15)' : generated ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.08)',
-                      border: `1px solid ${generating ? 'rgba(248,113,113,0.4)' : generated ? 'rgba(96,165,250,0.4)' : 'rgba(255,255,255,0.15)'}`,
+                      background: generating ? 'rgba(248,113,113,0.15)' : generated ? 'rgba(96,165,250,0.15)' : 'rgba(var(--ov), 0.08)',
+                      border: `1px solid ${generating ? 'rgba(248,113,113,0.4)' : generated ? 'rgba(96,165,250,0.4)' : 'rgba(var(--ov), 0.15)'}`,
                       borderRadius: 6, padding: '3px 9px',
                       cursor: generating ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: 5,
                       transition: 'all 0.2s',
@@ -870,20 +871,20 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
               <button
                 onClick={(e) => { e.stopPropagation(); handleCopy(); }}
                 style={{
-                  background: copied ? 'rgba(74,222,128,0.2)' : 'rgba(255,255,255,0.08)',
-                  border: `1px solid ${copied ? '#4ade80' : 'rgba(255,255,255,0.15)'}`,
+                  background: copied ? 'rgba(74,222,128,0.2)' : 'rgba(var(--ov), 0.08)',
+                  border: `1px solid ${copied ? '#4ade80' : 'rgba(var(--ov), 0.15)'}`,
                   borderRadius: 6, padding: '3px 9px',
                   cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
                   transition: 'all 0.2s',
                 }}
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={copied ? '#4ade80' : '#bbb'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={copied ? readable('#4ade80') : 'var(--text-menu)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   {copied
                     ? <polyline points="20 6 9 17 4 12" />
                     : <><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></>
                   }
                 </svg>
-                <span style={{ fontSize: 10, color: copied ? '#4ade80' : '#bbb', whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: 10, color: copied ? readable('#4ade80') : 'var(--text-menu)', whiteSpace: 'nowrap' }}>
                   {copied ? 'コピー済み' : 'コピー'}
                 </span>
               </button>
@@ -916,7 +917,7 @@ function SiteCard({ site, staffList, agency, siteMap, filterWork = true, badgeSi
                       {idx > 0 && (
                         <hr style={{
                           border: 'none',
-                          borderTop: '1px solid rgba(255,255,255,0.08)',
+                          borderTop: '1px solid rgba(var(--ov), 0.08)',
                           margin: '8px 0',
                         }} />
                       )}
@@ -1037,7 +1038,7 @@ export default function TalknoteCard() {
             稼働
           </h3>
           {/* Talknote/実績報告タブ */}
-          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.06)', borderRadius: 6, padding: 2, gap: 2 }}>
+          <div style={{ display: 'flex', background: 'rgba(var(--ov), 0.06)', borderRadius: 6, padding: 2, gap: 2 }}>
             {([['talknote', 'Talknote'], ['jisseki', '実績報告']] as [Tab, string][]).map(([t, label]) => (
               <button
                 key={t}
@@ -1049,7 +1050,7 @@ export default function TalknoteCard() {
                   borderRadius: 4,
                   border: 'none',
                   cursor: 'pointer',
-                  background: tab === t ? 'rgba(255,255,255,0.12)' : 'transparent',
+                  background: tab === t ? 'rgba(var(--ov), 0.12)' : 'transparent',
                   color: tab === t ? 'var(--text-main)' : 'var(--text-muted)',
                   transition: 'background 0.15s',
                 }}
@@ -1059,7 +1060,7 @@ export default function TalknoteCard() {
             ))}
           </div>
           {/* 関東/九州トグル */}
-          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.06)', borderRadius: 6, padding: 2, gap: 2 }}>
+          <div style={{ display: 'flex', background: 'rgba(var(--ov), 0.06)', borderRadius: 6, padding: 2, gap: 2 }}>
             {(['関東', '九州'] as Region[]).map((r) => (
               <button
                 key={r}
@@ -1071,7 +1072,7 @@ export default function TalknoteCard() {
                   borderRadius: 4,
                   border: 'none',
                   cursor: 'pointer',
-                  background: region === r ? 'rgba(255,255,255,0.12)' : 'transparent',
+                  background: region === r ? 'rgba(var(--ov), 0.12)' : 'transparent',
                   color: region === r ? 'var(--text-main)' : 'var(--text-muted)',
                   transition: 'background 0.15s',
                 }}

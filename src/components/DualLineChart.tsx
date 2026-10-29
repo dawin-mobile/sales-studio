@@ -10,6 +10,7 @@ import {
   Legend,
   Tooltip,
 } from 'chart.js';
+import { useChartColors } from '@/lib/theme';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Legend, Tooltip);
 
@@ -21,6 +22,7 @@ interface DualLineChartProps {
 }
 
 export default function DualLineChart({ name1, data1, name2, data2 }: DualLineChartProps) {
+  const colors = useChartColors();
   const labels = data1.map((_, i) => `${i + 1}日`);
 
   return (
@@ -37,12 +39,12 @@ export default function DualLineChart({ name1, data1, name2, data2 }: DualLineCh
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { labels: { color: '#fff' } },
+            legend: { labels: { color: colors.legend } },
             datalabels: { display: false },
           },
           scales: {
-            x: { grid: { color: '#333' }, ticks: { color: '#aaa' } },
-            y: { grid: { color: '#333' }, ticks: { color: '#aaa' }, beginAtZero: true },
+            x: { grid: { color: colors.grid }, ticks: { color: colors.tick } },
+            y: { grid: { color: colors.grid }, ticks: { color: colors.tick }, beginAtZero: true },
           },
         }}
       />

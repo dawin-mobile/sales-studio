@@ -3,6 +3,7 @@
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
+import { useChartColors } from '@/lib/theme';
 
 ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
 
@@ -30,6 +31,7 @@ const colorMap: Record<string, string> = {
 const defaultColors = ['#888', '#666'];
 
 export default function DoughnutChart({ dataMap, cutout = '70%', showLegend = false, className, tooltipUnit = '件' }: DoughnutChartProps) {
+  const colors = useChartColors();
   if (!dataMap || Object.keys(dataMap).length === 0) return null;
 
   const entries = Object.entries(dataMap).sort((a, b) => b[1] - a[1]);
@@ -42,7 +44,7 @@ export default function DoughnutChart({ dataMap, cutout = '70%', showLegend = fa
       className={className}
       data={{
         labels,
-        datasets: [{ data, backgroundColor: bgColors, borderWidth: 2, borderColor: '#1f1f1f' }],
+        datasets: [{ data, backgroundColor: bgColors, borderWidth: 2, borderColor: colors.sliceBorder }],
       }}
       options={{
         responsive: true,
@@ -52,7 +54,7 @@ export default function DoughnutChart({ dataMap, cutout = '70%', showLegend = fa
           legend: {
             display: showLegend,
             position: 'right',
-            labels: { color: '#aaaaaa', font: { size: 12 }, boxWidth: 12 },
+            labels: { color: colors.tick, font: { size: 12 }, boxWidth: 12 },
           },
           tooltip: {
             callbacks: { label: (c) => `${c.label}: ${c.raw}${tooltipUnit}` },

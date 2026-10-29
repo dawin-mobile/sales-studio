@@ -45,8 +45,8 @@ export default function Sidebar({ activeTab, onTabChange, userName, userRole, se
       <div className="sidebar-brand-row">
         {!collapsed && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Image src={secretMode ? '/L-icon4g-g-512.png' : '/L-icon4w-512.png'} alt="logo" width={38} height={38} style={{ borderRadius: 8, cursor: onLogoTap ? 'pointer' : 'default' }} onClick={onLogoTap} />
-            <div className="brand-text" style={secretMode ? { color: '#4ade80' } : undefined}>Sales Studio</div>
+            <Image className={secretMode ? undefined : 'app-logo'} src={secretMode ? '/L-icon4g-g-512.png' : '/L-icon4w-512.png'} alt="logo" width={38} height={38} style={{ borderRadius: 8, cursor: onLogoTap ? 'pointer' : 'default' }} onClick={onLogoTap} />
+            <div className="brand-text" style={secretMode ? { color: 'var(--green-text)' } : undefined}>Sales Studio</div>
           </div>
         )}
         <button

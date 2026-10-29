@@ -19,7 +19,8 @@ async function fetchWithRetry(url: string, timeoutMs = 15000): Promise<Response>
   throw new Error('リクエストに失敗しました');
 }
 import { useSession, signOut } from 'next-auth/react';
-import { RefreshCw, ChevronLeft } from 'lucide-react';
+import { RefreshCw, ChevronLeft, Moon, Sun } from 'lucide-react';
+import { useTheme } from '@/lib/theme';
 import Image from 'next/image';
 import { TabName, DashboardData, ShiftRow } from '@/types';
 import { addModoriToRanking, ModoriEntry } from '@/lib/modori';
@@ -69,6 +70,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<TabName>('dashboard');
   const [rankingView, setRankingView] = useState<'default' | 'total' | 'selfclose' | 'mnp' | 'table'>('default');
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
   const [nippoOpen, setNippoOpen] = useState(false);
   const nippo = useNippoForm();
   const [contactsOpen, setContactsOpen] = useState(false);
@@ -296,8 +298,8 @@ export default function Home() {
           {/* ブランドバー: スマホのみ表示 */}
           <div className="header-brand-row">
             <div className="header-logo" onClick={handleLogoTap} style={{ cursor: 'pointer' }}>
-              <Image src={secretMode ? '/L-icon4g-g-512.png' : '/L-icon4w-512.png'} alt="logo" width={36} height={36} style={{ borderRadius: 10, flexShrink: 0 }} />
-              <span style={{ fontSize: 22, fontWeight: 700, color: secretMode ? '#4ade80' : 'var(--text-main)', letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>
+              <Image className={secretMode ? undefined : 'app-logo'} src={secretMode ? '/L-icon4g-g-512.png' : '/L-icon4w-512.png'} alt="logo" width={36} height={36} style={{ borderRadius: 10, flexShrink: 0 }} />
+              <span style={{ fontSize: 22, fontWeight: 700, color: secretMode ? 'var(--green-text)' : 'var(--text-main)', letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>
                 Sales Studio
               </span>
             </div>
@@ -316,14 +318,14 @@ export default function Home() {
                 )}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 11, color: '#aaa' }}>{lastUpdate}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-soft)' }}>{lastUpdate}</span>
                 <button
                   onClick={() => {
                     fetchData(selectedMonth);
                     if (activeTab === 'shift') fetchShift(shiftMonth);
                   }}
                   title="更新"
-                  style={{ background: 'none', border: 'none', padding: 2, cursor: 'pointer', color: '#aaa', display: 'flex', alignItems: 'center', opacity: 0.55 }}
+                  style={{ background: 'none', border: 'none', padding: 2, cursor: 'pointer', color: 'var(--text-soft)', display: 'flex', alignItems: 'center', opacity: 0.55 }}
                   onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
                   onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.55')}
                 >
@@ -377,14 +379,14 @@ export default function Home() {
                 )}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 11, color: '#aaa' }}>{lastUpdate}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-soft)' }}>{lastUpdate}</span>
                 <button
                   onClick={() => {
                     fetchData(selectedMonth);
                     if (activeTab === 'shift') fetchShift(shiftMonth);
                   }}
                   title="更新"
-                  style={{ background: 'none', border: 'none', padding: 2, cursor: 'pointer', color: '#aaa', display: 'flex', alignItems: 'center', opacity: 0.55 }}
+                  style={{ background: 'none', border: 'none', padding: 2, cursor: 'pointer', color: 'var(--text-soft)', display: 'flex', alignItems: 'center', opacity: 0.55 }}
                   onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
                   onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.55')}
                 >
@@ -409,12 +411,12 @@ export default function Home() {
             padding: '6px 12px',
             marginBottom: 8,
             fontSize: 13,
-            color: '#fbbf24',
+            color: 'var(--yellow-text)',
           }}>
             <span>{impersonated.name}（{impersonated.role}）でログイン中</span>
             <button
               onClick={() => setImpersonated(null)}
-              style={{ background: 'none', border: 'none', color: '#fbbf24', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '0 4px' }}
+              style={{ background: 'none', border: 'none', color: 'var(--yellow-text)', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '0 4px' }}
             >
               ×
             </button>
@@ -432,13 +434,13 @@ export default function Home() {
         ) : (<>
 
         {loading && (
-          <div style={{ textAlign: 'center', padding: 40, color: '#aaa' }}>
+          <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-soft)' }}>
             データを読み込んでいます...
           </div>
         )}
 
         {error && (
-          <div style={{ textAlign: 'center', padding: 40, color: '#ff4e45' }}>
+          <div style={{ textAlign: 'center', padding: 40, color: 'var(--accent-red)' }}>
             エラー: {error}
           </div>
         )}
@@ -457,7 +459,7 @@ export default function Home() {
                     <BarChart ranking={[...data.ranking].sort((a, b) => b.total - a.total)} limit={10} />
                   </div>
                   <div className="ranking-card">
-                    <div style={{ padding: '16px', borderBottom: '1px solid #333', fontWeight: 'bold' }}>
+                    <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', fontWeight: 'bold' }}>
                       トップパフォーマー
                     </div>
                     <RankingList ranking={data.ranking} limit={5} />
@@ -640,9 +642,10 @@ export default function Home() {
             if (e.changedTouches[0].clientX - startX > 80) setDrawerOpen(false);
           }}
         >
-          {/* 戻るヘッダー（スマホのみ表示） */}
+          {/* 戻るヘッダー。右端の ☀／🌙 でアプリ全体の色を切り替える（PCは戻るボタンを隠す） */}
           <div className="profile-panel-header">
             <button
+              className="profile-panel-back"
               onClick={() => setDrawerOpen(false)}
               style={{
                 background: 'none',
@@ -655,6 +658,14 @@ export default function Home() {
               }}
             >
               <ChevronLeft size={24} strokeWidth={1.75} />
+            </button>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={theme === 'light' ? '黒基調にする' : '白基調にする'}
+              style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px 8px' }}
+            >
+              {theme === 'light' ? <Moon size={20} strokeWidth={1.75} /> : <Sun size={20} strokeWidth={1.75} />}
             </button>
           </div>
 
@@ -999,16 +1010,16 @@ export default function Home() {
                   const diffMin = (nowMs - loginJstMs) / 60000;
 
                   if (diffMin <= 60 * 24) {
-                    badge = { label: '1日以内', color: '#22c55e', bg: '', border: '' };
+                    badge = { label: '1日以内', color: 'var(--accent-green)', bg: '', border: '' };
                   } else if (diffMin <= 60 * 48) {
-                    badge = { label: '2日以内', color: '#facc15', bg: '', border: '' };
+                    badge = { label: '2日以内', color: 'var(--yellow-text)', bg: '', border: '' };
                   } else if (diffMin <= 60 * 72) {
-                    badge = { label: '3日以内', color: '#facc15', bg: '', border: '' };
+                    badge = { label: '3日以内', color: 'var(--yellow-text)', bg: '', border: '' };
                   } else {
                     badge = { label: '3日以上前', color: '#ef4444', bg: '', border: '' };
                   }
                 } else {
-                  badge = { label: '未ログイン', color: '#555', bg: '', border: '' };
+                  badge = { label: '未ログイン', color: 'var(--text-muted)', bg: '', border: '' };
                 }
 
                 return (
@@ -1073,7 +1084,7 @@ export default function Home() {
                     <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-main)' }}>{c.name}</div>
                     <a
                       href={`tel:${c.contact.replace(/[-\s]/g, '')}`}
-                      style={{ fontSize: 14, color: '#60a5fa', textDecoration: 'none', fontVariantNumeric: 'tabular-nums' }}
+                      style={{ fontSize: 14, color: 'var(--link-color)', textDecoration: 'none', fontVariantNumeric: 'tabular-nums' }}
                     >
                       {c.contact}
                     </a>

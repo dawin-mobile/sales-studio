@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import type { ShiftRow } from '@/types';
 import ShiftAnalysis from '@/components/ShiftAnalysis';
+import { readable } from '@/lib/colors';
 
 interface ShiftViewProps {
   rows: ShiftRow[];
@@ -288,7 +289,7 @@ export default function ShiftView({
 
   if (error) {
     return (
-      <div className="shift-loading" style={{ color: '#f87171' }}>
+      <div className="shift-loading" style={{ color: 'var(--accent-red)' }}>
         {error}
       </div>
     );
@@ -446,7 +447,7 @@ export default function ShiftView({
                   aria-pressed={isSelected}
                 >
                   <span className="shift-legend-dot" style={{ background: color.dot }} />
-                  <span style={{ color: isSelected ? color.text : undefined }}>{agency}</span>
+                  <span style={{ color: isSelected ? readable(color.text) : undefined }}>{agency}</span>
                 </div>
               );
             })}
@@ -549,7 +550,7 @@ export default function ShiftView({
                             {color && locations.length > 0 && (
                               <div
                                 className="shift-pill"
-                                style={{ background: color.bg, color: color.text }}
+                                style={{ background: color.bg, color: readable(color.text) }}
                               >
                                 {locations[0].slice(0, 4)}
                                 {locations.length > 1 && (
@@ -659,7 +660,7 @@ export default function ShiftView({
                           <div className="loc-staff-list">
                             {visibleStaff.length > 0 ? (
                               visibleStaff.map((name) => (
-                                <span key={name} className="loc-staff-chip" style={name.includes('バルーン') ? { background: 'rgba(200,50,90,0.5)', color: '#ff8ca8', border: '1px solid rgba(255,105,135,0.4)' } : undefined}>{name}</span>
+                                <span key={name} className="loc-staff-chip" style={name.includes('バルーン') ? { background: 'rgba(200,50,90,0.5)', color: readable('#ff8ca8'), border: '1px solid rgba(255,105,135,0.4)' } : undefined}>{name}</span>
                               ))
                             ) : (
                               <span style={{ color: 'var(--text-sub)', fontSize: 12 }}>—</span>
@@ -682,7 +683,7 @@ export default function ShiftView({
                           {agencyColor ? (
                             <span
                               className="loc-agency-badge"
-                              style={{ background: agencyColor.bg, color: agencyColor.text }}
+                              style={{ background: agencyColor.bg, color: readable(agencyColor.text) }}
                             >
                               {row.agency}
                             </span>
@@ -712,7 +713,7 @@ export default function ShiftView({
               <div>社員シフトを読み込んでいます...</div>
             </div>
           ) : empError ? (
-            <div className="shift-loading" style={{ color: '#f87171' }}>{empError}</div>
+            <div className="shift-loading" style={{ color: 'var(--accent-red)' }}>{empError}</div>
           ) : !empData || empData.staff.length === 0 ? (
             empFetchedMonth === selectedMonth ? (
               <div className="shift-loading" style={{ color: 'var(--text-sub)' }}>
@@ -779,8 +780,8 @@ export default function ShiftView({
                                 <div
                                   className="shift-pill"
                                   style={style
-                                    ? { background: style.bg, color: style.color }
-                                    : { background: 'rgba(255,255,255,0.06)', color: 'var(--text-sub)' }
+                                    ? { background: style.bg, color: readable(style.color) }
+                                    : { background: 'rgba(var(--ov), 0.06)', color: 'var(--text-sub)' }
                                   }
                                 >
                                   {val}

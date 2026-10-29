@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import { readable } from '@/lib/colors';
 
 export default function NippoAlert() {
   const { data: session } = useSession();
@@ -28,12 +29,12 @@ export default function NippoAlert() {
 
   return (
     <div style={{
-      background: '#2a0a0a',
+      background: 'color-mix(in srgb, #cc3333 12%, var(--card-bg))',
       border: '1px solid #cc3333',
       borderRadius: 8,
       padding: '10px 16px',
       marginBottom: 16,
-      color: '#ff6666',
+      color: readable('#ff6666'),
       fontSize: 13,
       fontWeight: 600,
       display: 'flex',

@@ -39,11 +39,11 @@ export default function LoginPage() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: '#0f0f0f',
+      background: 'var(--bg-color)',
     }}>
       <form onSubmit={handleSubmit} style={{
-        background: '#1f1f1f',
-        border: '1px solid #3e3e3e',
+        background: 'var(--card-bg)',
+        border: '1px solid var(--border-color)',
         borderRadius: '12px',
         padding: '40px',
         width: '100%',
@@ -60,10 +60,11 @@ export default function LoginPage() {
   gap: '10px',             /* 画像と文字の隙間 */
   fontSize: '24px', 
   fontWeight: 'bold', 
-  color: '#fff' 
+  color: 'var(--text-main)' 
 }}>
   {/* ここに画像を表示！ */}
   <Image 
+    className="app-logo"
     src="/L-icon4w-512.png" 
     alt="ロゴ" 
     width={32} 
@@ -71,7 +72,7 @@ export default function LoginPage() {
   />
   Sales Studio
 </div>
-          <div style={{ fontSize: '13px', color: '#aaa', marginTop: '8px' }}>
+          <div style={{ fontSize: '13px', color: 'var(--text-soft)', marginTop: '8px' }}>
             ログインしてください
           </div>
         </div>
@@ -91,7 +92,7 @@ export default function LoginPage() {
         )}
 
         <div style={{ marginBottom: '16px' }}>
-          <label htmlFor="login-userid" style={{ display: 'block', fontSize: '13px', color: '#aaa', marginBottom: '6px' }}>
+          <label htmlFor="login-userid" style={{ display: 'block', fontSize: '13px', color: 'var(--text-soft)', marginBottom: '6px' }}>
             ユーザーID
           </label>
           <input
@@ -104,9 +105,9 @@ export default function LoginPage() {
             style={{
               width: '100%',
               padding: '10px 12px',
-              background: '#111',
-              color: '#fff',
-              border: '1px solid #444',
+              background: 'var(--bg-color)',
+              color: 'var(--text-main)',
+              border: '1px solid var(--border-color)',
               borderRadius: '6px',
               fontSize: '14px',
             }}
@@ -114,7 +115,7 @@ export default function LoginPage() {
         </div>
 
         <div style={{ marginBottom: '24px' }}>
-          <label htmlFor="login-password" style={{ display: 'block', fontSize: '13px', color: '#aaa', marginBottom: '6px' }}>
+          <label htmlFor="login-password" style={{ display: 'block', fontSize: '13px', color: 'var(--text-soft)', marginBottom: '6px' }}>
             パスワード
           </label>
           <input
@@ -127,9 +128,9 @@ export default function LoginPage() {
             style={{
               width: '100%',
               padding: '10px 12px',
-              background: '#111',
-              color: '#fff',
-              border: '1px solid #444',
+              background: 'var(--bg-color)',
+              color: 'var(--text-main)',
+              border: '1px solid var(--border-color)',
               borderRadius: '6px',
               fontSize: '14px',
             }}

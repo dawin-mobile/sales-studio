@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { readable } from '@/lib/colors';
 
 type KintaiKind = '当欠' | '遅刻' | '早退' | 'その他';
 
@@ -22,7 +23,7 @@ const KIND_COLORS: Record<KintaiKind, { bg: string; text: string; border: string
   '当欠':   { bg: 'rgba(248,113,113,0.18)', text: '#f87171', border: 'rgba(248,113,113,0.4)' },
   '遅刻':   { bg: 'rgba(251,146,60,0.18)',  text: '#fb923c', border: 'rgba(251,146,60,0.4)' },
   '早退':   { bg: 'rgba(96,165,250,0.18)',  text: '#60a5fa', border: 'rgba(96,165,250,0.4)' },
-  'その他': { bg: 'rgba(255,255,255,0.08)', text: 'var(--text-sub)', border: 'rgba(255,255,255,0.15)' },
+  'その他': { bg: 'rgba(var(--ov), 0.08)', text: 'var(--text-sub)', border: 'rgba(var(--ov), 0.15)' },
 };
 
 function KindBadge({ kind }: { kind: KintaiKind }) {
@@ -31,7 +32,7 @@ function KindBadge({ kind }: { kind: KintaiKind }) {
     <span style={{
       display: 'inline-block', fontSize: 11, fontWeight: 600,
       padding: '2px 8px', borderRadius: 20, whiteSpace: 'nowrap',
-      background: c.bg, color: c.text, border: `1px solid ${c.border}`,
+      background: c.bg, color: readable(c.text), border: `1px solid ${c.border}`,
     }}>{kind}</span>
   );
 }
@@ -90,7 +91,7 @@ function StaffCard({ summary, selected, onClick }: {
   const border = level === 'alert' ? 'rgba(248,113,113,0.55)'
     : level === 'warn' ? 'rgba(251,146,60,0.45)'
     : 'var(--border-color)';
-  const totalColor = level === 'alert' ? '#f87171' : level === 'warn' ? '#fb923c' : 'var(--text-main)';
+  const totalColor = level === 'alert' ? readable('#f87171') : level === 'warn' ? readable('#fb923c') : 'var(--text-main)';
 
   return (
     <button
@@ -100,7 +101,7 @@ function StaffCard({ summary, selected, onClick }: {
         textAlign: 'left', cursor: 'pointer',
         // 枠線は常に回数に応じた色（赤/橙）のまま。選択中を枠線で示すと警告色が消えてしまうため、
         // 選択中は背景の明るさで表す（もう一度押せば解除できる）
-        background: selected ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.03)',
+        background: selected ? 'rgba(var(--ov), 0.16)' : 'rgba(var(--ov), 0.03)',
         border: `1px solid ${border}`,
         borderRadius: 10, padding: '10px 12px',
         display: 'flex', flexDirection: 'column', gap: 6,
@@ -118,7 +119,7 @@ function StaffCard({ summary, selected, onClick }: {
           summary.counts[k] ? (
             <span key={k} style={{
               fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 20, whiteSpace: 'nowrap',
-              background: KIND_COLORS[k].bg, color: KIND_COLORS[k].text,
+              background: KIND_COLORS[k].bg, color: readable(KIND_COLORS[k].text),
               border: `1px solid ${KIND_COLORS[k].border}`,
             }}>{k} {summary.counts[k]}</span>
           ) : null
@@ -259,9 +260,9 @@ function FragmentRow({ rec, open, onToggle }: { rec: KintaiRecord; open: boolean
       </tr>
       {open && (
         <tr>
-          <td colSpan={5} style={{ padding: '4px 6px 12px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+          <td colSpan={5} style={{ padding: '4px 6px 12px', borderBottom: '1px solid rgba(var(--ov), 0.04)' }}>
             <div style={{
-              background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '10px 12px',
+              background: 'rgba(var(--ov), 0.04)', borderRadius: 8, padding: '10px 12px',
               fontSize: 12, lineHeight: 1.7, color: 'var(--text-main)', whiteSpace: 'pre-wrap',
             }}>
               <div style={{ color: 'var(--text-sub)', marginBottom: 6, fontSize: 11 }}>
@@ -280,7 +281,7 @@ function FragmentRow({ rec, open, onToggle }: { rec: KintaiRecord; open: boolean
 
 const cellStyle: React.CSSProperties = {
   padding: '9px 6px',
-  borderBottom: '1px solid rgba(255,255,255,0.04)',
+  borderBottom: '1px solid rgba(var(--ov), 0.04)',
   whiteSpace: 'nowrap',
   color: 'var(--text-main)',
 };

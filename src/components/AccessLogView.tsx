@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { UserStat, TabStat } from '@/app/api/access-log/route';
 
-const BAR_COLOR = 'rgba(255,255,255,0.75)';
+const BAR_COLOR = 'rgba(var(--ov), 0.75)';
 
 function timeAgo(dateStr: string): string {
   const d = new Date(dateStr.replace(/\//g, '-').replace(' ', 'T'));
@@ -47,7 +47,7 @@ export default function AccessLogView() {
             <div key={t.name} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ fontSize: 10, color: 'var(--text-sub)', width: 14, textAlign: 'right' }}>{i + 1}</span>
               <span style={{ fontSize: 12, color: 'var(--text-main)', width: 80, flexShrink: 0 }}>{t.name}</span>
-              <div style={{ flex: 1, background: 'rgba(255,255,255,0.06)', borderRadius: 4, height: 8, overflow: 'hidden' }}>
+              <div style={{ flex: 1, background: 'rgba(var(--ov), 0.06)', borderRadius: 4, height: 8, overflow: 'hidden' }}>
                 <div style={{
                   width: `${(t.count / maxTabCount) * 100}%`,
                   height: '100%',
@@ -86,7 +86,7 @@ export default function AccessLogView() {
                 {topTabs.map(([tab, cnt]) => (
                   <div key={tab} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontSize: 10, color: 'var(--text-sub)', width: 72, flexShrink: 0 }}>{tab}</span>
-                    <div style={{ flex: 1, background: 'rgba(255,255,255,0.05)', borderRadius: 3, height: 5, overflow: 'hidden' }}>
+                    <div style={{ flex: 1, background: 'rgba(var(--ov), 0.05)', borderRadius: 3, height: 5, overflow: 'hidden' }}>
                       <div style={{
                         width: `${(cnt / maxT) * 100}%`,
                         height: '100%',

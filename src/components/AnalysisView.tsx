@@ -15,7 +15,7 @@ interface AnalysisViewProps {
 function SiteBarChart({ sites, nameWidth = 100 }: { sites: Record<string, number>; nameWidth?: number }) {
   const sorted = Object.entries(sites).sort((a, b) => b[1] - a[1]);
   const maxVal = sorted.length > 0 ? sorted[0][1] : 1;
-  if (sorted.length === 0) return <div style={{ color: '#555', padding: 10 }}>データなし</div>;
+  if (sorted.length === 0) return <div style={{ color: 'var(--text-muted)', padding: 10 }}>データなし</div>;
   return (
     <div className="bar-chart-container" style={{ maxHeight: 200 }}>
       {sorted.map(([name, val]) => (
@@ -37,11 +37,11 @@ function SingleColumn({ title, stats, isCompact = false }: { title: string; stat
     <>
       <div className="compare-header">{title}</div>
       <div className="chart-card">
-        <h3 style={{ fontSize: '14px', color: '#aaa', marginBottom: 10 }}>現場別</h3>
+        <h3 style={{ fontSize: '14px', color: 'var(--text-soft)', marginBottom: 10 }}>現場別</h3>
         <SiteBarChart sites={stats.sites} nameWidth={isCompact ? 60 : 100} />
       </div>
       <div className="chart-card" style={{ marginTop: 16 }}>
-        <h3 style={{ fontSize: '14px', color: '#aaa', marginBottom: 10 }}>客層・年代</h3>
+        <h3 style={{ fontSize: '14px', color: 'var(--text-soft)', marginBottom: 10 }}>客層・年代</h3>
         <div className="pie-container">
           <div className="nested-pie-wrapper">
             <DoughnutChart dataMap={stats.ages} cutout="70%" className="outer-pie-canvas" />

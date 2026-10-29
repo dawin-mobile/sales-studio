@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { X } from 'lucide-react';
 import { ReportScoreData, ReportScoreItem, ReportScoreGrade } from '@/types';
+import { readable } from '@/lib/colors';
 
 // ────────────────────────────────────────────
 //  採点結果の色・ラベル（Report Studio本家の配色ロジックを踏襲、色味はsales studioの黒基調に合わせる）
@@ -62,7 +63,7 @@ function GradeBadge({ grade, size = 'sm' }: { grade: ReportScoreGrade; size?: 's
       minWidth: size === 'lg' ? 46 : 26, justifyContent: 'center',
       padding: size === 'lg' ? '6px 8px' : '2px 7px',
       borderRadius: 7, fontSize: size === 'lg' ? 14 : 12, fontWeight: 700,
-      background: color + '22', color, border: `1px solid ${color}55`,
+      background: color + '22', color: readable(color), border: `1px solid ${color}55`,
     }}>
       {label}
       {size === 'lg' && point !== undefined && (
@@ -88,7 +89,7 @@ function AvgBadge({ p }: { p: number | null }) {
     <span style={{
       display: 'inline-block', minWidth: 30, textAlign: 'center', borderRadius: 7,
       fontSize: 12, fontWeight: 700, padding: '3px 6px',
-      background: color + '22', color, border: `1px solid ${color}55`,
+      background: color + '22', color: readable(color), border: `1px solid ${color}55`,
     }}>
       {p}
     </span>
@@ -193,26 +194,26 @@ function Legend() {
               <thead>
                 <tr>
                   <th style={{ textAlign: 'left', padding: '3px 8px 3px 0', color: 'var(--text-sub)', fontWeight: 600, whiteSpace: 'nowrap' }}></th>
-                  <th style={{ padding: '3px 6px', color: '#4ade80', fontWeight: 700 }}>当日</th>
-                  <th style={{ padding: '3px 6px', color: '#4ade80', fontWeight: 700 }}>翌日</th>
+                  <th style={{ padding: '3px 6px', color: readable('#4ade80'), fontWeight: 700 }}>当日</th>
+                  <th style={{ padding: '3px 6px', color: readable('#4ade80'), fontWeight: 700 }}>翌日</th>
                   <th style={{ padding: '3px 6px', color: 'var(--text-sub)', fontWeight: 600 }}>翌々日</th>
-                  <th style={{ padding: '3px 6px', color: '#f87171', fontWeight: 700 }}>未提出</th>
+                  <th style={{ padding: '3px 6px', color: readable('#f87171'), fontWeight: 700 }}>未提出</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <td style={{ padding: '3px 8px 3px 0', whiteSpace: 'nowrap' }}>現場・終担</td>
-                  <td style={{ textAlign: 'center', color: '#4ade80', fontWeight: 700 }}>+2</td>
-                  <td style={{ textAlign: 'center', color: '#4ade80', fontWeight: 700 }}>+1</td>
+                  <td style={{ textAlign: 'center', color: readable('#4ade80'), fontWeight: 700 }}>+2</td>
+                  <td style={{ textAlign: 'center', color: readable('#4ade80'), fontWeight: 700 }}>+1</td>
                   <td style={{ textAlign: 'center', color: 'var(--text-sub)' }}>0</td>
-                  <td style={{ textAlign: 'center', color: '#f87171', fontWeight: 700 }}>−1</td>
+                  <td style={{ textAlign: 'center', color: readable('#f87171'), fontWeight: 700 }}>−1</td>
                 </tr>
                 <tr>
                   <td style={{ padding: '3px 8px 3px 0', whiteSpace: 'nowrap' }}>転送</td>
-                  <td style={{ textAlign: 'center', color: '#4ade80', fontWeight: 700 }}>+0.2</td>
-                  <td style={{ textAlign: 'center', color: '#4ade80', fontWeight: 700 }}>+0.1</td>
+                  <td style={{ textAlign: 'center', color: readable('#4ade80'), fontWeight: 700 }}>+0.2</td>
+                  <td style={{ textAlign: 'center', color: readable('#4ade80'), fontWeight: 700 }}>+0.1</td>
                   <td style={{ textAlign: 'center', color: 'var(--text-sub)' }}>0</td>
-                  <td style={{ textAlign: 'center', color: '#f87171', fontWeight: 700 }}>−0.2</td>
+                  <td style={{ textAlign: 'center', color: readable('#f87171'), fontWeight: 700 }}>−0.2</td>
                 </tr>
               </tbody>
             </table>
@@ -271,7 +272,7 @@ function ReportDetailSheet({ item, onClose }: { item: ReportScoreItem; onClose: 
             </div>
 
             {item.pending && (
-              <p style={{ fontSize: 12, color: '#fbbf24', marginTop: 12, lineHeight: 1.6 }}>
+              <p style={{ fontSize: 12, color: readable('#fbbf24'), marginTop: 12, lineHeight: 1.6 }}>
                 評価待ち：GeminiとClaudeの評価が割れています（育成 G:{item.aiIkuG || '?'} / C:{item.aiIkuC || '?'}、現場指揮 G:{item.aiGenG || '?'} / C:{item.aiGenC || '?'}）。「採点結果」シートで確定してください。
               </p>
             )}
@@ -280,13 +281,13 @@ function ReportDetailSheet({ item, onClose }: { item: ReportScoreItem; onClose: 
               <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {item.ikuC && (
                   <div style={{ fontSize: 13, display: 'flex', gap: 8 }}>
-                    <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: '#1c7a4e33', color: '#4ade80', height: 'fit-content' }}>育成</span>
+                    <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: '#1c7a4e33', color: readable('#4ade80'), height: 'fit-content' }}>育成</span>
                     <span style={{ color: 'var(--text-main)' }}>{item.ikuC}</span>
                   </div>
                 )}
                 {item.genC && (
                   <div style={{ fontSize: 13, display: 'flex', gap: 8 }}>
-                    <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: '#2340b833', color: '#60a5fa', height: 'fit-content' }}>現指</span>
+                    <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: '#2340b833', color: readable('#60a5fa'), height: 'fit-content' }}>現指</span>
                     <span style={{ color: 'var(--text-main)' }}>{item.genC}</span>
                   </div>
                 )}
@@ -312,7 +313,7 @@ function ReportDetailSheet({ item, onClose }: { item: ReportScoreItem; onClose: 
 function MissingBlock({ title, items, accent }: { title: string; items: { date: string; venue: string; sur: string }[]; accent: string }) {
   return (
     <div style={{ background: accent + '11', border: `1px solid ${accent}33`, borderRadius: 12, padding: '12px 14px', marginBottom: 10 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: accent, display: 'flex', gap: 8, alignItems: 'baseline' }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: readable(accent), display: 'flex', gap: 8, alignItems: 'baseline' }}>
         {title}<span style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-sub)' }}>{items.length}件</span>
       </div>
       {items.length === 0 ? (
@@ -320,7 +321,7 @@ function MissingBlock({ title, items, accent }: { title: string; items: { date: 
       ) : (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 8 }}>
           {items.map((x, i) => (
-            <span key={i} style={{ fontSize: 12, background: 'var(--card-bg)', border: `1px solid ${accent}44`, color: accent, borderRadius: 8, padding: '5px 9px', display: 'inline-flex', gap: 6 }}>
+            <span key={i} style={{ fontSize: 12, background: 'var(--card-bg)', border: `1px solid ${accent}44`, color: readable(accent), borderRadius: 8, padding: '5px 9px', display: 'inline-flex', gap: 6 }}>
               <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{sur(x.sur)} {x.date.slice(5)}</span>
               <span style={{ color: 'var(--text-main)', fontWeight: 700 }}>{x.venue}</span>
             </span>
@@ -410,7 +411,7 @@ function ListTab({ reports, missing1, missing2, onSelect }: {
               <tr key={x.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                 <td style={{ padding: '8px 10px', fontFamily: 'monospace', fontSize: 11.5, color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>{x.date.slice(5)}</td>
                 <td style={{ padding: '8px 10px', fontWeight: 700 }}>
-                  <span onClick={() => onSelect(x)} style={{ color: '#3ea6ff', cursor: 'pointer', textDecoration: 'underline' }}>
+                  <span onClick={() => onSelect(x)} style={{ color: readable('#3ea6ff'), cursor: 'pointer', textDecoration: 'underline' }}>
                     {x.venue}
                   </span>
                 </td>
@@ -442,13 +443,13 @@ function DetailCard({ item }: { item: ReportScoreItem }) {
         <div style={{ marginTop: 9, display: 'flex', flexDirection: 'column', gap: 5 }}>
           {item.ikuC && (
             <div style={{ fontSize: 12.5, display: 'flex', gap: 7 }}>
-              <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 6, background: '#1c7a4e33', color: '#4ade80', height: 'fit-content' }}>育成</span>
+              <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 6, background: '#1c7a4e33', color: readable('#4ade80'), height: 'fit-content' }}>育成</span>
               <span style={{ color: 'var(--text-main)' }}>{item.ikuC}</span>
             </div>
           )}
           {item.genC && (
             <div style={{ fontSize: 12.5, display: 'flex', gap: 7 }}>
-              <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 6, background: '#2340b833', color: '#60a5fa', height: 'fit-content' }}>現指</span>
+              <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 6, background: '#2340b833', color: readable('#60a5fa'), height: 'fit-content' }}>現指</span>
               <span style={{ color: 'var(--text-main)' }}>{item.genC}</span>
             </div>
           )}
@@ -456,7 +457,7 @@ function DetailCard({ item }: { item: ReportScoreItem }) {
       )}
       {item.body && (
         <div style={{ marginTop: 8 }}>
-          <button onClick={() => setOpen((o) => !o)} style={{ background: 'none', border: 'none', color: '#3ea6ff', fontFamily: 'monospace', fontSize: 11.5, cursor: 'pointer', padding: 0 }}>
+          <button onClick={() => setOpen((o) => !o)} style={{ background: 'none', border: 'none', color: readable('#3ea6ff'), fontFamily: 'monospace', fontSize: 11.5, cursor: 'pointer', padding: 0 }}>
             {open ? '閉じる ▴' : '報告を読む ▾'}
           </button>
           {open && (
@@ -531,7 +532,7 @@ function VenueCard({ item }: { item: ReportScoreItem }) {
             {item.body}
           </div>
           {isLong && (
-            <button onClick={() => setOpen((o) => !o)} style={{ background: 'none', border: 'none', color: '#3ea6ff', fontFamily: 'monospace', fontSize: 11.5, cursor: 'pointer', padding: '4px 0 0' }}>
+            <button onClick={() => setOpen((o) => !o)} style={{ background: 'none', border: 'none', color: readable('#3ea6ff'), fontFamily: 'monospace', fontSize: 11.5, cursor: 'pointer', padding: '4px 0 0' }}>
               {open ? '閉じる ▴' : '続きを読む ▾'}
             </button>
           )}
@@ -608,7 +609,7 @@ function StaffTimelineEntry({ item, name }: { item: ReportScoreItem; name: strin
         </div>
         {hasExcerpt && (
           <>
-            <button onClick={() => setShowFull((o) => !o)} style={{ background: 'none', border: 'none', color: '#3ea6ff', fontFamily: 'monospace', fontSize: 11, cursor: 'pointer', padding: '4px 0 0' }}>
+            <button onClick={() => setShowFull((o) => !o)} style={{ background: 'none', border: 'none', color: readable('#3ea6ff'), fontFamily: 'monospace', fontSize: 11, cursor: 'pointer', padding: '4px 0 0' }}>
               {showFull ? '閉じる ▴' : '報告全文 ▾'}
             </button>
             {showFull && (
@@ -705,7 +706,7 @@ function RankTab({ allReports, allMissing1, allMissing2, month }: {
             style={{
               border: `1px solid ${rankKey === k ? '#3ea6ff' : 'var(--border-color)'}`,
               background: rankKey === k ? '#3ea6ff22' : 'var(--card-bg)',
-              color: rankKey === k ? '#3ea6ff' : 'var(--text-sub)',
+              color: rankKey === k ? readable('#3ea6ff') : 'var(--text-sub)',
               borderRadius: 9, padding: '7px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
             }}
           >
@@ -730,7 +731,7 @@ function RankTab({ allReports, allMissing1, allMissing2, month }: {
                 <td style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', color: 'var(--text-sub)' }}>{r.n}</td>
                 <td style={{ padding: '9px 8px', textAlign: 'center' }}><AvgBadge p={r.gen} /></td>
                 <td style={{ padding: '9px 8px', textAlign: 'center' }}><AvgBadge p={r.iku} /></td>
-                <td style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', color: r.miss ? '#f87171' : 'var(--text-sub)' }}>{r.miss || ''}</td>
+                <td style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', color: r.miss ? readable('#f87171') : 'var(--text-sub)' }}>{r.miss || ''}</td>
               </tr>
             ))}
           </tbody>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { readable } from '@/lib/colors';
 
 
 interface ProfileData {
@@ -123,7 +124,7 @@ function BloodTypeDonut({ bloodTypes, staffMap, onSelect }: { bloodTypes: Record
             </text>
             {/* 外側ラベル: % */}
             <text x={label.x} y={label.y + 9} textAnchor={anchor} dominantBaseline="middle"
-              fill={color} fontSize="14" fontWeight="800">
+              fill={readable(color)} fontSize="14" fontWeight="800">
               {pct}%
             </text>
           </g>
@@ -140,9 +141,9 @@ function BloodTypeDonut({ bloodTypes, staffMap, onSelect }: { bloodTypes: Record
 
 function nameBadgeStyle(name: string, genderMap?: Record<string, 'male' | 'female'>) {
   const g = genderMap?.[name];
-  if (g === 'male')   return { background: 'rgba(125,211,252,0.18)', color: '#7dd3fc' };
-  if (g === 'female') return { background: 'rgba(249,168,212,0.18)', color: '#f9a8d4' };
-  return { background: 'rgba(255,255,255,0.07)', color: 'var(--text-main)' as string };
+  if (g === 'male')   return { background: 'rgba(125,211,252,0.18)', color: readable('#7dd3fc') };
+  if (g === 'female') return { background: 'rgba(249,168,212,0.18)', color: readable('#f9a8d4') };
+  return { background: 'rgba(var(--ov), 0.07)', color: 'var(--text-main)' as string };
 }
 
 // BottomSheet（男女比率・年齢層・動物占い・血液型）
@@ -164,7 +165,7 @@ function BottomSheet({ title, names, genderMap, onClose }: { title: string; name
         boxShadow: '0 -4px 24px rgba(0,0,0,0.4)',
       }}>
         <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px' }}>
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)' }} />
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(var(--ov), 0.2)' }} />
         </div>
         <div style={{ padding: '8px 20px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-main)' }}>{title}</span>
@@ -198,7 +199,7 @@ function StaffModal({ title, names, genderMap, grouped, onClose }: {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         <div onClick={e => e.stopPropagation()} style={{
-          background: 'rgba(30, 30, 50, 0.6)',
+          background: 'var(--glass-bg)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
           borderRadius: 16, padding: '20px',
@@ -236,7 +237,7 @@ function StaffModal({ title, names, genderMap, grouped, onClose }: {
           </div>
           <button onClick={onClose} style={{
             marginTop: 16, padding: '8px', borderRadius: 8,
-            background: 'rgba(255,255,255,0.08)', border: 'none',
+            background: 'rgba(var(--ov), 0.08)', border: 'none',
             color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', width: '100%',
           }}>閉じる</button>
         </div>
@@ -293,7 +294,7 @@ function AnimalChart({ animalTypes, staffMap, onSelect }: { animalTypes: Record<
             <div style={{ width: 72, fontSize: 12, color: 'var(--text-main)', textAlign: 'right', flexShrink: 0 }}>
               {animal}
             </div>
-            <div style={{ flex: 1, background: 'rgba(255,255,255,0.06)', borderRadius: 4, height: 20, overflow: 'hidden' }}>
+            <div style={{ flex: 1, background: 'rgba(var(--ov), 0.06)', borderRadius: 4, height: 20, overflow: 'hidden' }}>
               <div style={{
                 width: `${barPct}%`, height: '100%',
                 background: color, borderRadius: 4,
@@ -325,12 +326,12 @@ function GenderBar({ genders, staffMap, onSelect }: { genders: { male: number; f
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
         <div style={{ textAlign: 'center', cursor: onSelect ? 'pointer' : 'default' }}
           onClick={() => onSelect && staffMap && onSelect('男性', staffMap.male)}>
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#60a5fa', lineHeight: 1 }}>{malePct}%</div>
+          <div style={{ fontSize: 28, fontWeight: 800, color: readable('#60a5fa'), lineHeight: 1 }}>{malePct}%</div>
           <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 3 }}>男性 {male}名</div>
         </div>
         <div style={{ textAlign: 'center', cursor: onSelect ? 'pointer' : 'default' }}
           onClick={() => onSelect && staffMap && onSelect('女性', staffMap.female)}>
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#f472b6', lineHeight: 1 }}>{femalePct}%</div>
+          <div style={{ fontSize: 28, fontWeight: 800, color: readable('#f472b6'), lineHeight: 1 }}>{femalePct}%</div>
           <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 3 }}>女性 {female}名</div>
         </div>
       </div>
@@ -402,7 +403,7 @@ function AgePieChart({ ageBrackets, staffMap, onSelect }: { ageBrackets: Record<
             <text x={label.x} y={label.y - 8} textAnchor={anchor} dominantBaseline="middle"
               fill="var(--text-sub)" fontSize="12" fontWeight="600">{bracket}</text>
             <text x={label.x} y={label.y + 9} textAnchor={anchor} dominantBaseline="middle"
-              fill={color} fontSize="14" fontWeight="800">{pct}%</text>
+              fill={readable(color)} fontSize="14" fontWeight="800">{pct}%</text>
           </g>
         );
       })}
@@ -535,10 +536,10 @@ export default function ProfileView({ effectiveRole = '', effectiveName = '' }: 
   }, [region]);
 
   if (loading) {
-    return <div style={{ textAlign: 'center', padding: 40, color: '#aaa' }}>データを読み込んでいます...</div>;
+    return <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-soft)' }}>データを読み込んでいます...</div>;
   }
   if (error) {
-    return <div style={{ textAlign: 'center', padding: 40, color: '#ff4e45' }}>エラー: {error}</div>;
+    return <div style={{ textAlign: 'center', padding: 40, color: 'var(--accent-red)' }}>エラー: {error}</div>;
   }
   if (!data) return null;
 
@@ -566,12 +567,13 @@ export default function ProfileView({ effectiveRole = '', effectiveName = '' }: 
           <span style={{ fontSize: 13, color: 'var(--text-sub)', fontWeight: 500 }}>名</span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          {([['社員', '#3ea6ff', '#1a3a5c'], ['アルバイト', '#facc15', '#3d3000'], ['業務委託', '#a3a3a3', '#2a2a2a']] as [string, string, string][]).map(([label, color, bg]) => (
+          {([['社員', '#3ea6ff'], ['アルバイト', '#facc15'], ['業務委託', '#a3a3a3']] as [string, string][]).map(([label, color]) => (
             <div key={label}
               onClick={() => { const names = data.roleStaff?.[label]; if (names?.length) openSheet(label, names); }}
               style={{
                 flex: 1,
-                background: bg,
+                // カードの色に区分の色を少し混ぜる（黒基調・白基調どちらでも背景になじむように）
+                background: `color-mix(in srgb, ${color} 14%, var(--card-bg))`,
                 border: `1px solid ${color}30`,
                 borderRadius: 10,
                 padding: '10px 12px',
@@ -580,9 +582,9 @@ export default function ProfileView({ effectiveRole = '', effectiveName = '' }: 
                 gap: 4,
                 cursor: 'pointer',
               }}>
-              <span style={{ fontSize: 11, color: color, fontWeight: 600, letterSpacing: '0.05em' }}>{label}</span>
+              <span style={{ fontSize: 11, color: readable(color), fontWeight: 600, letterSpacing: '0.05em' }}>{label}</span>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
-                <span style={{ fontSize: 28, fontWeight: 'bold', color: color, lineHeight: 1, letterSpacing: '-1px' }}>{data.roleCounts?.[label] ?? 0}</span>
+                <span style={{ fontSize: 28, fontWeight: 'bold', color: readable(color), lineHeight: 1, letterSpacing: '-1px' }}>{data.roleCounts?.[label] ?? 0}</span>
                 <span style={{ fontSize: 10, color: 'var(--text-sub)' }}>名</span>
               </div>
             </div>

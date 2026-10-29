@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { DashboardData, Staff } from '@/types';
 import IncentiveBar from './IncentiveBar';
 import { modoriToCalendarRow, sameStaff, ModoriEntry } from '@/lib/modori';
+import { readable } from '@/lib/colors';
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -163,12 +164,12 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
     ? { bg: 'rgba(239,68,68,0.2)', text: '#f87171', border: 'rgba(239,68,68,0.4)' }
     : position?.includes('準ディレ')
     ? { bg: 'rgba(59,130,246,0.2)', text: '#60a5fa', border: 'rgba(59,130,246,0.4)' }
-    : { bg: 'rgba(255,255,255,0.08)', text: 'rgba(255,255,255,0.6)', border: 'rgba(255,255,255,0.15)' };
+    : { bg: 'rgba(var(--ov), 0.08)', text: 'rgba(var(--ov), 0.6)', border: 'rgba(var(--ov), 0.15)' };
   const positionBadge = position ? (
     <span style={{
       display: 'inline-block', fontSize: 12, fontWeight: 600,
       padding: '4px 10px', borderRadius: 20, marginTop: 5,
-      background: positionColor.bg, color: positionColor.text,
+      background: positionColor.bg, color: readable(positionColor.text),
       border: `1px solid ${positionColor.border}`,
       alignSelf: 'flex-start',
     }}>{position}</span>
@@ -282,7 +283,7 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
                 {Array.from({ length: days }, (_, i) => {
                   const dateObj = new Date(yearMonth.year, yearMonth.month, i + 1);
                   const dayOfWeek = WEEKDAYS[dateObj.getDay()];
-                  const colorStyle = dayOfWeek === '土' ? '#3ea6ff' : dayOfWeek === '日' ? '#ff4e45' : undefined;
+                  const colorStyle = dayOfWeek === '土' ? 'var(--sat-color)' : dayOfWeek === '日' ? 'var(--sun-color)' : undefined;
                   return (
                     <th key={i} style={{
                       ...(colorStyle ? { color: colorStyle } : {}),

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { TantouEntry } from '@/app/api/tantou/route';
+import { readable } from '@/lib/colors';
 
 export default function TantouView() {
   const [staff, setStaff] = useState<TantouEntry[]>([]);
@@ -54,12 +55,12 @@ export default function TantouView() {
                     ? { bg: 'rgba(239,68,68,0.2)', text: '#f87171', border: 'rgba(239,68,68,0.4)' }
                     : s.position.includes('準ディレ')
                     ? { bg: 'rgba(59,130,246,0.2)', text: '#60a5fa', border: 'rgba(59,130,246,0.4)' }
-                    : { bg: 'rgba(255,255,255,0.08)', text: 'rgba(255,255,255,0.6)', border: 'rgba(255,255,255,0.15)' };
+                    : { bg: 'rgba(var(--ov), 0.08)', text: 'rgba(var(--ov), 0.6)', border: 'rgba(var(--ov), 0.15)' };
                   return (
                     <span style={{
                       fontSize: 11, fontWeight: 600,
                       padding: '2px 8px', borderRadius: 10,
-                      background: c.bg, color: c.text,
+                      background: c.bg, color: readable(c.text),
                       border: `1px solid ${c.border}`,
                     }}>
                       {s.position}

@@ -11,6 +11,7 @@ import {
   Legend,
   Tooltip,
 } from 'chart.js';
+import { useChartColors } from '@/lib/theme';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Legend, Tooltip);
 
@@ -21,11 +22,12 @@ interface TrendChartProps {
 }
 
 export default function TrendChart({ title, dataArray, label }: TrendChartProps) {
+  const colors = useChartColors();
   const labels = dataArray.map((_, i) => `${i + 1}日`);
 
   return (
     <div className="chart-card" style={{ marginBottom: 16, height: 350 }}>
-      <h3 style={{ fontSize: '14px', color: '#aaa', marginBottom: 10 }}>{title}</h3>
+      <h3 style={{ fontSize: '14px', color: 'var(--text-soft)', marginBottom: 10 }}>{title}</h3>
       <div style={{ flex: 1, position: 'relative' }}>
         <Line
           data={{
@@ -49,8 +51,8 @@ export default function TrendChart({ title, dataArray, label }: TrendChartProps)
               datalabels: { display: false },
             },
             scales: {
-              x: { grid: { color: '#333' }, ticks: { color: '#aaa' } },
-              y: { grid: { color: '#333' }, ticks: { color: '#aaa' }, beginAtZero: true },
+              x: { grid: { color: colors.grid }, ticks: { color: colors.tick } },
+              y: { grid: { color: colors.grid }, ticks: { color: colors.tick }, beginAtZero: true },
             },
           }}
         />

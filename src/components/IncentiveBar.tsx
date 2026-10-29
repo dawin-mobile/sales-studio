@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { readable } from '@/lib/colors';
 
 interface Tier {
   name: string;
@@ -114,7 +115,7 @@ export default function IncentiveBar({ total, selfClose, attendanceDays, missing
           </span>
           <span style={{ gridArea: '1 / 1', display: 'flex', alignItems: 'baseline', gap: 5, whiteSpace: 'nowrap' }}>
             <span style={{ fontSize: 10, color: 'var(--text-sub)' }}>現在クラス</span>
-            <span style={{ fontSize: 16, fontWeight: 'bold', color: tierColor(currentIdx) }}>{current.name}</span>
+            <span style={{ fontSize: 16, fontWeight: 'bold', color: readable(tierColor(currentIdx)) }}>{current.name}</span>
           </span>
         </span>
       </div>
@@ -156,7 +157,7 @@ export default function IncentiveBar({ total, selfClose, attendanceDays, missing
                       left: `${pct}%`,
                       transform: xAlign,
                       fontSize: 9,
-                      color: total >= pt ? tickColor : 'rgba(255,255,255,0.22)',
+                      color: total >= pt ? readable(tickColor) : 'rgba(var(--ov), 0.22)',
                       fontWeight: total >= pt ? 600 : 400,
                       whiteSpace: 'nowrap',
                       lineHeight: 1,
@@ -195,8 +196,8 @@ export default function IncentiveBar({ total, selfClose, attendanceDays, missing
                       transform: xAlign,
                       pointerEvents: 'none',
                     }}>
-                      <div style={{ width: 1, height: GAP, background: 'rgba(255,255,255,0.18)' }} />
-                      <span className="incentive-tick-num" style={{ fontSize: 20, lineHeight: 1, whiteSpace: 'nowrap', color: total >= pt ? zone.color : 'rgba(255,255,255,0.4)', fontWeight: total >= pt ? 700 : 400 }}>
+                      <div style={{ width: 1, height: GAP, background: 'rgba(var(--ov), 0.18)' }} />
+                      <span className="incentive-tick-num" style={{ fontSize: 20, lineHeight: 1, whiteSpace: 'nowrap', color: total >= pt ? readable(zone.color) : 'rgba(var(--ov), 0.4)', fontWeight: total >= pt ? 700 : 400 }}>
                         {pt}
                       </span>
                       {(() => {
@@ -215,7 +216,7 @@ export default function IncentiveBar({ total, selfClose, attendanceDays, missing
                               WebkitTextFillColor: 'transparent',
                               backgroundClip: 'text',
                             } : {
-                              color: 'rgba(255,255,255,0.25)',
+                              color: 'rgba(var(--ov), 0.25)',
                             }),
                           }}>
                             ¥{tier.incentive.toLocaleString()}
@@ -232,8 +233,8 @@ export default function IncentiveBar({ total, selfClose, attendanceDays, missing
                 const ptNeeded = Math.max(0, Math.ceil(Math.round((next.pt - total) * 1000) / 100) / 10);
                 const scNeeded = next.selfClosePt !== null ? Math.max(0, Math.ceil(Math.round((next.selfClosePt - selfClose) * 1000) / 100) / 10) : 0;
                 return (
-                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: 13 }}>
-                    <span style={{ fontWeight: 600, color: zone.color }}>{next.name}</span>
+                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(var(--ov), 0.06)', fontSize: 13 }}>
+                    <span style={{ fontWeight: 600, color: readable(zone.color) }}>{next.name}</span>
                     <span style={{ color: 'var(--text-sub)' }}> まであと </span>
                     {ptNeeded > 0 && <span style={{ fontWeight: 600 }}>獲得{ptNeeded}pt</span>}
                     {ptNeeded > 0 && scNeeded > 0 && <span style={{ color: 'var(--text-sub)' }}>・</span>}
@@ -248,7 +249,7 @@ export default function IncentiveBar({ total, selfClose, attendanceDays, missing
 
       {/* ゼウス達成時 */}
       {!next && (
-        <div style={{ textAlign: 'center', color: '#facc15', fontWeight: 700, fontSize: 14 }}>
+        <div style={{ textAlign: 'center', color: readable('#facc15'), fontWeight: 700, fontSize: 14 }}>
           ゼウス達成！
         </div>
       )}

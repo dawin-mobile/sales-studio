@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { StaffEvaluation } from '@/types';
+import { readable } from '@/lib/colors';
 
 // ────────────────────────────────────────────
 //  スキルカテゴリのグループ定義
@@ -33,7 +34,7 @@ function Stars({ value, max = 3 }: { value: number; max?: number }) {
   return (
     <span style={{ letterSpacing: 1, fontSize: 13 }}>
       {Array.from({ length: max }).map((_, i) => (
-        <span key={i} style={{ color: i < value ? '#facc15' : '#444' }}>★</span>
+        <span key={i} style={{ color: i < value ? readable('#facc15') : 'var(--text-muted)' }}>★</span>
       ))}
     </span>
   );
@@ -54,7 +55,7 @@ function LevelBadge({ label }: { label: string }) {
       padding: '2px 7px',
       borderRadius: 10,
       background: color + '22',
-      color,
+      color: readable(color),
       border: `1px solid ${color}55`,
       fontWeight: 600,
     }}>
@@ -71,7 +72,7 @@ function AttributeBadge({ label }: { label: string }) {
       padding: '2px 7px',
       borderRadius: 10,
       background: isFreeter ? '#60a5fa22' : '#a78bfa22',
-      color: isFreeter ? '#60a5fa' : '#a78bfa',
+      color: readable(isFreeter ? readable('#60a5fa') : readable('#a78bfa')),
       border: `1px solid ${isFreeter ? '#60a5fa55' : '#a78bfa55'}`,
       fontWeight: 600,
       whiteSpace: 'nowrap',
@@ -140,7 +141,7 @@ function DetailPanel({ staff, onClose }: { staff: StaffEvaluation; onClose: () =
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <span style={{
               background: '#3ea6ff22',
-              color: '#3ea6ff',
+              color: readable('#3ea6ff'),
               border: '1px solid #3ea6ff55',
               borderRadius: 6,
               fontSize: 11,
@@ -162,7 +163,7 @@ function DetailPanel({ staff, onClose }: { staff: StaffEvaluation; onClose: () =
           <div style={{ fontSize: 12, color: 'var(--text-sub)', marginBottom: 4 }}>
             スキルスコア {staff.totalScore} / 42点
           </div>
-          <div style={{ background: '#333', borderRadius: 4, height: 6, overflow: 'hidden' }}>
+          <div style={{ background: 'rgba(var(--ov), 0.12)', borderRadius: 4, height: 6, overflow: 'hidden' }}>
             <div style={{
               background: 'linear-gradient(90deg, #3ea6ff, #60d394)',
               width: `${scorePercent}%`,
@@ -212,7 +213,7 @@ function DetailPanel({ staff, onClose }: { staff: StaffEvaluation; onClose: () =
       <div style={{ padding: '14px 16px' }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-sub)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           知識チェック
-          <span style={{ marginLeft: 8, fontSize: 12, color: knowledgeCount === knowledgeTotal ? '#4ade80' : 'var(--text-sub)', fontWeight: 400, textTransform: 'none' }}>
+          <span style={{ marginLeft: 8, fontSize: 12, color: knowledgeCount === knowledgeTotal ? readable('#4ade80') : 'var(--text-sub)', fontWeight: 400, textTransform: 'none' }}>
             {knowledgeCount}/{knowledgeTotal}
           </span>
         </div>
@@ -246,10 +247,10 @@ function DetailPanel({ staff, onClose }: { staff: StaffEvaluation; onClose: () =
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 10, color: group.color, transition: 'transform 0.2s', display: 'inline-block', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>▼</span>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: group.color }}>{group.label}</span>
+                    <span style={{ fontSize: 10, color: readable(group.color), transition: 'transform 0.2s', display: 'inline-block', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>▼</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: readable(group.color) }}>{group.label}</span>
                   </div>
-                  <span style={{ fontSize: 11, color: groupOk === groupTotal ? '#4ade80' : 'var(--text-sub)' }}>
+                  <span style={{ fontSize: 11, color: groupOk === groupTotal ? readable('#4ade80') : 'var(--text-sub)' }}>
                     {groupOk}/{groupTotal}
                   </span>
                 </button>
@@ -261,7 +262,7 @@ function DetailPanel({ staff, onClose }: { staff: StaffEvaluation; onClose: () =
                       return (
                         <div key={item} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span style={{ fontSize: 12, color: ok ? 'var(--text-main)' : 'var(--text-sub)' }}>{item}</span>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: ok ? '#4ade80' : '#f87171', minWidth: 16, textAlign: 'right' }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: ok ? readable('#4ade80') : readable('#f87171'), minWidth: 16, textAlign: 'right' }}>
                             {ok ? '○' : '×'}
                           </span>
                         </div>
@@ -297,11 +298,11 @@ export default function GrowthView() {
   }, []);
 
   if (loading) {
-    return <div style={{ textAlign: 'center', padding: 40, color: '#aaa' }}>読み込み中...</div>;
+    return <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-soft)' }}>読み込み中...</div>;
   }
 
   if (staff.length === 0) {
-    return <div style={{ textAlign: 'center', padding: 40, color: '#aaa' }}>データがありません。GASからsyncEvaluation()を実行してください。</div>;
+    return <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-soft)' }}>データがありません。GASからsyncEvaluation()を実行してください。</div>;
   }
 
   return (
@@ -341,14 +342,14 @@ export default function GrowthView() {
                     background: isSelected ? 'rgba(62,166,255,0.08)' : 'transparent',
                     transition: 'background 0.15s',
                   }}
-                  onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+                  onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'rgba(var(--ov), 0.04)'; }}
                   onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
                 >
-                  <td style={{ padding: '10px 12px', color: '#3ea6ff', fontWeight: 700 }}>{s.rank}位</td>
+                  <td style={{ padding: '10px 12px', color: readable('#3ea6ff'), fontWeight: 700 }}>{s.rank}位</td>
                   <td style={{ padding: '10px 12px', fontWeight: 600, color: 'var(--text-main)' }}>{s.staffName}</td>
                   <td style={{ padding: '10px 12px', color: 'var(--text-sub)' }}>{s.supervisor || '—'}</td>
                   <td style={{ padding: '10px 12px' }}>
-                    <span style={{ color: '#3ea6ff', fontWeight: 700 }}>{s.totalScore}</span>
+                    <span style={{ color: readable('#3ea6ff'), fontWeight: 700 }}>{s.totalScore}</span>
                     <span style={{ color: 'var(--text-sub)', fontSize: 11 }}>/42</span>
                   </td>
                   <td style={{ padding: '10px 12px' }}>
@@ -361,7 +362,7 @@ export default function GrowthView() {
                     {s.attribute ? <AttributeBadge label={s.attribute} /> : '—'}
                   </td>
                   <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
-                    <span style={{ color: knowledgeCount === s.knowledgeItems.length && s.knowledgeItems.length > 0 ? '#4ade80' : 'var(--text-sub)' }}>
+                    <span style={{ color: knowledgeCount === s.knowledgeItems.length && s.knowledgeItems.length > 0 ? readable('#4ade80') : 'var(--text-sub)' }}>
                       {knowledgeCount}/{s.knowledgeItems.length}
                     </span>
                   </td>

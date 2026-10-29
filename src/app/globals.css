@@ -40,7 +40,71 @@ html, body { overflow-x: hidden; overscroll-behavior-x: none; }
   --radius-lg: 12px;
   --transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 
+  /* テーマで入れ替わる色。--ov は「重ねる色」の RGB（黒基調は白を、白基調は黒を薄く重ねて明暗をつける）。
+     使い方: rgba(var(--ov), 0.06) */
+  --ov: 255, 255, 255;
+  --shade: 0%; /* readable()（src/lib/colors.ts）で明るい文字色に混ぜる黒の割合 */
+  --zebra-mix: 90%; /* 表の1行おきの色: カードの色にこの割合で --ov を混ぜる */
+  --text-menu: #b0b0b0;
+  --text-soft: #a1a1aa;
+  --chip-on-bg: #ffffff; /* 切り替えボタンの選択中 */
+  --chip-on-text: #0a0a0a;
+  --green-text: #4ade80;
+  --sat-color: #7dd3fc;
+  --sun-color: #f87171;
+  --orange-text: #fb923c;
+  --sky-text: #38bdf8;
+  --yellow-text: #fbbf24;
+  --link-color: #60a5fa;
+  --glass-bg: rgba(20, 20, 20, 0.60); /* 背景画像を透かすカード（勤怠タブ） */
+  --glass-bg-solid: rgba(20, 20, 20, 0.85);
+
   color-scheme: dark;
+}
+
+/* 白基調。プロフィール画面のヘッダーの ☀／🌙 で切り替える（<html data-theme="light">）。
+   真っ白だと眩しいので、少し温かみのあるグレー寄りの白にしてコントラストを抑える。
+   白地で薄く見える黄色・水色などの文字は濃くする */
+:root[data-theme="light"] {
+  --bg-color: #e4e2dd;
+  --bg-secondary: #dcd9d3;
+  --card-bg: #f2f1ed;
+  --card-bg-hover: #ebe9e4;
+
+  --text-main: #2b2b2b;
+  --text-sub: #6b6862;
+  --text-muted: #a8a49c;
+
+  --border-color: #d9d6cf;
+
+  --accent-hover: #c53030;
+  --accent-glow: rgba(229, 62, 62, 0.12);
+  --accent-green: #059669;
+  --accent-yellow: #d97706;
+  --accent-blue: #6b6862;
+  --accent-purple: #8a8780;
+  --accent-orange: #ea580c;
+  --chart-purple: #8a8780;
+  --chart-yellow: #d97706;
+
+  --ov: 0, 0, 0;
+  --shade: 40%;
+  --zebra-mix: 96%;
+  --text-menu: #4a4843;
+  --text-soft: #6b6862;
+  --chip-on-bg: #34332f;
+  --chip-on-text: #f2f1ed;
+  --green-text: #15803d;
+  --sat-color: #0369a1;
+  --sun-color: #dc2626;
+  --orange-text: #c2410c;
+  --sky-text: #0369a1;
+  --yellow-text: #a16207;
+  --link-color: #2563eb;
+  --glass-bg: rgba(242, 241, 237, 0.70);
+  --glass-bg-solid: rgba(242, 241, 237, 0.90);
+
+  color-scheme: light;
 }
 
 body {
@@ -119,7 +183,7 @@ body {
 }
 .sidebar-toggle-btn:hover {
   color: var(--text-main);
-  background: rgba(255,255,255,0.06);
+  background: rgba(var(--ov), 0.06);
 }
 
 .menu-item-collapsed {
@@ -136,7 +200,7 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #b0b0b0;
+  color: var(--text-menu);
   font-size: 13px;
   text-decoration: none;
   border-radius: var(--radius);
@@ -146,7 +210,7 @@ body {
 }
 
 .menu-item:hover {
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: rgba(var(--ov), 0.06);
   color: var(--text-main);
 }
 
@@ -237,8 +301,13 @@ body {
     -webkit-overflow-scrolling: touch;
   }
 
+  /* PCはドロップダウンなので戻るボタンは出さず、☀／🌙 だけを右端に残す */
   .profile-panel-header {
-    display: none;
+    padding: 6px 8px;
+    border-bottom: none;
+  }
+  .profile-panel-back {
+    display: none !important;
   }
 }
 
@@ -280,12 +349,12 @@ body {
   /* 日報画面の色（黒基調）。背景(#0f0f0f) → カード(#1c1c1c) → 入力欄・ボタン の順に少しずつ明るくする */
   --n-input-bg: #2a2a2a;
   --n-input-border: #3a3a3a;
-  --n-chip-bg: rgba(255, 255, 255, 0.09);
-  --n-chip-border: rgba(255, 255, 255, 0.16);
+  --n-chip-bg: rgba(var(--ov), 0.09);
+  --n-chip-border: rgba(var(--ov), 0.16);
   --n-chip-on-bg: #fff;
   --n-chip-on-text: #111;
-  --n-seg-bg: rgba(255, 255, 255, 0.06);
-  --n-seg-on: rgba(255, 255, 255, 0.12);
+  --n-seg-bg: rgba(var(--ov), 0.06);
+  --n-seg-on: rgba(var(--ov), 0.12);
   --n-line: #2a2a2a;
   --n-sub: #aaa;
   --n-hint: #999;
@@ -297,16 +366,14 @@ body {
   --n-draft-link: #c4b5fd;
 }
 
-/* 白基調（日報画面の標準。ヘッダーの ☀／🌙 で黒基調に切り替えられる）。アプリ共通の色もこの画面の中だけ上書きする。
-   真っ白だと眩しいので、少し温かみのあるグレー寄りの白にしてコントラストを抑える */
-.nippo-panel.nippo-light {
-  color-scheme: light;
-  color: #2b2b2b;
-  --bg-color: #e4e2dd;
-  --card-bg: #f2f1ed;
-  --text-main: #2b2b2b;
+/* 銀色のロゴは白地だと背景になじむので、白基調のときは濃くする */
+:root[data-theme="light"] .app-logo {
+  filter: brightness(0.35);
+}
+
+/* 白基調のときの日報画面の色。アプリ共通の色は :root[data-theme="light"] で切り替わる */
+:root[data-theme="light"] .nippo-panel {
   --text-muted: #8a8780;
-  --border-color: #d9d6cf;
   --n-input-bg: #f9f8f5;
   --n-input-border: #cdc9c1;
   --n-chip-bg: #f9f8f5;
@@ -496,7 +563,7 @@ input[type="password"]:focus {
   font-weight: 600;
   padding: 2px 7px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(var(--ov), 0.06);
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -550,7 +617,7 @@ input[type="password"]:focus {
 
 .bar-row { display: flex; align-items: center; gap: 10px; }
 .bar-name { width: 100px; font-size: 12px; text-align: right; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bar-area { flex: 1; height: 22px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; overflow: hidden; position: relative; display: flex; }
+.bar-area { flex: 1; height: 22px; background: rgba(var(--ov), 0.05); border-radius: 4px; overflow: hidden; position: relative; display: flex; }
 .bar-fill { height: 100%; background-color: #3ea6ff; width: 0%; transition: width 1s ease-out; }
 .bar-part { height: 100%; transition: width 1s ease-out; }
 .bar-part-mnp { background-color: #3ea6ff; }
@@ -571,7 +638,7 @@ input[type="password"]:focus {
   border-bottom: 1px solid var(--border-color);
   transition: background 0.1s;
 }
-.ranking-item:hover { background: rgba(255, 255, 255, 0.03); }
+.ranking-item:hover { background: rgba(var(--ov), 0.03); }
 .rank-num { width: 24px; font-weight: bold; color: var(--text-sub); }
 .staff-info { flex: 1; margin-left: 8px; }
 .staff-name { display: block; font-size: 14px; }
@@ -661,7 +728,7 @@ input[type="password"]:focus {
 .stat-figure-note { font-size: 10px; color: var(--text-sub); margin-top: 3px; white-space: nowrap; }
 
 /* 戻り分を含む日に付ける印 */
-.cal-modori-mark { color: #f59e0b; font-weight: 700; margin-left: 1px; }
+.cal-modori-mark { color: var(--accent-yellow); font-weight: 700; margin-left: 1px; }
 .cal-modori-note { padding: 8px 12px; font-size: 11px; color: var(--text-sub); }
 
 /* 出勤日数（スタッフ選択カードと獲得表カードの間） */
@@ -692,7 +759,7 @@ input[type="password"]:focus {
 .table-wrapper { overflow-x: auto; }
 .full-ranking-table { border-collapse: collapse; font-size: 13px; table-layout: fixed; }
 .full-ranking-table th { text-align: left; padding: 8px 4px; color: var(--text-sub); border-bottom: 1px solid var(--border-color); font-weight: 500; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; overflow: hidden; }
-.full-ranking-table td { padding: 7px 4px; border-bottom: 1px solid rgba(255, 255, 255, 0.04); white-space: nowrap; }
+.full-ranking-table td { padding: 7px 4px; border-bottom: 1px solid rgba(var(--ov), 0.04); white-space: nowrap; }
 .full-ranking-table th:first-child,
 .full-ranking-table td:first-child { position: sticky; left: 0; z-index: 2; background: var(--card-bg); width: 32px; min-width: 32px; max-width: 32px; text-align: center; padding: 8px 6px; }
 .full-ranking-table th:nth-child(2),
@@ -753,8 +820,8 @@ input[type="password"]:focus {
 
 .shift-region-toggle {
   display: flex;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(var(--ov), 0.05);
+  border: 1px solid rgba(var(--ov), 0.08);
   border-radius: 8px;
   padding: 3px;
   gap: 3px;
@@ -765,7 +832,7 @@ input[type="password"]:focus {
   border-radius: 6px;
   border: none;
   background: transparent;
-  color: #a1a1aa;
+  color: var(--text-soft);
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
@@ -773,15 +840,15 @@ input[type="password"]:focus {
 }
 
 .shift-region-btn.active {
-  background: #ffffff;
-  color: #0a0a0a;
+  background: var(--chip-on-bg);
+  color: var(--chip-on-text);
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
 .shift-region-btn:hover:not(.active) {
-  background: rgba(255, 255, 255, 0.08);
-  color: #e4e4e7;
+  background: rgba(var(--ov), 0.08);
+  color: var(--text-main);
 }
 
 /* 育成アプリ（外部アプリ）へのリンク。内部タブと並ぶが別アプリに飛ぶことが分かる見た目にする */
@@ -793,7 +860,7 @@ input[type="password"]:focus {
   border-radius: 8px;
   border: 1px solid rgba(74, 222, 128, 0.3);
   background: rgba(74, 222, 128, 0.08);
-  color: #4ade80;
+  color: var(--green-text);
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;
@@ -851,9 +918,9 @@ input[type="password"]:focus {
   gap: 5px;
   padding: 5px 10px;
   border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
-  color: #a1a1aa;
+  border: 1px solid rgba(var(--ov), 0.1);
+  background: rgba(var(--ov), 0.05);
+  color: var(--text-soft);
   cursor: pointer;
   font-size: 12px;
   font-weight: 500;
@@ -862,14 +929,14 @@ input[type="password"]:focus {
 }
 
 .shift-agency-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #e4e4e7;
+  background: rgba(var(--ov), 0.08);
+  color: var(--text-main);
 }
 
 .shift-agency-btn.active {
-  background: rgba(255, 255, 255, 0.10);
-  color: #e4e4e7;
-  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(var(--ov), 0.10);
+  color: var(--text-main);
+  border-color: rgba(var(--ov), 0.2);
 }
 
 .shift-agency-btn.filtered {
@@ -902,7 +969,7 @@ input[type="password"]:focus {
   font-size: 12px;
   padding: 3px 10px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(var(--ov), 0.03);
   border: 1px solid var(--border-color);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, opacity 0.15s;
@@ -910,13 +977,13 @@ input[type="password"]:focus {
 }
 
 .shift-legend-item:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(var(--ov), 0.07);
 }
 
 .shift-legend-item.selected {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+  background: rgba(var(--ov), 0.08);
+  border-color: rgba(var(--ov), 0.25);
+  box-shadow: 0 0 0 1px rgba(var(--ov), 0.1);
 }
 
 .shift-legend-item.dimmed {
@@ -965,22 +1032,22 @@ input[type="password"]:focus {
 
 .shift-table th,
 .shift-table td {
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(var(--ov), 0.05);
 }
 
 /* 現場別: 日付が変わる行に太めのボーダー */
 .shift-table tr.date-boundary td {
-  border-top: 2px solid rgba(255, 255, 255, 0.6) !important;
+  border-top: 2px solid rgba(var(--ov), 0.6) !important;
 }
 
 /* 1行ごとに交互色 */
 .shift-table tbody tr:nth-child(even) {
-  background: color-mix(in srgb, var(--card-bg) 90%, white 10%);
+  background: color-mix(in srgb, var(--card-bg) var(--zebra-mix), rgb(var(--ov)));
 }
 
 /* 固定列も同じ交互色を引き継ぐ（stickyはbackgroundが必要） */
 .shift-table tbody tr:nth-child(even) .shift-sticky-col {
-  background: color-mix(in srgb, var(--card-bg) 90%, white 10%);
+  background: color-mix(in srgb, var(--card-bg) var(--zebra-mix), rgb(var(--ov)));
 }
 .shift-table tbody tr:nth-child(odd) .shift-sticky-col {
   background: var(--card-bg);
@@ -1038,13 +1105,13 @@ thead .shift-sticky-col {
   border-bottom: 2px solid var(--accent-color) !important;
 }
 
-.shift-col-date.weekend-sat { color: #7dd3fc; }
-.shift-col-date.weekend-sun { color: #f87171; }
+.shift-col-date.weekend-sat { color: var(--sat-color); }
+.shift-col-date.weekend-sun { color: var(--sun-color); }
 
 .shift-date-num { font-size: 10px; font-weight: 600; line-height: 1.3; }
 .shift-date-dow { font-size: 8px; margin-top: 1px; }
-.shift-date-dow.sat { color: #7dd3fc; }
-.shift-date-dow.sun { color: #f87171; }
+.shift-date-dow.sat { color: var(--sat-color); }
+.shift-date-dow.sun { color: var(--sun-color); }
 
 /* Header: total column */
 .shift-col-total {
@@ -1224,8 +1291,8 @@ thead .loc-th-dow { z-index: 30; } /* 最前面 */
   border-left: 3px solid var(--accent-color) !important;
 }
 
-.loc-date-cell.weekend-sat { color: #7dd3fc; }
-.loc-date-cell.weekend-sun { color: #f87171; }
+.loc-date-cell.weekend-sat { color: var(--sat-color); }
+.loc-date-cell.weekend-sun { color: var(--sun-color); }
 
 .loc-date-num {
   font-size: 11px;
@@ -1250,8 +1317,8 @@ thead .loc-th-dow { z-index: 30; } /* 最前面 */
   box-shadow: 2px 0 0 var(--border-color);
 }
 
-.loc-dow-cell.sat { color: #7dd3fc; }
-.loc-dow-cell.sun { color: #f87171; }
+.loc-dow-cell.sat { color: var(--sat-color); }
+.loc-dow-cell.sun { color: var(--sun-color); }
 
 /* 日付・曜日セルの背景を行の交互色と同期 */
 .shift-table tbody tr:nth-child(odd) .loc-date-cell,
@@ -1260,7 +1327,7 @@ thead .loc-th-dow { z-index: 30; } /* 最前面 */
 }
 .shift-table tbody tr:nth-child(even) .loc-date-cell,
 .shift-table tbody tr:nth-child(even) .loc-dow-cell {
-  background: color-mix(in srgb, var(--card-bg) 90%, white 10%);
+  background: color-mix(in srgb, var(--card-bg) var(--zebra-mix), rgb(var(--ov)));
 }
 
 /* 種別（シフト表C列：au / SB / 増強）セル */
@@ -1275,11 +1342,11 @@ thead .loc-th-dow { z-index: 30; } /* 最前面 */
   border-radius: 4px;
   white-space: nowrap;
   background: rgba(251, 146, 60, 0.20);
-  color: #fb923c;
+  color: var(--orange-text);
 }
 .loc-carrier-badge.sb {
   background: rgba(56, 189, 248, 0.20);
-  color: #38bdf8;
+  color: var(--sky-text);
 }
 
 /* 店舗名セル */
@@ -1325,9 +1392,9 @@ thead .loc-th-dow { z-index: 30; } /* 最前面 */
   border-radius: 2px;
   font-size: 10px;
   font-weight: 500;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(var(--ov), 0.07);
   color: var(--text-main);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(var(--ov), 0.08);
   white-space: nowrap;
 }
 
@@ -1480,14 +1547,14 @@ thead .loc-th-dow { z-index: 30; } /* 最前面 */
 
 /* 対角セル（自分自身）*/
 .hm-self-cell {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(var(--ov), 0.04);
   border-radius: 4px;
   cursor: not-allowed;
 }
 
 /* 合計列 */
 .hm-total-cell {
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(var(--ov), 0.08) !important;
   font-weight: 700;
   color: var(--text-main);
   border-radius: 4px;
@@ -1593,18 +1660,18 @@ thead .loc-th-dow { z-index: 30; } /* 最前面 */
      ぼかしを入れて背景の細かい模様を落とし、文字が読める濃さを保つ */
   .kintai-view .chart-card,
   .kintai-view.chart-card {
-    background: rgba(20, 20, 20, 0.60);
+    background: var(--glass-bg);
     /* 透過を上げるほど背景の細かい模様が文字と干渉するので、ぼかしも強める */
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(var(--ov), 0.10);
   }
 
   /* backdrop-filter が効かない端末では、透過を控えめにして可読性を優先する */
   @supports not ((backdrop-filter: blur(10px)) or (-webkit-backdrop-filter: blur(10px))) {
     .kintai-view .chart-card,
     .kintai-view.chart-card {
-      background: rgba(20, 20, 20, 0.85);
+      background: var(--glass-bg-solid);
     }
   }
 }

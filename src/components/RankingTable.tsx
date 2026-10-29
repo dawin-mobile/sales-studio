@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Staff } from '@/types';
+import { readable } from '@/lib/colors';
 
 type SortKey = 'total' | 'selfClose' | 'mnp' | 'new' | 'change' | 'hikari' | 'tablet' | 'other';
 
@@ -47,7 +48,7 @@ export default function RankingTable({ ranking }: RankingTableProps) {
                   onClick={() => setSortKey(key)}
                   style={{
                     cursor: 'pointer',
-                    color: sortKey === key ? '#ff4e45' : undefined,
+                    color: sortKey === key ? readable('#ff4e45') : undefined,
                     whiteSpace: 'nowrap',
                     userSelect: 'none',
                   }}
@@ -60,12 +61,12 @@ export default function RankingTable({ ranking }: RankingTableProps) {
           <tbody>
             {sorted.map((staff, i) => (
               <tr key={staff.name}>
-                <td style={{ textAlign: 'center', color: i < 3 ? '#facc15' : 'var(--text-sub)', fontWeight: i < 3 ? 700 : 400 }}>
+                <td style={{ textAlign: 'center', color: i < 3 ? readable('#facc15') : 'var(--text-sub)', fontWeight: i < 3 ? 700 : 400 }}>
                   {i + 1}
                 </td>
                 <td style={{ whiteSpace: 'nowrap', left: nameLeft }}>{staff.name.length > 12 ? staff.name.slice(0, 12) + '…' : staff.name}</td>
-                <td style={{ color: '#3ea6ff', fontWeight: 'bold' }}>{staff.total}</td>
-                <td style={{ color: staff.selfClose > 0 ? '#f97316' : 'var(--text-sub)' }}>{staff.selfClose}</td>
+                <td style={{ color: readable('#3ea6ff'), fontWeight: 'bold' }}>{staff.total}</td>
+                <td style={{ color: staff.selfClose > 0 ? readable('#f97316') : 'var(--text-sub)' }}>{staff.selfClose}</td>
                 <td>{staff.mnp}</td>
                 <td>{staff.new}</td>
                 <td>{staff.change}</td>
