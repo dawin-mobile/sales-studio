@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { ChevronLeft, Moon, PenLine, Sun } from 'lucide-react';
-import { useTheme } from '@/lib/theme';
 import { NIPPO_SECTIONS, sectionsFor, validateNippo, type NippoField, type NippoMode } from '@/lib/nippoForm';
 
 type PastFare = { location: string; fare: string; date: string; order: number };
@@ -239,9 +238,16 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
   const [fareAuto, setFareAuto] = useState(draft?.fareAuto ?? true);
   // 書きかけを戻したときは、最初のシフト読み込みで勤務地を上書きしない
   const keepLocationRef = useRef(draft !== null);
-  // ヘッダーの ☀／🌙 はアプリ全体の色を切り替える（プロフィール画面のものと同じ設定）
-  const { theme, toggleTheme } = useTheme();
-  const light = theme === 'light';
+  // 日報画面の色はアプリ全体とは別に選べる（白基調が標準）。ヘッダーの ☀／🌙 で切り替え、端末に覚えておく
+  const [light, setLight] = useState(() => {
+    try { return localStorage.getItem('nippo-theme') !== 'dark'; } catch { return true; }
+  });
+  const toggleTheme = () => {
+    setLight((cur) => {
+      try { localStorage.setItem('nippo-theme', cur ? 'dark' : 'light'); } catch { /* 保存できなくても切り替えはできる */ }
+      return !cur;
+    });
+  };
   // 「消して最初から」で、日付が同じままでもシフトを読み直すためのカウンター
   const [reloadCount, setReloadCount] = useState(0);
 
@@ -495,7 +501,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
   };
 
   return (
-    <div className="nippo-panel">
+    <div className={light ? 'nippo-panel nippo-light' : 'nippo-panel nippo-dark'}>
       <div className="nippo-panel-header">
         <button
           onClick={step === 'confirm' ? () => setStep('edit') : onClose}

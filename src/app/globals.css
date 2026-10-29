@@ -1,7 +1,9 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { overflow-x: hidden; overscroll-behavior-x: none; }
 
-:root {
+/* 日報画面はアプリとは別に色を選べるので、日報の黒基調（.nippo-dark）でもこの値を使う */
+:root,
+.nippo-panel.nippo-dark {
   /* Base */
   --bg-color: #0f0f0f;
   --bg-secondary: #161616;
@@ -65,7 +67,8 @@ html, body { overflow-x: hidden; overscroll-behavior-x: none; }
 /* 白基調。プロフィール画面のヘッダーの ☀／🌙 で切り替える（<html data-theme="light">）。
    真っ白だと眩しいので、少し温かみのあるグレー寄りの白にしてコントラストを抑える。
    白地で薄く見える黄色・水色などの文字は濃くする */
-:root[data-theme="light"] {
+:root[data-theme="light"],
+.nippo-panel.nippo-light {
   --bg-color: #e4e2dd;
   --bg-secondary: #dcd9d3;
   --card-bg: #f2f1ed;
@@ -342,6 +345,7 @@ body {
   inset: 0;
   z-index: 600; /* スマホの下部ナビ（z-index: 500）より前に出す */
   background: var(--bg-color);
+  color: var(--text-main); /* アプリと日報で色が違うときも、日報側の文字色で表示する */
   color-scheme: dark; /* 日付ピッカー・チェックボックスを暗い背景に合った見た目にする */
   overflow: hidden;
   display: flex;
@@ -371,8 +375,9 @@ body {
   filter: brightness(0.35);
 }
 
-/* 白基調のときの日報画面の色。アプリ共通の色は :root[data-theme="light"] で切り替わる */
-:root[data-theme="light"] .nippo-panel {
+/* 日報画面の白基調。アプリ共通の色（--bg-color など）は上の :root[data-theme="light"] と同じ値がこの画面にだけ入る */
+.nippo-panel.nippo-light {
+  color-scheme: light;
   --text-muted: #8a8780;
   --n-input-bg: #f9f8f5;
   --n-input-border: #cdc9c1;
