@@ -8,12 +8,12 @@
 
 export const NIPPO_FORM_ID = '1FAIpQLSes2Ux9bbQ0DffeEcbCuMUo6IXemj5r1gExdm8s9G48FIv-bw';
 
-// アプリから日報を書けるロール。アルバイトはまだ出さない
-// （業務委託ロールの人も自社スタッフ用フォームで提出している。協力会社専用フォームの人はアプリのユーザーではない）
-export const NIPPO_FORM_ROLES: string[] = ['管理者', '幹部', '社員', '業務委託'];
+// アプリから日報を書けるロール。アルバイト・業務委託はロールではまとめて出さない
+export const NIPPO_FORM_ROLES: string[] = ['管理者', '幹部', '社員'];
 
-// ロールに関係なく使える人（試験運用からの継続。フォームの名前プルダウンと同じ表記）
-export const NIPPO_FORM_USERS = ['中村翔', '市川絢菜'];
+// ロールに関係なく使える人（フォームの名前プルダウンと同じ表記）。
+// 中村翔・市川絢菜は試験運用からの継続、大野雅也・小嶌駿幸は業務委託のうちこの2人だけに出す（翔の指定）
+export const NIPPO_FORM_USERS = ['中村翔', '市川絢菜', '大野雅也', '小嶌駿幸'];
 
 export function canUseNippoForm(name: string, role: string | undefined): boolean {
   return NIPPO_FORM_USERS.includes(name) || (role !== undefined && NIPPO_FORM_ROLES.includes(role));
