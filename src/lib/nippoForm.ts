@@ -39,6 +39,8 @@ export type NippoField = {
   // label はどの種類のボタンかのコード上の目印（画面には出さない）
   steps?: { value: number; label?: string }[];
   copyTotal?: boolean; // 「実績と同じ」ボタン（実績の合計を入れる）を出す
+  zeroButton?: boolean; // 入力欄の左に「0」ボタンを出す（ほとんどの人が0の欄）
+  zero?: boolean; // 0だった日も入力する欄（セクションごと出さない場合でもこの欄だけ出す）
 };
 
 export type NippoSection = {
@@ -65,7 +67,7 @@ export const NIPPO_SECTIONS: NippoSection[] = [
       { key: 'denki', entry: '1501165980', label: 'でんき・ガス', hint: '1件→0.1', kind: 'number', steps: [{ value: 0.05 }] },
       { key: 'credit', entry: '1014539532', label: 'クレカ・自銀', hint: 'ゴールド 0.3 / シルバー 0.1 / 自銀 0.1', kind: 'number', steps: [{ value: 0.15, label: 'ゴールド' }, { value: 0.05, label: 'シルバー・自銀' }] },
       { key: 'selfClose', entry: '973447314', label: '合計自己クロ', kind: 'number', copyTotal: true },
-      { key: 'seated', entry: '2131159871', label: '着座数', hint: '1組1件（3人家族を着座させたら1）。実績か自己クロがあれば自動で1', kind: 'number', steps: [{ value: 1 }] },
+      { key: 'seated', entry: '2131159871', label: '着座数', hint: '1組1件（3人家族を着座させたら1）', kind: 'number', steps: [{ value: 1 }], zero: true },
     ],
   },
   {
@@ -81,12 +83,12 @@ export const NIPPO_SECTIONS: NippoSection[] = [
     always: true,
     fields: [
       { key: 'fare', entry: '1677579059', label: '往復交通費（公共交通機関）', kind: 'number', required: true },
-      { key: 'taxi', entry: '23584606', label: 'タクシー代、有料特急', hint: '事前承諾が必要。領収書は社員に渡してね', kind: 'number', required: true },
+      { key: 'taxi', entry: '23584606', label: 'タクシー代、有料特急', hint: '事前承諾が必要。領収書は社員に渡してね', kind: 'number', required: true, zeroButton: true },
     ],
   },
 ];
 
-// normal = 通常 / zero = 0だった日（業務委託で所感と交通費） / training = 研修の日（交通費だけ）
+// normal = 通常 / zero = 0だった日（業務委託で着座数・所感・交通費） / training = 研修の日（交通費だけ）
 export type NippoMode = 'normal' | 'zero' | 'training';
 
 // フォームのページ番号（0始まり）。フォームのページ移動の設定と同じ順に通る。
@@ -107,7 +109,12 @@ export type NippoSubmission = {
 /** そのモードで入力するセクション */
 export function sectionsFor(mode: NippoMode): NippoSection[] {
   if (mode === 'normal') return NIPPO_SECTIONS;
-  return NIPPO_SECTIONS.filter((s) => s.always || (mode === 'zero' && s.zero));
+  return NIPPO_SECTIONS.flatMap((s) => {
+    if (s.always || (mode === 'zero' && s.zero)) return [s];
+    // 0だった日は、実績のうち着座数だけ出す
+    const fields = mode === 'zero' ? s.fields.filter((f) => f.zero) : [];
+    return fields.length > 0 ? [{ ...s, fields }] : [];
+  });
 }
 
 /** 入力内容の不備を返す（問題なければ空配列） */

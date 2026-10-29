@@ -169,7 +169,7 @@ type Draft = {
   fareAuto: boolean;
 };
 
-const INITIAL_VALUES: Record<string, string> = { taxi: '0' };
+const INITIAL_VALUES: Record<string, string> = {};
 
 function draftKey(name: string | null | undefined): string | null {
   return name ? `nippo-draft:${name}` : null;
@@ -302,11 +302,12 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
   }, [pastFare, fareAuto]);
 
   // 着座数を自分で触っていない間は、実績か自己クロのどれかが0でなければ自動で1にする
+  // （0だった日は実績の欄が隠れていて送られないので、そこに残った数字では自動入力しない）
   const effectiveValues = useMemo(() => {
     if (values.seated !== undefined) return values;
-    const hasResult = [...RESULT_KEYS, 'selfClose'].some((k) => parseFloat(values[k] ?? '') > 0);
+    const hasResult = mode === 'normal' && [...RESULT_KEYS, 'selfClose'].some((k) => parseFloat(values[k] ?? '') > 0);
     return { ...values, seated: hasResult ? '1' : '' };
-  }, [values]);
+  }, [values, mode]);
 
   const setValue = (key: string, value: string) => {
     if (key === 'fare') setFareAuto(false);
@@ -387,7 +388,8 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
 
     if (f.kind === 'number') {
       const canUndo = (stepHistory[f.key]?.length ?? 0) > 0;
-      const filled = parseFloat(v) > 0;
+      // 「0」ボタンのある欄は0も入力済みとして緑にする
+      const filled = parseFloat(v) > 0 || (f.zeroButton === true && v.trim() !== '');
       const stepperButton: React.CSSProperties = { ...stepButton, height: 40, minWidth: 44, justifyContent: 'center', padding: '0 10px' };
       const input = (
         <input
@@ -430,6 +432,11 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
                     +{st.value}
                   </button>
                 ))}
+              </div>
+            ) : f.zeroButton ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
+                <button type="button" onClick={() => setValue(f.key, '0')} style={stepperButton}>0</button>
+                {input}
               </div>
             ) : input}
           </div>
@@ -580,21 +587,33 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
                   <div style={{ fontSize: 11, color: '#999', marginTop: 8 }}>この日のシフトが見つからないため、勤務地を入力してください</div>
                 )}
                 {/* 勤務の種類。0だった日は所感と交通費、研修は交通費だけ入力する */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, marginTop: 16, padding: 4, background: '#141414', borderRadius: 10 }}>
+                {/* 稼働カードの「関東／九州」と同じデザイン: 選択中だけ明るいグレー、それ以外は背景なしで文字を薄く */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, marginTop: 16, padding: 2, background: 'rgba(255,255,255,0.06)', borderRadius: 8 }}>
                   {MODE_OPTIONS.map((o) => (
                     <button
                       key={o.mode}
                       type="button"
                       onClick={() => setMode(o.mode)}
                       aria-pressed={mode === o.mode}
-                      style={{ ...chipStyle(mode === o.mode), height: 36, borderRadius: 8, border: 'none', padding: 0, ...(mode !== o.mode && { background: 'transparent', color: '#aaa' }) }}
+                      style={{
+                        height: 40,
+                        borderRadius: 6,
+                        border: 'none',
+                        padding: 0,
+                        fontSize: 14,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        background: mode === o.mode ? 'rgba(255,255,255,0.12)' : 'transparent',
+                        color: mode === o.mode ? 'var(--text-main)' : 'var(--text-muted)',
+                        transition: 'background 0.15s',
+                      }}
                     >
                       {o.label}
                     </button>
                   ))}
                 </div>
                 {mode !== 'normal' && (
-                  <div style={{ fontSize: 11, color: '#999', marginTop: 6 }}>{mode === 'zero' ? '所感と交通費を入力します' : '交通費だけ入力します'}</div>
+                  <div style={{ fontSize: 11, color: '#999', marginTop: 6 }}>{mode === 'zero' ? '着座数・所感・交通費を入力します' : '交通費だけ入力します'}</div>
                 )}
               </div>
 
