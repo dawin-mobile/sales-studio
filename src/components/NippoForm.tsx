@@ -137,7 +137,7 @@ const inputStyle: React.CSSProperties = {
 // 数字が入った欄は緑（赤はエラーに見えるため）
 const GREEN_STYLE: React.CSSProperties = { background: 'rgba(16, 185, 129, 0.12)', borderColor: 'rgba(16, 185, 129, 0.6)' };
 
-// 実績の換算値の欄（自己クロ・着座数を除く）。着座数の自動入力と「実績と同じ」の合計に使う
+// 実績の換算値の欄（自己クロ・着座数を除く）。「実績と同じ」と確認画面の獲得合計に使う
 const RESULT_KEYS = NIPPO_SECTIONS[0].fields.map((f) => f.key).filter((k) => k !== 'selfClose' && k !== 'seated');
 
 const stepButton: React.CSSProperties = {
@@ -320,43 +320,35 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
     setValues((v) => ({ ...v, fare: pastFare !== undefined ? String(pastFare) : '' }));
   }, [pastFare, fareAuto]);
 
-  // 着座数を自分で触っていない間は、実績か自己クロのどれかが0でなければ自動で1にする
-  // （0だった日は実績の欄が隠れていて送られないので、そこに残った数字では自動入力しない）
-  const effectiveValues = useMemo(() => {
-    if (values.seated !== undefined) return values;
-    const hasResult = mode === 'normal' && [...RESULT_KEYS, 'selfClose'].some((k) => parseFloat(values[k] ?? '') > 0);
-    return { ...values, seated: hasResult ? '1' : '' };
-  }, [values, mode]);
-
   const setValue = (key: string, value: string) => {
     if (key === 'fare') setFareAuto(false);
     setValues((v) => ({ ...v, [key]: value }));
     setStepHistory((h) => ({ ...h, [key]: [] }));
   };
   const addStep = (key: string, step: number) => {
-    const cur = parseFloat(effectiveValues[key] ?? '') || 0;
+    const cur = parseFloat(values[key] ?? '') || 0;
     setValues((v) => ({ ...v, [key]: String(round2(cur + step)) }));
     setStepHistory((h) => ({ ...h, [key]: [...(h[key] ?? []), step] }));
   };
   // 自己クロの「実績と同じ」: 実績の合計を入れる
   const copyTotal = (key: string) => {
-    const total = RESULT_KEYS.reduce((sum, k) => round2(sum + (parseFloat(effectiveValues[k] ?? '') || 0)), 0);
+    const total = RESULT_KEYS.reduce((sum, k) => round2(sum + (parseFloat(values[k] ?? '') || 0)), 0);
     setValue(key, total === 0 ? '' : String(total));
   };
   const undoStep = (key: string) => {
     const history = stepHistory[key] ?? [];
     const last = history[history.length - 1];
     if (last === undefined) return;
-    const next = Math.max(0, round2((parseFloat(effectiveValues[key] ?? '') || 0) - last));
+    const next = Math.max(0, round2((parseFloat(values[key] ?? '') || 0) - last));
     setValues((v) => ({ ...v, [key]: next === 0 ? '' : String(next) }));
     setStepHistory((h) => ({ ...h, [key]: history.slice(0, -1) }));
   };
 
   // いつもの金額（直近5回の最安）より高くしたら、差額を見せて本人に自覚してもらう（送信は止めない）
-  const fareOver = pastFare !== undefined ? (parseFloat(effectiveValues.fare ?? '') || 0) - pastFare : 0;
+  const fareOver = pastFare !== undefined ? (parseFloat(values.fare ?? '') || 0) - pastFare : 0;
   const fareOverNote = fareOver > 0 ? `いつもより +${fareOver.toLocaleString()}円 高い金額です` : '';
 
-  const submission = { date, location, mode, values: effectiveValues };
+  const submission = { date, location, mode, values };
   const sections = sectionsFor(mode);
 
   // 勤務日ボタン: 今日・昨日・未提出の日（新しい順）
@@ -366,14 +358,14 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
   const isOtherDate = !dateChips.includes(date);
 
   // 確認画面は見落としやすい要点だけにする（項目ごとの数字は入力画面で見えている）
-  const sumOf = (keys: string[]) => keys.reduce((sum, k) => round2(sum + (parseFloat(effectiveValues[k] ?? '') || 0)), 0);
+  const sumOf = (keys: string[]) => keys.reduce((sum, k) => round2(sum + (parseFloat(values[k] ?? '') || 0)), 0);
   // 獲得・自己クロは大きく、交通費は1行ずつ。0だった日・研修の日は獲得・自己クロを出さない
   const confirmTotals: [string, string][] = mode === 'normal'
     ? [['獲得合計', String(sumOf(RESULT_KEYS))], ['自己クロ合計', String(sumOf(['selfClose']))]]
     : [];
   const confirmFares: [string, string][] = [
-    ['往復交通費（公共交通機関）', (effectiveValues.fare ?? '').trim()],
-    ['タクシー代、有料特急', (effectiveValues.taxi ?? '').trim()],
+    ['往復交通費（公共交通機関）', (values.fare ?? '').trim()],
+    ['タクシー代、有料特急', (values.taxi ?? '').trim()],
   ];
 
   const goConfirm = () => {
@@ -397,6 +389,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
         return;
       }
       clearDraft();
+      trackAccess('日報送信');
       setStep('done');
     } catch {
       setErrors(['通信に失敗しました。電波のよいところで再度送信してください']);
@@ -406,7 +399,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
   };
 
   const renderField = (f: NippoField) => {
-    const v = effectiveValues[f.key] ?? '';
+    const v = values[f.key] ?? '';
     const label = (
       <div style={{ flex: '1 1 120px', minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 600 }}>
