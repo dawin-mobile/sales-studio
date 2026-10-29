@@ -277,6 +277,53 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  /* 日報画面の色（黒基調）。背景(#0f0f0f) → カード(#1c1c1c) → 入力欄・ボタン の順に少しずつ明るくする */
+  --n-input-bg: #2a2a2a;
+  --n-input-border: #3a3a3a;
+  --n-chip-bg: rgba(255, 255, 255, 0.09);
+  --n-chip-border: rgba(255, 255, 255, 0.16);
+  --n-chip-on-bg: #fff;
+  --n-chip-on-text: #111;
+  --n-seg-bg: rgba(255, 255, 255, 0.06);
+  --n-seg-on: rgba(255, 255, 255, 0.12);
+  --n-line: #2a2a2a;
+  --n-sub: #aaa;
+  --n-hint: #999;
+  --n-warn: #f59e0b;
+  --n-error-bg: #2a0a0a;
+  --n-error-text: #ff6666;
+  --n-draft-bg: rgba(124, 58, 237, 0.15);
+  --n-draft-border: rgba(196, 181, 253, 0.35);
+  --n-draft-link: #c4b5fd;
+}
+
+/* 白基調（日報画面はこちらを使う）。アプリ共通の色もこの画面の中だけ上書きする。
+   真っ白だと眩しいので、少し温かみのあるグレー寄りの白にしてコントラストを抑える */
+.nippo-panel.nippo-light {
+  color-scheme: light;
+  color: #2b2b2b;
+  --bg-color: #e4e2dd;
+  --card-bg: #f2f1ed;
+  --text-main: #2b2b2b;
+  --text-muted: #8a8780;
+  --border-color: #d9d6cf;
+  --n-input-bg: #f9f8f5;
+  --n-input-border: #cdc9c1;
+  --n-chip-bg: #f9f8f5;
+  --n-chip-border: #cdc9c1;
+  --n-chip-on-bg: #34332f;
+  --n-chip-on-text: #f2f1ed;
+  --n-seg-bg: #e2dfd9;
+  --n-seg-on: #f9f8f5;
+  --n-line: #e1ded8;
+  --n-sub: #6b6862;
+  --n-hint: #8a8780;
+  --n-warn: #b45309;
+  --n-error-bg: #fdecec;
+  --n-error-text: #c53030;
+  --n-draft-bg: #f3effe;
+  --n-draft-border: #d9ccfb;
+  --n-draft-link: #6d28d9;
 }
 
 .nippo-panel-header {

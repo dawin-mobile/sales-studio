@@ -117,10 +117,10 @@ export function NippoButton({ missingCount, onClick }: { missingCount: number; o
   );
 }
 
-// 黒基調のまま重なりが見えるよう、背景(#0f0f0f) → カード(#1c1c1c) → 入力欄・ボタン の順に少しずつ明るくする
+// 色は globals.css の .nippo-panel で決めている（黒基調／白基調）
 const inputStyle: React.CSSProperties = {
-  background: '#2a2a2a',
-  border: '1px solid #3a3a3a',
+  background: 'var(--n-input-bg)',
+  border: '1px solid var(--n-input-border)',
   borderRadius: 8,
   color: 'var(--text-main)',
   fontSize: 16, // 16px未満だとiOSで入力時に画面が拡大される
@@ -139,8 +139,8 @@ const stepButton: React.CSSProperties = {
   height: 36,
   padding: '0 12px',
   borderRadius: 18,
-  border: '1px solid rgba(255, 255, 255, 0.16)',
-  background: 'rgba(255, 255, 255, 0.09)',
+  border: '1px solid var(--n-chip-border)',
+  background: 'var(--n-chip-bg)',
   color: 'var(--text-main)',
   fontSize: 14,
   fontWeight: 700,
@@ -151,7 +151,7 @@ const stepButton: React.CSSProperties = {
 
 const sectionStyle: React.CSSProperties = {
   background: 'var(--card-bg)',
-  border: '1px solid #2a2a2a',
+  border: '1px solid var(--border-color)',
   borderRadius: 12,
   padding: 16,
   marginBottom: 16,
@@ -207,9 +207,9 @@ const chipStyle = (selected: boolean): React.CSSProperties => ({
   height: 36,
   padding: '0 12px',
   borderRadius: 18,
-  border: selected ? '1px solid #fff' : '1px solid rgba(255, 255, 255, 0.16)',
-  background: selected ? '#fff' : 'rgba(255, 255, 255, 0.09)',
-  color: selected ? '#111' : 'var(--text-main)',
+  border: selected ? '1px solid var(--n-chip-on-bg)' : '1px solid var(--n-chip-border)',
+  background: selected ? 'var(--n-chip-on-bg)' : 'var(--n-chip-bg)',
+  color: selected ? 'var(--n-chip-on-text)' : 'var(--text-main)',
   fontSize: 14,
   fontWeight: 700,
   cursor: 'pointer',
@@ -391,7 +391,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
         <div style={{ fontSize: 14, fontWeight: 600 }}>
           {f.label}{f.required && <span style={{ color: 'var(--accent-color)', marginLeft: 4 }}>*</span>}
         </div>
-        {f.hint && <div style={{ fontSize: 11, color: '#999', marginTop: 2, lineHeight: 1.4 }}>{f.hint}</div>}
+        {f.hint && <div style={{ fontSize: 11, color: 'var(--n-hint)', marginTop: 2, lineHeight: 1.4 }}>{f.hint}</div>}
       </div>
     );
 
@@ -420,7 +420,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
         />
       );
       return (
-        <div key={f.key} id={`nippo-field-${f.key}`} style={{ padding: '12px 0', borderBottom: '1px solid #2a2a2a' }}>
+        <div key={f.key} id={`nippo-field-${f.key}`} style={{ padding: '12px 0', borderBottom: '1px solid var(--n-line)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', rowGap: 8 }}>
             {label}
             {f.steps ? (
@@ -450,7 +450,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
             ) : input}
           </div>
           {f.key === 'fare' && fareOverNote && (
-            <div style={{ textAlign: 'right', fontSize: 12, color: '#f59e0b', marginTop: 6 }}>{fareOverNote}</div>
+            <div style={{ textAlign: 'right', fontSize: 12, color: 'var(--n-warn)', marginTop: 6 }}>{fareOverNote}</div>
           )}
           {f.copyTotal && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
@@ -469,7 +469,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
   };
 
   const errorBox = errors.length > 0 && (
-    <div style={{ background: '#2a0a0a', border: '1px solid #cc3333', borderRadius: 8, padding: '10px 14px', color: '#ff6666', fontSize: 13, marginBottom: 16, whiteSpace: 'pre-wrap' }}>
+    <div style={{ background: 'var(--n-error-bg)', border: '1px solid #cc3333', borderRadius: 8, padding: '10px 14px', color: 'var(--n-error-text)', fontSize: 13, marginBottom: 16, whiteSpace: 'pre-wrap' }}>
       {errors.join('\n')}
     </div>
   );
@@ -483,7 +483,8 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
   };
 
   return (
-    <div className="nippo-panel">
+    // 入力フォームは白基調のほうが「書く画面」だとわかりやすく、店頭の明るい場所でも読みやすいため、日報画面だけ白基調にする
+    <div className="nippo-panel nippo-light">
       <div className="nippo-panel-header">
         <button
           onClick={step === 'confirm' ? () => setStep('edit') : onClose}
@@ -507,20 +508,20 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
           {step === 'confirm' && (
             <>
               <div style={sectionStyle}>
-                <div style={{ fontSize: 13, color: '#aaa' }}>{userName}</div>
+                <div style={{ fontSize: 13, color: 'var(--n-sub)' }}>{userName}</div>
                 <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4 }}>{dateWithWeekday(date)}</div>
                 <div style={{ fontSize: 15, marginTop: 6, lineHeight: 1.5, wordBreak: 'break-word' }}>{location}</div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
                 {confirmTiles.map(([k, v]) => (
                   <div key={k} style={{ ...sectionStyle, marginBottom: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 8, minHeight: 112 }}>
-                    <div style={{ fontSize: 12, color: '#aaa', lineHeight: 1.4 }}>{k}</div>
+                    <div style={{ fontSize: 12, color: 'var(--n-sub)', lineHeight: 1.4 }}>{k}</div>
                     <div style={{ fontSize: 34, fontWeight: 800, textAlign: 'right', lineHeight: 1 }}>{v}</div>
                   </div>
                 ))}
               </div>
               {fareOverNote && (
-                <div style={{ fontSize: 13, color: '#f59e0b', marginBottom: 16, lineHeight: 1.6 }}>
+                <div style={{ fontSize: 13, color: 'var(--n-warn)', marginBottom: 16, lineHeight: 1.6 }}>
                   往復交通費が{fareOverNote}。実際に支払った金額か確認してください。
                 </div>
               )}
@@ -530,17 +531,17 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
 
           {step === 'edit' && (
             <>
-              <div style={{ fontSize: 12, color: '#999', marginBottom: 8 }}>{userName} さんの日報</div>
+              <div style={{ fontSize: 12, color: 'var(--n-hint)', marginBottom: 8 }}>{userName} さんの日報</div>
               {restored && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: 'rgba(124, 58, 237, 0.15)', border: '1px solid rgba(196, 181, 253, 0.35)', borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: 13 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: 'var(--n-draft-bg)', border: '1px solid var(--n-draft-border)', borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: 13 }}>
                   書きかけの日報を戻しました
-                  <button type="button" onClick={startOver} style={{ background: 'none', border: 'none', color: '#c4b5fd', fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: 0, whiteSpace: 'nowrap' }}>
+                  <button type="button" onClick={startOver} style={{ background: 'none', border: 'none', color: 'var(--n-draft-link)', fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: 0, whiteSpace: 'nowrap' }}>
                     消して最初から
                   </button>
                 </div>
               )}
               <div style={sectionStyle}>
-                <div style={{ fontSize: 12, color: '#aaa', marginBottom: 6 }}>勤務日</div>
+                <div style={{ fontSize: 12, color: 'var(--n-sub)', marginBottom: 6 }}>勤務日</div>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   {dateChips.map((d) => {
                     const missing = missingDates.includes(d);
@@ -551,7 +552,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
                         key={d}
                         type="button"
                         onClick={() => setDate(d)}
-                        style={{ ...chipStyle(selected), ...(missing && !selected && { borderColor: '#cc3333', color: '#ff6666' }) }}
+                        style={{ ...chipStyle(selected), ...(missing && !selected && { borderColor: '#cc3333', color: 'var(--n-error-text)' }) }}
                       >
                         {text}{missing && <span style={{ fontSize: 11, marginLeft: 4 }}>未提出</span>}
                       </button>
@@ -573,7 +574,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
                   </label>
                 </div>
 
-                <label style={{ display: 'block', fontSize: 12, color: '#aaa', marginTop: 16 }}>
+                <label style={{ display: 'block', fontSize: 12, color: 'var(--n-sub)', marginTop: 16 }}>
                   勤務地
                   <input type="text" list="nippo-locations" value={location} onChange={(e) => setLocation(e.target.value)} style={{ ...inputStyle, marginTop: 6, height: 44 }} />
                   <datalist id="nippo-locations">
@@ -581,11 +582,11 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
                   </datalist>
                 </label>
                 {shiftLocations.length === 0 && (
-                  <div style={{ fontSize: 11, color: '#999', marginTop: 8 }}>この日のシフトが見つからないため、勤務地を入力してください</div>
+                  <div style={{ fontSize: 11, color: 'var(--n-hint)', marginTop: 8 }}>この日のシフトが見つからないため、勤務地を入力してください</div>
                 )}
                 {/* 勤務の種類。0だった日は所感と交通費、研修は交通費だけ入力する */}
                 {/* 稼働カードの「関東／九州」と同じデザイン: 選択中だけ明るいグレー、それ以外は背景なしで文字を薄く */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, marginTop: 16, padding: 2, background: 'rgba(255,255,255,0.06)', borderRadius: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, marginTop: 16, padding: 2, background: 'var(--n-seg-bg)', borderRadius: 8 }}>
                   {MODE_OPTIONS.map((o) => (
                     <button
                       key={o.mode}
@@ -600,7 +601,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
                         fontSize: 14,
                         fontWeight: 700,
                         cursor: 'pointer',
-                        background: mode === o.mode ? 'rgba(255,255,255,0.12)' : 'transparent',
+                        background: mode === o.mode ? 'var(--n-seg-on)' : 'transparent',
                         color: mode === o.mode ? 'var(--text-main)' : 'var(--text-muted)',
                         transition: 'background 0.15s',
                       }}
@@ -610,14 +611,14 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
                   ))}
                 </div>
                 {mode !== 'normal' && (
-                  <div style={{ fontSize: 11, color: '#999', marginTop: 6 }}>{mode === 'zero' ? '着座数・所感・交通費を入力します' : '交通費だけ入力します'}</div>
+                  <div style={{ fontSize: 11, color: 'var(--n-hint)', marginTop: 6 }}>{mode === 'zero' ? '着座数・所感・交通費を入力します' : '交通費だけ入力します'}</div>
                 )}
               </div>
 
               {sections.map((s) => (
                 <div key={s.title} style={sectionStyle}>
                   <div style={{ fontSize: 19, fontWeight: 800 }}>{s.title}</div>
-                  {s.hint && <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>{s.hint}</div>}
+                  {s.hint && <div style={{ fontSize: 11, color: 'var(--n-hint)', marginTop: 2 }}>{s.hint}</div>}
                   <div style={{ marginTop: 4 }}>{s.fields.map(renderField)}</div>
                 </div>
               ))}
