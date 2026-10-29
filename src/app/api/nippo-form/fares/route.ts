@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { getSheetDataCached } from '@/lib/sheets';
-import { NIPPO_FORM_USERS } from '@/lib/nippoForm';
+import { canUseNippoForm } from '@/lib/nippoForm';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +24,7 @@ export async function GET() {
   const session = await auth();
   const name = session?.user?.name;
   if (!name) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!NIPPO_FORM_USERS.includes(name)) return NextResponse.json({ fares: [] });
+  if (!canUseNippoForm(name, session.user.role)) return NextResponse.json({ fares: [] });
 
   try {
     const [left, fareCol] = await Promise.all([
