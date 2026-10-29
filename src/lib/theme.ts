@@ -1,6 +1,7 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
+import { trackAccess } from './track';
 
 // アプリの色（黒基調／白基調）。<html data-theme="light"> で白基調になり、色は globals.css の変数で切り替わる。
 // 選んだ色は端末に保存し、開いた瞬間に色が入れ替わって見えないよう layout.tsx の小さなスクリプトで描画前に反映する
@@ -32,7 +33,11 @@ export function setTheme(theme: Theme) {
 /** 今の色と切り替え関数。どの画面の ☀／🌙 から切り替えても全部に反映される */
 export function useTheme() {
   const theme = useSyncExternalStore(subscribe, getTheme, () => 'dark' as Theme);
-  return { theme, toggleTheme: () => setTheme(theme === 'light' ? 'dark' : 'light') };
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
+    trackAccess('カラー変更');
+  };
+  return { theme, toggleTheme };
 }
 
 /** グラフ（Chart.js）用の色。キャンバスには CSS の変数が効かないので、テーマに合わせて実際の色を渡す */

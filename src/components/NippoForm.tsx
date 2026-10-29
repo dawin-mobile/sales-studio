@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { ChevronLeft, Moon, PenLine, Sun } from 'lucide-react';
+import { trackAccess } from '@/lib/track';
 import { NIPPO_SECTIONS, sectionsFor, validateNippo, type NippoField, type NippoMode } from '@/lib/nippoForm';
 
 type PastFare = { location: string; fare: string; date: string; order: number };
@@ -87,7 +88,7 @@ export function NippoButton({ missingCount, onClick }: { missingCount: number; o
   const alert = missingCount > 0;
   return (
     <button
-      onClick={onClick}
+      onClick={() => { onClick(); trackAccess('日報'); }}
       title={alert ? `日報未提出 ${missingCount}日` : '日報を書く'}
       style={{
         display: 'flex',
@@ -247,6 +248,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
       try { localStorage.setItem('nippo-theme', cur ? 'dark' : 'light'); } catch { /* 保存できなくても切り替えはできる */ }
       return !cur;
     });
+    trackAccess('カラー変更');
   };
   // 「消して最初から」で、日付が同じままでもシフトを読み直すためのカウンター
   const [reloadCount, setReloadCount] = useState(0);
