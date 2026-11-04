@@ -14,6 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql, eq, and } from 'drizzle-orm';
 import { db } from '@/lib/db';
+import { getShiftNameMap, isOwnShiftName, lookupShiftName } from '@/lib/shiftName';
 import {
   salesRecords,
   ageRecords,
@@ -318,10 +319,13 @@ async function syncTalknote(payload: TalknotePayload) {
   if (rows.length === 0) return { inserted: 0 };
 
   // シフトデータを一括取得してメモリ上でマッチング（N+1クエリ回避）
-  const allShifts = await db
-    .select({ date: shiftRows.date, location: shiftRows.location, staff: shiftRows.staff })
-    .from(shiftRows)
-    .where(eq(shiftRows.month, month));
+  const [allShifts, shiftNames] = await Promise.all([
+    db
+      .select({ date: shiftRows.date, location: shiftRows.location, staff: shiftRows.staff })
+      .from(shiftRows)
+      .where(eq(shiftRows.month, month)),
+    getShiftNameMap(),
+  ]);
 
   // date → [{location, staff[]}] のマップを構築
   const shiftMap = new Map<string, { location: string; staff: string[] }[]>();
@@ -337,13 +341,17 @@ async function syncTalknote(payload: TalknotePayload) {
     const [, m, d] = date.split('-');
     const shiftDate = `${parseInt(m)}/${parseInt(d)}`; // '4/23'
     const fullNameNoSpace = row.staffName.replace(/[\s　]/g, '');
+    // スタッフ情報にシフト名があれば完全一致で照らし合わせる（「大野賀世」の投稿に、シフト表の「大野」＝大野雅也の現場を付けないため）
+    const shiftName = lookupShiftName(shiftNames, row.staffName);
 
-    // メモリ上でシフト名の前方一致マッチング
+    // メモリ上でシフト名のマッチング。シフト名がない人は前方一致でいちばん長く一致したもの
     let site = '';
     let bestMatchLen = 0;
     for (const shift of shiftMap.get(shiftDate) ?? []) {
       for (const s of shift.staff) {
-        const matched = s.length >= 2
+        const matched = shiftName
+          ? isOwnShiftName(s, row.staffName, shiftName)
+          : s.length >= 2
           ? fullNameNoSpace.startsWith(s)
           : fullNameNoSpace === s;
         if (matched && s.length > bestMatchLen) {

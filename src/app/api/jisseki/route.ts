@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { getSheetData, getShiftMonthData } from '@/lib/sheets';
+import { getShiftNameMap, isOwnShiftName, lookupShiftName } from '@/lib/shiftName';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,14 +19,6 @@ function normalizeDate(raw: string): string {
   const jp = raw.match(/(\d{1,2})月(\d{1,2})日/);
   if (jp) return `${parseInt(jp[1])}/${parseInt(jp[2])}`;
   return raw;
-}
-
-// 送信者名とシフトスタッフ名を照合する（スペース除去して前方一致）
-function matchStaff(sender: string, staffName: string): boolean {
-  const s = sender.replace(/\s/g, '');
-  const n = staffName.replace(/\s/g, '');
-  if (!s || !n) return false;
-  return s === n || s.startsWith(n) || n.startsWith(s);
 }
 
 export async function GET(request: NextRequest) {
@@ -47,9 +40,10 @@ export async function GET(request: NextRequest) {
   const targetM = parseInt(m);
   const targetD = parseInt(d);
 
-  const [jissekiRows, shift] = await Promise.all([
+  const [jissekiRows, shift, shiftNames] = await Promise.all([
     getSheetData('実績受信録').catch(() => [] as string[][]),
     getShiftMonthData(month).catch(() => ({ tokyo: [] as string[][], fukuoka: [] as string[][] })),
+    getShiftNameMap(),
   ]);
 
   // シフトシートから現場→スタッフのマッピングを構築
@@ -103,10 +97,12 @@ export async function GET(request: NextRequest) {
       if (!receivedAt.startsWith(jissekiDatePrefix)) continue;
     }
 
-    // 送信者名から現場を特定
+    // 送信者名から現場を特定。スタッフ情報のシフト名と完全一致で照らし合わせる
+    // （「大野賀世」の報告が、シフト表の「大野」＝大野雅也の現場に付かないように）
+    const senderShiftName = lookupShiftName(shiftNames, sender);
     let site = 'その他';
     for (const [staffName, siteName] of staffToSite) {
-      if (matchStaff(sender, staffName)) {
+      if (isOwnShiftName(staffName, sender, senderShiftName)) {
         site = siteName;
         break;
       }

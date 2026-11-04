@@ -14,14 +14,33 @@ function normalize(name: string | null | undefined): string {
   return (name ?? '').replace(/[\s　]/g, '').replace(/髙/g, '高');
 }
 
-/** スタッフ情報（T列=名前・F列=シフト名）から、その人のシフト表での名前を返す。登録がなければ空文字 */
-export async function getShiftName(name: string): Promise<string> {
+/**
+ * スタッフ情報（T列=名前・F列=シフト名）の対応表。キーは空白を除いた名前。
+ * Talknote の名前は「大野 賀世」のように空白が入ることがあるので、空白を除いて引く
+ */
+export async function getShiftNameMap(): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
   try {
     const rows = await getSheetDataCached('スタッフ情報');
-    return normalize(rows.find((r) => r[19] === name)?.[5]);
+    for (const r of rows) {
+      const name = normalize(r[19]);
+      const shiftName = normalize(r[5]);
+      if (name && shiftName) map.set(name, shiftName);
+    }
   } catch {
-    return '';
+    // 読めなければ全員シフト名なし（以前の前方一致）で判定する
   }
+  return map;
+}
+
+/** 対応表から、その人のシフト表での名前を返す。登録がなければ空文字 */
+export function lookupShiftName(map: Map<string, string>, name: string): string {
+  return map.get(normalize(name)) ?? '';
+}
+
+/** その人のシフト表での名前を返す。登録がなければ空文字 */
+export async function getShiftName(name: string): Promise<string> {
+  return lookupShiftName(await getShiftNameMap(), name);
 }
 
 /** シフト表の名前がその人のものか。シフト名が分かれば完全一致、分からなければ前方一致（以前と同じ判定） */
@@ -29,5 +48,6 @@ export function isOwnShiftName(cell: string | null | undefined, name: string, sh
   const sn = normalize(cell);
   if (!sn) return false;
   if (shiftName) return sn === shiftName;
-  return name.startsWith(sn) || sn.startsWith(name);
+  const n = normalize(name);
+  return n.startsWith(sn) || sn.startsWith(n);
 }
