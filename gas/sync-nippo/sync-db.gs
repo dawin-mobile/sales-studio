@@ -2,12 +2,13 @@
 //  sync-db.gs
 //  【役割】スプレッドシートの内容をVercelアプリのDBへ送信する
 //
-//  合算データ・年代・家族構成・トークノートの各シートを読み取り、
+//  合算データ・トークノートの各シートを読み取り、
 //  APIを通じてデータベースに書き込みます。
+//  年代・家族構成はアプリがシートを直接読むので DB には送らない（2026-11-04 にやめた）
 //
-//  【自動実行】1時間おき → syncAll()
+//  【自動実行】合算データは日報合算（mergeSheets_Complete）の直後 → syncNippoAfterMerge_()
 //  【手動実行】
-//    syncAll()           … 今すぐ全シートを同期
+//    syncAll()           … 今すぐ合算データの今月分を同期（合算データを手で直したとき）
 //    syncSpecificMonth() … 特定の月のデータを入れ直す（月を書き換えて実行）
 // ============================================================
 
@@ -44,34 +45,15 @@ function syncNippoSheet(month) {
   callSyncApi_({ type: 'sales', month: targetMonth, rows: rows });
 }
 
-// 年代シートをDBへ送る
-function syncAgeSheet(month) {
-  const ss    = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(SHEET_AGE);
-  if (!sheet) { Logger.log(SHEET_AGE + ' が見つかりません'); return; }
-
-  const rows = sheet.getDataRange().getValues().map(function(row) {
-    return row.map(function(cell) {
-      if (cell instanceof Date) return cell.toISOString();
-      return String(cell);
-    });
-  });
-  callSyncApi_({ type: 'age', month: month || getCurrentMonth_(), rows: rows });
-}
-
-// 家族構成シートをDBへ送る
-function syncTypeSheet(month) {
-  const ss    = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(SHEET_TYPE);
-  if (!sheet) { Logger.log(SHEET_TYPE + ' が見つかりません'); return; }
-
-  const rows = sheet.getDataRange().getValues().map(function(row) {
-    return row.map(function(cell) {
-      if (cell instanceof Date) return cell.toISOString();
-      return String(cell);
-    });
-  });
-  callSyncApi_({ type: 'type', month: month || getCurrentMonth_(), rows: rows });
+// 日報合算の直後に呼ぶ。合算データが変わるのは合算のときだけなので、DB へはこのときだけ送る。
+// 月初の 0時の合算には前の月の最後の日報が入るので、1日は前の月も送り直す
+function syncNippoAfterMerge_() {
+  const now = new Date();
+  syncNippoSheet(getCurrentMonth_());
+  if (now.getDate() === 1) {
+    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    syncNippoSheet(prev.getFullYear() + '-' + String(prev.getMonth() + 1).padStart(2, '0'));
+  }
 }
 
 // トークノート受信録シートをDBへ送る
@@ -115,16 +97,12 @@ function syncTalknote(month) {
   callSyncApi_({ type: 'talknote', month: month, rows: rows });
 }
 
-// 全シートを現在月で一括同期（10分おき自動実行 / 手動実行も可）
-// ※トークノートは fetchAndSyncTalknote（5分おき）が別途同期するため除外
+// 合算データの今月分を今すぐ同期（手動実行用。自動では合算の直後に syncNippoAfterMerge_ が送る）
+// ※トークノートは fetchAndSyncTalknote（15分おき）が新しい投稿のあるときだけ同期する
 function syncAll() {
-  const jstHour = new Date().getHours();
-  if (jstHour >= 1 && jstHour < 9) return;
   const month = getCurrentMonth_();
   Logger.log('DB同期開始: ' + month);
   syncNippoSheet(month);
-  syncAgeSheet(month);
-  syncTypeSheet(month);
   Logger.log('DB同期完了');
 }
 
@@ -132,6 +110,4 @@ function syncAll() {
 function syncSpecificMonth() {
   const month = '2026-03'; // ← ここを変更して実行してください（例：'2026-05'）
   syncNippoSheet(month);
-  syncAgeSheet(month);
-  syncTypeSheet(month);
 }

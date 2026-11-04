@@ -52,8 +52,6 @@ const DAWIN = {
 // ============================================================
 
 const SHEET_NIPPO    = '合算データ';
-const SHEET_AGE      = 'グラフ用データ_年代';
-const SHEET_TYPE     = 'グラフ用データ_家族構成';
 const SHEET_TALKNOTE = 'トークノート受信録';
 const SHEET_JISSEKI  = '実績受信録';
 const SHEET_SHURYO   = '終了報告受信録';

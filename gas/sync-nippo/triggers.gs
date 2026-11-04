@@ -21,7 +21,7 @@
  * ▶ dawinmobilebot@gmail.com でログインした状態で実行してください
  *
  *   ① Talknoteメール取得   15分おき → fetchAndSyncTalknote
- *   ② DB同期              1時間おき → syncAll
+ *   ② DB同期              （トリガーなし）⑦の合算の直後に合算データを送る。手で直したときは syncAll を手動実行
  *   ③ 明日のシフト通知     毎日18時  → mainTomorrow_ShiftNotify
  *   ④ 日報催促            毎日21時  → mainToday_ReportReminder
  *   ⑤ 動物占いの補完      毎日6時  → fillAnimalColumns
@@ -34,7 +34,6 @@ function setupTriggers_Bot() {
 
   ScriptApp.newTrigger('onEditTrigger').forSpreadsheet(ss).onEdit().create();                    // ⑥ 編集時
   ScriptApp.newTrigger('fetchAndSyncTalknote').timeBased().everyMinutes(15).create();            // ① 15分おき
-  ScriptApp.newTrigger('syncAll').timeBased().everyHours(1).create();                           // ② 1時間おき
   ScriptApp.newTrigger('mainTomorrow_ShiftNotify').timeBased().atHour(18).everyDays(1).create(); // ③ 18時
   ScriptApp.newTrigger('mainToday_ReportReminder').timeBased().atHour(21).everyDays(1).create(); // ④ 21時
   ScriptApp.newTrigger('fillAnimalColumns').timeBased().atHour(6).everyDays(1).create();         // ⑤ 6時

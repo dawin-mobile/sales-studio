@@ -106,6 +106,8 @@ function mergeSheets_Complete() {
       if (r > 1) shC.getRange(2, 2, r - 1, 1).setNumberFormat('yyyy/MM/dd');
     }
     Logger.log('[merge] 日報合算完了');
+    // 合算データが変わったので、そのまま DB にも送る（未提出チェック・個人の月間成績が DB を読む）
+    syncNippoAfterMerge_();
   } catch (e) {
     Logger.log('[merge] エラー: ' + e.message);
   }

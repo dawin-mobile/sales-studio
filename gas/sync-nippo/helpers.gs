@@ -196,7 +196,5 @@ function onEditTrigger(e) {
   const sheetName = e.source.getActiveSheet().getName();
   const month     = getCurrentMonth_();
   if      (sheetName === SHEET_NIPPO)    syncNippoSheet(month);
-  else if (sheetName === SHEET_AGE)      syncAgeSheet(month);
-  else if (sheetName === SHEET_TYPE)     syncTypeSheet(month);
   else if (sheetName === SHEET_TALKNOTE) syncTalknote(month);
 }
