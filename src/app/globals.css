@@ -363,7 +363,6 @@ body {
   --n-sub: #aaa;
   --n-hint: #999;
   --n-warn: #f59e0b;
-  --n-warn-bg: rgba(245, 158, 11, 0.12);
   --n-error-bg: #2a0a0a;
   --n-error-text: #ff6666;
   --n-draft-bg: rgba(124, 58, 237, 0.15);
@@ -392,7 +391,6 @@ body {
   --n-sub: #6b6862;
   --n-hint: #8a8780;
   --n-warn: #b45309;
-  --n-warn-bg: #fdf3e1;
   --n-error-bg: #fdecec;
   --n-error-text: #c53030;
   --n-draft-bg: #f3effe;

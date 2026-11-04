@@ -535,21 +535,12 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
 
           {step === 'confirm' && (
             <>
-              {/* 勤務日が今日でないときは、明細カードより上に色をつけて出して見落とさないようにする */}
-              {date !== today && (
-                <div style={{ background: 'var(--n-warn-bg)', borderRadius: 10, padding: '12px 14px', marginBottom: 12, color: 'var(--n-warn)', lineHeight: 1.5 }}>
-                  <div style={{ fontSize: 15, fontWeight: 800 }}>今日の日報ではありません</div>
-                  <div style={{ fontSize: 13, fontWeight: 600, marginTop: 2 }}>
-                    {dateWithWeekday(date)} の日報として送ります。勤務日が合っているか確認してください。
-                  </div>
-                </div>
-              )}
               {/* 1枚の明細カード: 名前・日付・勤務地 → 獲得・自己クロ（大） → 交通費（1行ずつ） */}
               <div style={sectionStyle}>
                 {/* 1行目は左に日付・右に名前、2行目に現場名。曜日は小さく薄くして数字を主役に */}
                 <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
                   <div style={{ whiteSpace: 'nowrap' }}>
-                    <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: '0.01em', fontVariantNumeric: 'tabular-nums', ...(date !== today && { color: 'var(--n-warn)' }) }}>{shortDate(date)}</span>
+                    <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: '0.01em', fontVariantNumeric: 'tabular-nums' }}>{shortDate(date)}</span>
                     <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--n-sub)', marginLeft: 6 }}>{weekdayOf(date)}曜日</span>
                   </div>
                   <div style={{ fontSize: 18, color: 'var(--n-sub)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName}</div>
@@ -574,6 +565,11 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
                   ))}
                 </div>
               </div>
+              {date !== today && (
+                <div style={{ fontSize: 13, color: 'var(--n-warn)', marginBottom: 16, lineHeight: 1.6 }}>
+                  今日ではなく {dateWithWeekday(date)} の日報として送ります。勤務日が合っているか確認してください。
+                </div>
+              )}
               {fareOverNote && (
                 <div style={{ fontSize: 13, color: 'var(--n-warn)', marginBottom: 16, lineHeight: 1.6 }}>
                   往復交通費が{fareOverNote}。実際に支払った金額か確認してください。
