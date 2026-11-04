@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { getSheetData } from '@/lib/sheets';
+import { latestReports } from '@/lib/aggregator';
 
 const COL = { DATE: 1, NAME: 2, MNP_H: 6, MNP_S: 7, NEW: 8, CHANGE: 9, CELLUP: 10,
   HIKARI_N: 11, HIKARI_T: 12, HIKARI_C: 13, TABLET: 14, LIFE: 15, CREDIT: 16 };
@@ -54,7 +55,8 @@ export async function GET(request: NextRequest) {
     avgMap.set(m, new Map());
   });
 
-  for (const row of rows.slice(1)) {
+  // 同じ日に2回出した日報は新しいほうだけ使う（月の画面の集計とそろえる）
+  for (const row of latestReports(rows.slice(1))) {
     const name = row[COL.NAME];
     if (!name) continue;
     const d = new Date(row[COL.DATE]);

@@ -30,6 +30,29 @@ function getNum(row: string[], idx: number): number {
   return isNaN(n) ? 0 : n;
 }
 
+/**
+ * 同じ人・同じ勤務日の日報が複数あるときは、いちばん新しく出したもの（合算データで後ろの行）だけを残す。
+ * 出し直しや二重送信で、実績や交通費が二重に数えられないようにするため。
+ * 合算データの行は提出順に並ぶ。勤務日・名前が読めない行（ヘッダーなど）はそのまま残す
+ */
+export function latestReports(rows: string[][]): string[][] {
+  const keyOf = (row: string[]): string | null => {
+    const name = row[COL.NAME];
+    const d = new Date(row[COL.DATE]);
+    if (!name || isNaN(d.getTime())) return null;
+    return `${name}|${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  };
+  const lastIndex = new Map<string, number>();
+  rows.forEach((row, i) => {
+    const key = keyOf(row);
+    if (key) lastIndex.set(key, i);
+  });
+  return rows.filter((row, i) => {
+    const key = keyOf(row);
+    return key === null || lastIndex.get(key) === i;
+  });
+}
+
 export function aggregateMainSheet(
   rows: string[][],
   targetYear: number,
@@ -62,8 +85,8 @@ export function aggregateMainSheet(
     }
   };
 
-  // Skip header row (rows[0])
-  const dataRows = rows.slice(1);
+  // Skip header row (rows[0])。同じ日に2回出した日報は新しいほうだけ使う
+  const dataRows = latestReports(rows.slice(1));
 
   dataRows.forEach((row) => {
     const rowDateVal = row[COL.DATE];
@@ -109,7 +132,7 @@ export function aggregateMainSheet(
       }
 
       const dayIndex = d.getDate() - 1;
-      // 日報を出した日数。同じ日に複数行（現場掛け持ち等）あっても1日と数える
+      // 日報を出した日数（同じ日の日報は latestReports で1行にしてある）
       if (!reportedDays[name]) reportedDays[name] = new Set<number>();
       reportedDays[name].add(dayIndex);
       s.dailyTotal[dayIndex] = safeAdd(s.dailyTotal[dayIndex], rowTotal);
@@ -127,7 +150,7 @@ export function aggregateMainSheet(
       cDay.nw = safeAdd(cDay.nw, hikari);
       cDay.elec = safeAdd(cDay.elec, life);
       cDay.credit = safeAdd(cDay.credit, credit);
-      // 交通費は往復とタクシー代を合わせた実費（円）。同じ日に複数行あれば合算する
+      // 交通費は往復とタクシー代を合わせた実費（円）
       cDay.fare = cDay.fare + getNum(row, COL.FARE) + getNum(row, COL.TAXI);
       if (siteName) cDay.site = siteName;
 

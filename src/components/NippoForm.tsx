@@ -227,7 +227,11 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
   // パネルはボタンを押してから出るので、この時点でログイン情報は読み込み済み
   const [draft] = useState(() => loadDraft(userName));
   const [restored, setRestored] = useState(draft !== null);
-  const [date, setDate] = useState(draft?.date ?? todayJst());
+  // 書きかけの勤務日が今日でも未提出の日でもなければ今日に戻す。
+  // 提出済みの日に開いて残った書きかけが、次の日にその日付のまま送られてしまうため
+  const [date, setDate] = useState(() =>
+    draft && (draft.date === todayJst() || missingDates.includes(draft.date)) ? draft.date : todayJst()
+  );
   const [location, setLocation] = useState(draft?.location ?? '');
   const [shiftLocations, setShiftLocations] = useState<string[]>([]);
   // その日のシフト表の全現場（確認用。中村翔のみサーバーが返す）
@@ -240,7 +244,8 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
   // 交通費を自分で触るまでは、勤務地に合わせて過去の金額を入れ直す
   const [fareAuto, setFareAuto] = useState(draft?.fareAuto ?? true);
   // 書きかけを戻したときは、最初のシフト読み込みで勤務地を上書きしない
-  const keepLocationRef = useRef(draft !== null);
+  // 勤務日を今日に戻したときは、勤務地も今日のシフトから入れ直す
+  const keepLocationRef = useRef(draft !== null && draft.date === date);
   // 日報画面の色はアプリ全体とは別に選べる（白基調が標準）。ヘッダーの ☀／🌙 で切り替え、端末に覚えておく
   const [light, setLight] = useState(() => {
     try { return localStorage.getItem('nippo-theme') !== 'dark'; } catch { return true; }
@@ -560,6 +565,11 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
                   ))}
                 </div>
               </div>
+              {date !== today && (
+                <div style={{ fontSize: 13, color: 'var(--n-warn)', marginBottom: 16, lineHeight: 1.6 }}>
+                  今日ではなく {dateWithWeekday(date)} の日報として送ります。勤務日が合っているか確認してください。
+                </div>
+              )}
               {fareOverNote && (
                 <div style={{ fontSize: 13, color: 'var(--n-warn)', marginBottom: 16, lineHeight: 1.6 }}>
                   往復交通費が{fareOverNote}。実際に支払った金額か確認してください。
