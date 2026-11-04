@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
   const currentMonthNum = mp ? parseInt(mp[2]) : thisMonthNum;
   const month = `${currentYear}-${String(currentMonthNum).padStart(2, '0')}`;
 
-  // 過去の月は月末まで対象。当月は今日まで（当日はJST19時以降）
+  // 過去の月は月末まで対象。当月は今日まで（当日はJST22時以降）
   const isThisMonth = currentYear === thisYear && currentMonthNum === thisMonthNum;
   const lastDayOfMonth = new Date(currentYear, currentMonthNum, 0).getDate();
   const todayDay = isThisMonth ? nowJst.getUTCDate() : lastDayOfMonth;
@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
       const d = parseInt(parts[1]);
       if (isNaN(m) || isNaN(d) || m !== currentMonthNum) continue;
       if (d > todayDay) continue; // 未来はスキップ
-      if (isThisMonth && d === todayDay && jstHour < 19) continue; // 当日JST19時前はスキップ
+      if (isThisMonth && d === todayDay && jstHour < 22) continue; // 当日JST22時前はスキップ
 
       const dateKey = `${currentYear}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       shiftDates.add(dateKey);
