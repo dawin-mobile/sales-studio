@@ -5,6 +5,7 @@ import { DashboardData, Staff } from '@/types';
 import IncentiveBar from './IncentiveBar';
 import { modoriToCalendarRow, sameStaff, ModoriEntry } from '@/lib/modori';
 import { readable } from '@/lib/colors';
+import { SENT_EVENT, withoutSent } from '@/components/NippoForm';
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -88,21 +89,34 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
   // ログインユーザーの未提出日（日番号のSet）
   // 日報の未提出日。自分の分だけでなく、選択中のスタッフ・選択中の月でも取る
   // （出勤日数＝提出した日数＋未提出の日数 を出すため）。他人の分は社員以上のみAPIが返す
-  const [missingDays, setMissingDays] = useState<Set<number>>(new Set());
+  const [missingDates, setMissingDates] = useState<string[]>([]);
   useEffect(() => {
-    if (!staffName) { setMissingDays(new Set()); return; }
+    if (!staffName) { setMissingDates([]); return; }
     let canceled = false;
     const params = new URLSearchParams({ staff: staffName, month: selectedMonth });
     fetch(`/api/nippo-check?${params}`)
       .then((r) => r.json())
       .then((data) => {
         if (canceled) return;
-        if (!Array.isArray(data.missingDates)) { setMissingDays(new Set()); return; }
-        setMissingDays(new Set<number>(data.missingDates.map((d: string) => parseInt(d.split('-')[2]))));
+        setMissingDates(Array.isArray(data.missingDates) ? data.missingDates : []);
       })
-      .catch(() => { if (!canceled) setMissingDays(new Set()); });
+      .catch(() => { if (!canceled) setMissingDates([]); });
     return () => { canceled = true; };
   }, [staffName, selectedMonth]);
+
+  // 自分の分は、アプリから送った日を合算を待たずに未提出の印から外す。送信したらその場で塗り直す
+  const [sentTick, setSentTick] = useState(0);
+  useEffect(() => {
+    const onSent = () => setSentTick((n) => n + 1);
+    window.addEventListener(SENT_EVENT, onSent);
+    return () => window.removeEventListener(SENT_EVENT, onSent);
+  }, []);
+  const missingDays = useMemo(() => {
+    const dates = staffName === loginName ? withoutSent(loginName, missingDates) : missingDates;
+    return new Set<number>(dates.map((d) => parseInt(d.split('-')[2])));
+    // sentTick は送信のたびに localStorage を読み直すためのきっかけ
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [missingDates, staffName, loginName, sentTick]);
 
   // 戻り報告（別日に戻ってきた分）を取得する。月が変わったら取り直す
   const [modoriEntries, setModoriEntries] = useState<ModoriEntry[]>([]);
@@ -148,8 +162,9 @@ export default function AttendanceTable({ data, selectedMonth, loginName, userRo
   const hasModori = modoriTotalPt > 0 || modoriTotalSelfClose > 0;
 
   // 出勤日数 = 日報を出した日数 ＋ 日報が未提出の日数（シフトに入っていたのに出していない日）
+  // アプリから送って合算待ちの日は「出した日数」にまだ入っていないので、外す前の未提出の数で数える
   const reportDays = staff?.reportDays ?? 0;
-  const attendanceDays = reportDays + missingDays.size;
+  const attendanceDays = reportDays + missingDates.length;
 
   const yearMonth = useMemo(() => {
     const parts = selectedMonth.split('-');

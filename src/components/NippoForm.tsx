@@ -63,7 +63,7 @@ function dateWithWeekday(date: string): string {
 
 // アプリから送った日報は、次の合算（0時・10時・21時）で DB に入るまで未提出チェックに出てしまう。
 // 送った日を端末に覚えておき、その間は未提出から外す。2日たてば合算で入っているので忘れる
-const SENT_EVENT = 'nippo-sent';
+export const SENT_EVENT = 'nippo-sent';
 const SENT_KEEP_MS = 2 * 24 * 60 * 60 * 1000;
 
 function sentKey(name: string | null | undefined): string | null {
@@ -93,7 +93,7 @@ function rememberSent(name: string | null | undefined, date: string) {
 }
 
 /** 未提出日から、この端末で送信済みの日を外す */
-function withoutSent(name: string | null | undefined, dates: string[]): string[] {
+export function withoutSent(name: string | null | undefined, dates: string[]): string[] {
   const sent = loadSent(name);
   return dates.filter((d) => !(d in sent));
 }
