@@ -7,6 +7,7 @@ import { getSheetDataCached } from '@/lib/sheets';
 import { isOnFormNameList } from '@/lib/nippoFormNames';
 import { canUseNippo } from '@/lib/nippoAccess';
 import { normalizeSiteName, pickCommonSiteName } from '@/lib/site';
+import { getShiftName, isOwnShiftName } from '@/lib/shiftName';
 import {
   NIPPO_FORM_ID,
   NIPPO_SITE_PICKER_USERS,
@@ -87,17 +88,14 @@ export async function GET(request: NextRequest) {
       .from(shiftRows)
       .where(and(eq(shiftRows.month, `${y}-${String(m).padStart(2, '0')}`), eq(shiftRows.date, `${m}/${d}`)));
 
-    const siteCounts = await recentSiteCounts();
+    const [siteCounts, shiftName] = await Promise.all([recentSiteCounts(), getShiftName(name)]);
     const locations: string[] = [];
     const allLocations: string[] = [];
     for (const row of rows) {
       // 稼働ではない行（健康診断など）は除く。/api/nippo-check と同じ判定
       if (!row.carrier?.trim() && !row.startTime?.trim() && !row.agency?.trim()) continue;
       const staff = (row.staff as string[]) ?? [];
-      const isMine = staff.some((s) => {
-        const sn = s?.trim();
-        return !!sn && (name.startsWith(sn) || sn.startsWith(name));
-      });
+      const isMine = staff.some((s) => isOwnShiftName(s, name, shiftName));
       // シフト表の現場欄のメモは落として現場名だけにし、日報でいちばん多い書き方に直す（勤務地の書き方を全員でそろえるため）
       const location = pickCommonSiteName(normalizeSiteName(row.location ?? ''), row.carrier ?? '', siteCounts);
       if (location && !allLocations.includes(location)) allLocations.push(location);

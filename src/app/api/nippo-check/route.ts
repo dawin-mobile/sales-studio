@@ -3,6 +3,7 @@ import { eq, sql, and } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { shiftRows, salesRecords } from '@/lib/schema';
+import { getShiftName, isOwnShiftName } from '@/lib/shiftName';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,6 +63,9 @@ export async function GET(request: NextRequest) {
   const todayDay = isThisMonth ? nowJst.getUTCDate() : lastDayOfMonth;
 
   try {
+    // シフト表での本人の名前（同姓の別人のシフトを数えないため）
+    const shiftName = await getShiftName(userName);
+
     // 当月のシフトデータを全取得
     const shifts = await db
       .select({
@@ -81,11 +85,7 @@ export async function GET(request: NextRequest) {
       if (!row.carrier?.trim() && !row.startTime?.trim() && !row.agency?.trim()) continue;
 
       const staffArray = (row.staff as string[]) ?? [];
-      if (!staffArray.some((s) => {
-        const sn = s?.trim();
-        if (!sn) return false;
-        return userName.startsWith(sn) || sn.startsWith(userName);
-      })) continue;
+      if (!staffArray.some((s) => isOwnShiftName(s, userName, shiftName))) continue;
 
       // date は "M/D" 形式
       const parts = row.date.split('/');
