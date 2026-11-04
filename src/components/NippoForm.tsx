@@ -535,15 +535,12 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
 
           {step === 'confirm' && (
             <>
-              {/* 勤務日が今日でないときは、明細カードより上に枠つきで出して見落とさないようにする */}
+              {/* 勤務日が今日でないときは、明細カードより上に色をつけて出して見落とさないようにする */}
               {date !== today && (
-                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: 'var(--n-warn-bg)', border: '1.5px solid var(--n-warn-border)', borderRadius: 10, padding: '12px 14px', marginBottom: 12, color: 'var(--n-warn)' }}>
-                  <span style={{ fontSize: 20, lineHeight: 1.2 }}>⚠️</span>
-                  <div style={{ lineHeight: 1.5 }}>
-                    <div style={{ fontSize: 15, fontWeight: 800 }}>今日の日報ではありません</div>
-                    <div style={{ fontSize: 13, fontWeight: 600, marginTop: 2 }}>
-                      {dateWithWeekday(date)} の日報として送ります。勤務日が合っているか確認してください。
-                    </div>
+                <div style={{ background: 'var(--n-warn-bg)', borderRadius: 10, padding: '12px 14px', marginBottom: 12, color: 'var(--n-warn)', lineHeight: 1.5 }}>
+                  <div style={{ fontSize: 15, fontWeight: 800 }}>今日の日報ではありません</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginTop: 2 }}>
+                    {dateWithWeekday(date)} の日報として送ります。勤務日が合っているか確認してください。
                   </div>
                 </div>
               )}
