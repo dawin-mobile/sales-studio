@@ -17,9 +17,10 @@
  * 今日から1週間分のシフトを対象者全員のカレンダーに同期する（本番用）
  */
 function syncWeeklyStaffCalendar() {
-  const config   = DAWIN;
-  const staffMap = getStaffMapWithCalendar_(config);
-  const today    = new Date();
+  const config     = DAWIN;
+  const staffMap   = getStaffMapWithCalendar_(config);
+  const today      = new Date();
+  const shiftCache = newShiftCache_(); // シフト表は全員・全日で使い回す
 
   let successCount = 0;
   let skipCount    = 0;
@@ -27,10 +28,11 @@ function syncWeeklyStaffCalendar() {
   for (const [staffName, calendarId] of Object.entries(staffMap)) {
     if (!calendarId) continue;
     try {
+      const calendar = getStaffCalendar_(calendarId);
       for (let i = 0; i < 7; i++) {
         const targetDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
-        const shiftInfo  = getShiftDataFromSheet_(targetDate, staffName, config);
-        updateCalendarEvent_(calendarId, targetDate, shiftInfo);
+        const shiftInfo  = getShiftDataFromSheet_(targetDate, staffName, config, shiftCache);
+        updateCalendarEvent_(calendar, targetDate, shiftInfo);
       }
       successCount++;
       Logger.log('✅ ' + staffName + 'さんの同期に成功しました！');
@@ -43,22 +45,27 @@ function syncWeeklyStaffCalendar() {
 }
 
 /**
- * シフト表から特定の日の勤務情報を抽出する
+ * シフト表の読み込み結果の入れ物。1回の実行の中で使い回す。
+ * 以前は スタッフ×7日 の回数だけシフト表を開いて全セルを読み直しており（1回の実行で最大 約240回）、
+ * GAS の実行時間の上限（6分）を超えて途中で止まることがあった
  */
-function getShiftDataFromSheet_(date, staffName, config) {
-  let ss;
-  try { ss = SpreadsheetApp.openById(config.shiftSheetId); } catch(e) { return null; }
+function newShiftCache_() {
+  return { ss: undefined, sheets: {} };
+}
 
-  const targetSheetNames = config.shiftSheetNames.map(base =>
-    Utilities.formatDate(date, 'Asia/Tokyo', 'yy') + '年' + Utilities.formatDate(date, 'Asia/Tokyo', 'M') + '月' + base
-  );
+/**
+ * シフト表のシートを読み、見出し（1〜12・店舗・時間）の列を探す。読んだ結果は cache に入れて使い回す。
+ * シートが無い・見出しが見つからないときは null
+ */
+function loadShiftSheet_(sheetName, config, cache) {
+  if (sheetName in cache.sheets) return cache.sheets[sheetName];
+  if (cache.ss === undefined) {
+    try { cache.ss = SpreadsheetApp.openById(config.shiftSheetId); } catch(e) { cache.ss = null; }
+  }
 
-  let shiftInfo = null;
-
-  for (const sheetName of targetSheetNames) {
-    const sheet = ss.getSheetByName(sheetName);
-    if (!sheet) continue;
-
+  let parsed = null;
+  const sheet = cache.ss ? cache.ss.getSheetByName(sheetName) : null;
+  if (sheet) {
     const data = sheet.getDataRange().getValues();
     let activeCols = [], storeColIdx = 3, timeColIdx = 4;
 
@@ -75,7 +82,29 @@ function getShiftDataFromSheet_(date, staffName, config) {
         activeCols = tempCols; storeColIdx = tempStoreIdx; timeColIdx = tempTimeIdx; break;
       }
     }
-    if (activeCols.length === 0) continue;
+    if (activeCols.length > 0) parsed = { data: data, activeCols: activeCols, storeColIdx: storeColIdx, timeColIdx: timeColIdx };
+  }
+  cache.sheets[sheetName] = parsed;
+  return parsed;
+}
+
+/**
+ * シフト表から特定の日の勤務情報を抽出する。cache を渡すとシフト表の読み込みを使い回す
+ */
+function getShiftDataFromSheet_(date, staffName, config, cache) {
+  cache = cache || newShiftCache_();
+
+  const targetSheetNames = config.shiftSheetNames.map(base =>
+    Utilities.formatDate(date, 'Asia/Tokyo', 'yy') + '年' + Utilities.formatDate(date, 'Asia/Tokyo', 'M') + '月' + base
+  );
+
+  let shiftInfo = null;
+
+  for (const sheetName of targetSheetNames) {
+    const shiftSheet = loadShiftSheet_(sheetName, config, cache);
+    if (!shiftSheet) continue;
+    const data = shiftSheet.data, activeCols = shiftSheet.activeCols;
+    const storeColIdx = shiftSheet.storeColIdx, timeColIdx = shiftSheet.timeColIdx;
 
     let currentShiftDate = null;
     for (const row of data) {
@@ -107,14 +136,20 @@ function getShiftDataFromSheet_(date, staffName, config) {
 }
 
 /**
- * カレンダーの予定を上書き/削除する
+ * スタッフのカレンダーを開く（1人1回だけ開いて7日分に使う）
  */
-function updateCalendarEvent_(calendarId, date, shiftInfo) {
+function getStaffCalendar_(calendarId) {
   const calendar = CalendarApp.getCalendarById(String(calendarId).trim());
   if (!calendar) {
     throw new Error('Action not allowed (権限がないか、アドレスが間違っています)');
   }
+  return calendar;
+}
 
+/**
+ * カレンダーの予定を上書き/削除する
+ */
+function updateCalendarEvent_(calendar, date, shiftInfo) {
   const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate(),  0,  0, 0);
   const endOfDay   = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
 
@@ -166,12 +201,13 @@ function testSyncSingleStaff() {
   }
   Logger.log('▶ ' + targetStaffName + 'さんの同期テストを開始します（送信先: ' + calendarId + '）');
 
-  const today = new Date();
+  const today      = new Date();
+  const shiftCache = newShiftCache_();
   for (let i = 0; i < 7; i++) {
     const targetDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
-    const shiftInfo  = getShiftDataFromSheet_(targetDate, targetStaffName, config);
+    const shiftInfo  = getShiftDataFromSheet_(targetDate, targetStaffName, config, shiftCache);
     try {
-      updateCalendarEvent_(calendarId, targetDate, shiftInfo);
+      updateCalendarEvent_(getStaffCalendar_(calendarId), targetDate, shiftInfo);
       if (shiftInfo) {
         Logger.log('  ' + Utilities.formatDate(targetDate, 'JST', 'MM/dd') + ': ' + shiftInfo.location + ' (' + shiftInfo.start.getHours() + '時開始) で更新');
       } else {
