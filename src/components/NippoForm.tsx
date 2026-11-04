@@ -567,7 +567,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
               </div>
               {date !== today && (
                 <div style={{ fontSize: 15, color: 'var(--n-warn)', marginBottom: 16, lineHeight: 1.6 }}>
-                  今日ではなく {dateWithWeekday(date)} の日報として送ります。<br />
+                  今日ではなく <span style={{ fontSize: 19, fontWeight: 700 }}>{dateWithWeekday(date)}</span> の日報として送ります。<br />
                   勤務日が合っているか確認してください。
                 </div>
               )}
