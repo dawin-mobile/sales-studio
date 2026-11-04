@@ -1,22 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
 import { readable } from '@/lib/colors';
+import { useMissingDates } from '@/components/NippoForm';
 
 export default function NippoAlert() {
-  const { data: session } = useSession();
-  const [missingDates, setMissingDates] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (!session) return;
-    fetch('/api/nippo-check')
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data.missingDates)) setMissingDates(data.missingDates);
-      })
-      .catch(() => {});
-  }, [session]);
+  // アプリから送信した日は、合算で DB に入る前でもすぐ外れる
+  const missingDates = useMissingDates();
 
   if (missingDates.length === 0) return null;
 

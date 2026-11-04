@@ -61,23 +61,74 @@ function dateWithWeekday(date: string): string {
   return `${shortDate(date)}(${weekdayOf(date)})`;
 }
 
+// アプリから送った日報は、次の合算（0時・10時・21時）で DB に入るまで未提出チェックに出てしまう。
+// 送った日を端末に覚えておき、その間は未提出から外す。2日たてば合算で入っているので忘れる
+const SENT_EVENT = 'nippo-sent';
+const SENT_KEEP_MS = 2 * 24 * 60 * 60 * 1000;
+
+function sentKey(name: string | null | undefined): string | null {
+  return name ? `nippo-sent:${name}` : null;
+}
+
+function loadSent(name: string | null | undefined): Record<string, number> {
+  const key = sentKey(name);
+  if (!key) return {};
+  try {
+    const sent = JSON.parse(localStorage.getItem(key) ?? '{}') as Record<string, number>;
+    return Object.fromEntries(Object.entries(sent).filter(([, at]) => Date.now() - at < SENT_KEEP_MS));
+  } catch {
+    return {};
+  }
+}
+
+function rememberSent(name: string | null | undefined, date: string) {
+  const key = sentKey(name);
+  if (!key) return;
+  try {
+    localStorage.setItem(key, JSON.stringify({ ...loadSent(name), [date]: Date.now() }));
+  } catch {
+    // 保存できない端末では、合算まで未提出のまま出るだけ
+  }
+  window.dispatchEvent(new Event(SENT_EVENT));
+}
+
+/** 未提出日から、この端末で送信済みの日を外す */
+function withoutSent(name: string | null | undefined, dates: string[]): string[] {
+  const sent = loadSent(name);
+  return dates.filter((d) => !(d in sent));
+}
+
+/** 未提出日を取ってきて、送信したらその場で外す（日報ボタンのバッジ・未提出の帯で使う） */
+export function useMissingDates(enabled: boolean = true): string[] {
+  const { data: session } = useSession();
+  const name = session?.user?.name;
+  const [missingDates, setMissingDates] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!name || !enabled) return;
+    fetch('/api/nippo-check')
+      .then((r) => r.json())
+      .then((d) => { if (Array.isArray(d.missingDates)) setMissingDates(withoutSent(name, d.missingDates)); })
+      .catch(() => {});
+    const onSent = () => setMissingDates((prev) => withoutSent(name, prev));
+    window.addEventListener(SENT_EVENT, onSent);
+    return () => window.removeEventListener(SENT_EVENT, onSent);
+  }, [name, enabled]);
+
+  return missingDates;
+}
+
 /** 日報を書けるユーザーかと、未提出日を返す */
 export function useNippoForm() {
   const { data: session } = useSession();
   const [available, setAvailable] = useState(false);
-  const [missingDates, setMissingDates] = useState<string[]>([]);
+  const missingDates = useMissingDates(available);
 
   useEffect(() => {
     if (!session) return;
     fetch('/api/nippo-form')
       .then((r) => r.json())
-      .then((data) => {
-        if (!data.available) return;
-        setAvailable(true);
-        return fetch('/api/nippo-check')
-          .then((r) => r.json())
-          .then((d) => { if (Array.isArray(d.missingDates)) setMissingDates(d.missingDates); });
-      })
+      .then((data) => { if (data.available) setAvailable(true); })
       .catch(() => {});
   }, [session]);
 
@@ -394,6 +445,7 @@ export default function NippoForm({ onClose, missingDates }: { onClose: () => vo
         return;
       }
       clearDraft();
+      rememberSent(userName, date);
       trackAccess('日報送信');
       setStep('done');
     } catch {
