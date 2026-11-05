@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command // \"\"' | grep -q 'clasp push' && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"clasp push を直接実行しないこと。GAS エディタでの直接編集を上書きしないよう、scripts/gas-push.sh gas/<フォルダ> を使う（push 前に今の GAS の中身と最後のコミットを比べ、違いがあれば止まる）\"}}' || true"
+          }
+        ]
+      }
+    ]
+  }
+}

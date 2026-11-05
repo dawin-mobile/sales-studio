@@ -293,6 +293,15 @@ function syncAll() {
   }
 }
 
+// 定期同期（トリガー用）。シフトは編集時に onEditTrigger が即時同期するので、これは保険。
+// 毎回 3か月分を DB で洗い替えるため、Neon の Compute と変更履歴（History）を抑えるよう
+// 3時間おきにし、1時〜9時は何もしない（日報の GAS と同じ時間帯）。手動で同期するときは syncAll を実行する
+function syncAllScheduled() {
+  const jstHour = new Date().getHours();
+  if (jstHour >= 1 && jstHour < 9) return;
+  syncAll();
+}
+
 // 過去N月分を自動同期（月をまたいでも変更不要）
 function syncPastMonths() {
   const MONTHS_BACK = 6; // 何ヶ月前まで同期するか
@@ -342,10 +351,10 @@ function setupTriggers() {
     .onEdit()
     .create();
 
-  // 1時間ごとの定期同期（編集時はonEditTriggerで即時同期されるため保険として十分）
-  ScriptApp.newTrigger('syncAll')
+  // 3時間ごとの定期同期（編集時はonEditTriggerで即時同期されるため保険として十分。1時〜9時は syncAllScheduled 側で何もしない）
+  ScriptApp.newTrigger('syncAllScheduled')
     .timeBased()
-    .everyHours(1)
+    .everyHours(3)
     .create();
 
   Logger.log('トリガーを設定しました ✅');
