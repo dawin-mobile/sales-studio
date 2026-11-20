@@ -621,7 +621,7 @@ export default function Home() {
 
         {activeTab === 'profile' && <ProfileView effectiveRole={effectiveRole} effectiveName={effectiveName} />}
 
-        {activeTab === 'shiryo' && <ShiryoView />}
+        {activeTab === 'shiryo' && <ShiryoView onBack={() => setActiveTab('dashboard')} />}
 
         {activeTab === 'growth' && ['社員', '幹部', '管理者'].includes(effectiveRole ?? '') && <GrowthView />}
 

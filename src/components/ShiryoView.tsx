@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FileText, ChevronRight, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { FileText, ChevronLeft, ChevronRight, X, ZoomIn, ZoomOut } from 'lucide-react';
 // 型だけ読む（中身はアプリの JS に入れず、/api/shiryo から受け取る）
 import type { Shiryo } from '@/lib/shiryo';
 
@@ -139,12 +139,34 @@ function ShiryoCard({ item }: { item: Shiryo }) {
   );
 }
 
-export default function ShiryoView() {
+// 日報の画面と同じ「‹ 画面名」の見出し。‹ でホームに戻る
+function BackHeader({ onBack }: { onBack: () => void }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 12 }}>
+      <button
+        onClick={onBack}
+        aria-label="戻る"
+        style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px 8px 4px 0' }}
+      >
+        <ChevronLeft size={24} strokeWidth={1.75} />
+      </button>
+      <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--text-main)' }}>資料・トーク</span>
+    </div>
+  );
+}
+
+export default function ShiryoView({ onBack }: { onBack: () => void }) {
   const { items, error } = useShiryo();
 
-  if (error) return <div style={{ textAlign: 'center', padding: 40, color: 'var(--accent-red)' }}>資料を読み込めませんでした</div>;
-  if (!items) return <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-soft)' }}>読み込んでいます...</div>;
-  if (items.length === 0) return <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-soft)' }}>資料はまだありません</div>;
+  const message = (text: string, color = 'var(--text-soft)') => (
+    <div style={{ maxWidth: 800, margin: '0 auto' }}>
+      <BackHeader onBack={onBack} />
+      <div style={{ textAlign: 'center', padding: 40, color }}>{text}</div>
+    </div>
+  );
+  if (error) return message('資料を読み込めませんでした', 'var(--accent-red)');
+  if (!items) return message('読み込んでいます...');
+  if (items.length === 0) return message('資料はまだありません');
 
   // カテゴリごとにまとめる（一覧は新しい順なので、最近更新したカテゴリが上に来る）
   const groups = new Map<string, Shiryo[]>();
@@ -155,6 +177,7 @@ export default function ShiryoView() {
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', paddingBottom: 24 }}>
+      <BackHeader onBack={onBack} />
       {[...groups].map(([cat, list]) => (
         <section key={cat} style={{ marginBottom: 20 }}>
           <h3 style={{ fontSize: 13, color: 'var(--text-sub)', margin: '4px 0 8px' }}>{cat}</h3>
