@@ -22,14 +22,14 @@ export interface Shiryo {
 
 export const SHIRYO: Shiryo[] = [
   {
-    id: 'uq-gakuwari-kachikata',
+    id: 'uq-oyakowari-2026',
     category: 'UQ 親子割',
-    title: 'UQ 学割 勝ち方シート（第2版）',
+    title: 'UQ親子割2026',
     updated: '2026-11-19',
     note: 'UQ親子応援割でワイモバ親子割に勝つ。相見積もりのときの値段の出し方・パターン別の勝ち筋。スタッフ用（お客さまに見せない）',
     // 元ファイル: UQ学割_勝ち方シート_2026-27_第2版.pdf。画像は PDF を横2600pxで書き出したもの
-    image: 'uq-gakuwari-kachikata.png',
-    pdf: 'uq-gakuwari-kachikata.pdf',
+    image: 'UQ親子割2026.png',
+    pdf: 'UQ親子割2026.pdf',
     talk: [],
   },
 ];

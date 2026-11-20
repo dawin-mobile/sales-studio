@@ -25,7 +25,13 @@ export async function GET(_req: Request, { params }: { params: Promise<{ name: s
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { name } = await params;
+  // 日本語のファイル名は %E3%81… の形のまま届くことがあるので、元に戻してから照合する
+  let { name } = await params;
+  try {
+    name = decodeURIComponent(name);
+  } catch {
+    return NextResponse.json({ error: 'Not Found' }, { status: 404 });
+  }
   const type = CONTENT_TYPES[path.extname(name).toLowerCase()];
   if (!shiryoFileNames().has(name) || !type) {
     return NextResponse.json({ error: 'Not Found' }, { status: 404 });

@@ -43,7 +43,7 @@ export function ShiryoEntryCard({ onOpen }: { onOpen: () => void }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 'bold' }}>資料・トーク</div>
         <div style={{ fontSize: 12, color: 'var(--text-sub)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {latest.category}｜{latest.title}（{fmtDate(latest.updated)} 更新）
+          {latest.title}（{fmtDate(latest.updated)} 更新）
         </div>
       </div>
       <ChevronRight size={18} strokeWidth={1.75} style={{ flexShrink: 0, color: 'var(--text-sub)' }} />
