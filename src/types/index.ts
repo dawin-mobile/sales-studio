@@ -101,7 +101,8 @@ export type TabName =
   | 'tardiness'
   | 'access-log'
   | 'tantou'
-  | 'report-score';
+  | 'report-score'
+  | 'shiryo';
 
 export interface StaffEvaluation {
   staffName: string;

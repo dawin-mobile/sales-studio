@@ -45,6 +45,7 @@ import AccessLogView from '@/components/AccessLogView';
 import TantouView from '@/components/TantouView';
 import ReportScoreView from '@/components/ReportScoreView';
 import AnalyticsView from '@/components/AnalyticsView';
+import ShiryoView, { ShiryoEntryCard } from '@/components/ShiryoView';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import IncentiveBar from '@/components/IncentiveBar';
 
@@ -62,6 +63,7 @@ const TAB_TITLES: Record<TabName, string> = {
   'access-log': 'アクセスログ',
   'tantou': '担当',
   'report-score': 'Report Studio',
+  'shiryo': '資料・トーク',
 };
 
 export default function Home() {
@@ -449,6 +451,7 @@ export default function Home() {
           <>
             {activeTab === 'dashboard' && (
               <>
+                <ShiryoEntryCard onOpen={() => setActiveTab('shiryo')} />
                 <TalknoteCard />
                 <KpiCards kpi={data.kpi} prevKpi={data.prevKpi} />
                 <div className="dashboard-split">
@@ -617,6 +620,8 @@ export default function Home() {
         )}
 
         {activeTab === 'profile' && <ProfileView effectiveRole={effectiveRole} effectiveName={effectiveName} />}
+
+        {activeTab === 'shiryo' && <ShiryoView />}
 
         {activeTab === 'growth' && ['社員', '幹部', '管理者'].includes(effectiveRole ?? '') && <GrowthView />}
 
